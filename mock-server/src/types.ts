@@ -90,3 +90,35 @@ export interface CadreMaturityJobCategoryQualifiedStatisticsResponse {
   maturityStatistics: CadreMaturityQualifiedStatistics[]
   totalStatistics: CadreMaturityQualifiedStatistics
 }
+
+export interface EmployeeDetailVO {
+  name: string
+  employeeNumber: string
+  competenceCategory?: string
+  competenceSubcategory?: string
+  firstLevelDept?: string
+  secondLevelDept?: string
+  thirdLevelDept?: string
+  fourthLevelDept?: string
+  fifthLevelDept?: string
+  sixthLevelDept?: string
+  certTitle?: string
+  certStartTime?: string
+  isPassedSubject2?: number
+  isCadre?: number
+  aiMaturity?: string
+  miniDeptName?: string
+  cadreType?: string
+  competenceFamilyCn?: string
+  competenceCategoryCn?: string
+  competenceSubcategoryCn?: string
+  directionCnName?: string
+  competenceRatingCn?: string
+  competenceGradeCn?: string
+  competenceFrom?: string
+  competenceTo?: string
+}
+
+export interface EmployeeDrillDownResponseVO {
+  employeeDetails: EmployeeDetailVO[]
+}

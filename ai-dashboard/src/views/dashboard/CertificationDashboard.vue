@@ -165,6 +165,42 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   })
 }
 
+// 处理干部任职数据表格的点击事件
+const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: string) => {
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取成熟度级别和职位类
+  let maturityLevel = (row.maturityLevel as string) || ''
+  const jobCategory = (row.jobCategory as string) || ''
+  
+  // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
+  if (!maturityLevel && jobCategory && dashboardData.value?.cadreAppointment) {
+    const currentIndex = dashboardData.value.cadreAppointment.findIndex(
+      (r) => r === row
+    )
+    // 向上查找最近的成熟度行
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevRow = dashboardData.value.cadreAppointment[i]
+      if (prevRow.isMaturityRow && prevRow.maturityLevel) {
+        maturityLevel = prevRow.maturityLevel as string
+        break
+      }
+    }
+  }
+  
+  router.push({
+    name: 'CertificationDetail',
+    params: { id: 'detail' },
+    query: {
+      column, // 'baseline', 'appointed', 'appointedByRequirement'
+      maturity: maturityLevel || undefined, // 如果为空则不传递
+      jobCategory: jobCategory || undefined, // 如果为空则不传递
+      role: '1', // 强制设置为干部角色
+      deptCode: deptCode,
+    },
+  })
+}
+
 const formatNumber = (value: number) => {
   if (value === null || value === undefined || Number.isNaN(value)) {
     return '-'
@@ -377,7 +413,7 @@ onActivated(() => {
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
-                    @click="handleCellClick(row, 'baseline')"
+                    @click="handleCadreQualifiedCellClick(row, 'baseline')"
                   >
                     {{ formatNumber(row.baseline) }}
                   </el-link>
@@ -389,7 +425,7 @@ onActivated(() => {
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
-                    @click="handleCellClick(row, 'appointed')"
+                    @click="handleCadreQualifiedCellClick(row, 'appointed')"
                   >
                     {{ formatNumber(row.appointed) }}
                   </el-link>
@@ -401,7 +437,7 @@ onActivated(() => {
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
-                    @click="handleCellClick(row, 'appointedByRequirement')"
+                    @click="handleCadreQualifiedCellClick(row, 'appointedByRequirement')"
                   >
                     {{ formatNumber(row.appointedByRequirement) }}
                   </el-link>

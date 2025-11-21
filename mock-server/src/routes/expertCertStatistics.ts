@@ -3,7 +3,8 @@ import { getEmployeeCertStatistics } from '../data/employeeCertStatistics'
 import { getCompetenceCategoryCertStatistics } from '../data/competenceCategoryCertStatistics'
 import { getCadreMaturityJobCategoryCertStatistics } from '../data/cadreMaturityJobCategoryCertStatistics'
 import { getCadreMaturityJobCategoryQualifiedStatistics } from '../data/cadreMaturityJobCategoryQualifiedStatistics'
-import { successResponse } from '../utils/response'
+import { getCadreQualifiedDetails } from '../data/cadreQualifiedDetails'
+import { successResponse, errorResponse } from '../utils/response'
 
 const router = Router()
 
@@ -36,6 +37,34 @@ router.get('/cadre-cert-statistics/by-maturity-and-job-category-qualified', (req
     : '0'
   const data = getCadreMaturityJobCategoryQualifiedStatistics(deptCode)
   return res.json(successResponse(data, 'mock cadre maturity job category qualified statistics'))
+})
+
+router.get('/cadre-qualified-details', (req, res) => {
+  try {
+    const deptCode = typeof req.query.deptCode === 'string' ? req.query.deptCode : ''
+    const aiMaturity = typeof req.query.aiMaturity === 'string' ? req.query.aiMaturity : undefined
+    const jobCategory = typeof req.query.jobCategory === 'string' ? req.query.jobCategory : undefined
+    const personType = typeof req.query.personType === 'string' 
+      ? parseInt(req.query.personType, 10) 
+      : typeof req.query.personType === 'number'
+      ? req.query.personType
+      : 1
+
+    // 参数验证
+    if (!deptCode || deptCode.trim().length === 0) {
+      return res.status(400).json(errorResponse('部门ID不能为空', 400))
+    }
+
+    if (!personType) {
+      return res.status(400).json(errorResponse('人员类型不能为空', 400))
+    }
+
+    const data = getCadreQualifiedDetails(deptCode, aiMaturity, jobCategory, personType)
+    return res.json(successResponse(data, '查询成功'))
+  } catch (error) {
+    console.error('[mock] 获取干部任职详情失败:', error)
+    return res.status(500).json(errorResponse('系统异常，请稍后重试', 500))
+  }
 })
 
 export default router
