@@ -188,6 +188,11 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
     }
   }
   
+  // 如果是总计行，将maturityLevel改为L5（代表查询L2和L3的数据）
+  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
+    maturityLevel = 'L5'
+  }
+  
   router.push({
     name: 'CertificationDetail',
     params: { id: 'detail' },
@@ -433,14 +438,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130">
                 <template #default="{ row }">
-                  <el-link
-                    type="primary"
-                    :underline="false"
-                    class="clickable-cell"
-                    @click="handleCadreQualifiedCellClick(row, 'appointedByRequirement')"
-                  >
-                    {{ formatNumber(row.appointedByRequirement) }}
-                  </el-link>
+                  <span style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="AI任职率" min-width="90">
@@ -450,7 +448,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="certificationCompliance" label="按要求AI认证人数占比" min-width="140">
                 <template #default="{ row }">
-                  {{ formatPercent(row.certificationCompliance) }}
+                  <span style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
             </el-table>
