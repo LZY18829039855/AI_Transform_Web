@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/ai_transform_webapi': {
-        target: 'http://localhost:3800',
+        target: 'http://localhost:8080', // 后端服务地址
         changeOrigin: true,
       },
     },

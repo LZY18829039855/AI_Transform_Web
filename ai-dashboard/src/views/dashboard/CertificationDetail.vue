@@ -45,30 +45,30 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     name: employee.name || '',
     employeeId: employee.employeeNumber || '',
     positionCategory: employee.competenceCategoryCn || employee.competenceCategory || '',
-    positionSubCategory: employee.competenceSubcategoryCn || employee.competenceSubcategory || '',
+    positionSubCategory: '', // 职位子类为空，不展示
     departmentLevel1: employee.firstLevelDept || '',
     departmentLevel2: employee.secondLevelDept || '',
     departmentLevel3: employee.thirdLevelDept || '',
     departmentLevel4: employee.fourthLevelDept || '',
     departmentLevel5: employee.fifthLevelDept || '',
-    departmentLevel6: employee.sixthLevelDept || '',
+    departmentLevel6: '', // 六级部门不展示
     minDepartment: employee.miniDeptName || '',
     professionalCategory: employee.competenceFamilyCn || '',
     expertCategory: employee.competenceCategoryCn || '',
     professionalSubCategory: employee.competenceSubcategoryCn || '',
     qualificationDirection: employee.directionCnName || '',
     qualificationLevel: employee.competenceRatingCn || '',
-    acquisitionMethod: '',
+    acquisitionMethod: employee.competenceGradeCn || '', // 对应 t_qualifications.competence_grade_cn
     effectiveDate: employee.competenceFrom ? new Date(employee.competenceFrom).toLocaleDateString('zh-CN') : '',
     expiryDate: employee.competenceTo ? new Date(employee.competenceTo).toLocaleDateString('zh-CN') : '',
     isCadre: employee.isCadre === 1,
     cadreType: employee.cadreType || '',
-    isExpert: false,
-    isFrontlineManager: false,
-    organizationMaturity: (employee.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
-    positionMaturity: (employee.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
-    requiredCertificate: '',
-    isQualified: true,
+    isExpert: undefined, // 暂无数据
+    isFrontlineManager: undefined, // 暂无数据
+    organizationMaturity: undefined, // 暂无数据
+    positionMaturity: (employee.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
+    requiredCertificate: undefined, // 暂无数据
+    isQualified: undefined, // 暂无数据
   }
 }
 
@@ -406,13 +406,11 @@ onActivated(() => {
               <el-table-column prop="name" label="姓名" width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" width="140" />
               <el-table-column prop="positionCategory" label="职位类" width="140" />
-              <el-table-column prop="positionSubCategory" label="职位子类" width="140" />
               <el-table-column prop="departmentLevel1" label="一级部门" width="140" />
               <el-table-column prop="departmentLevel2" label="二级部门" width="140" />
               <el-table-column prop="departmentLevel3" label="三级部门" width="140" />
               <el-table-column prop="departmentLevel4" label="四级部门" width="140" />
               <el-table-column prop="departmentLevel5" label="五级部门" width="140" />
-              <el-table-column prop="departmentLevel6" label="六级部门" width="140" />
               <el-table-column prop="minDepartment" label="最小部门" width="160" />
               <el-table-column prop="professionalCategory" label="专业任职资格类" width="180" />
               <el-table-column prop="expertCategory" label="专家任职资格类（仅体现AI）" width="220" />
@@ -430,22 +428,35 @@ onActivated(() => {
               <el-table-column prop="cadreType" label="干部类型" width="140" />
               <el-table-column label="是否专家" width="110">
                 <template #default="{ row }">
-                  {{ formatBoolean(row.isExpert) }}
+                  <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
               <el-table-column label="是否基层主管" width="140">
                 <template #default="{ row }">
-                  {{ formatBoolean(row.isFrontlineManager) }}
+                  <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" />
+              <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150">
+                <template #default="{ row }">
+                  <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" />
-              <el-table-column prop="requiredCertificate" label="要求持证类型" width="160" />
+              <el-table-column prop="requiredCertificate" label="要求持证类型" width="160">
+                <template #default="{ row }">
+                  <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
+                </template>
+              </el-table-column>
               <el-table-column label="是否达标" width="120">
                 <template #default="{ row }">
-                  <el-tag :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
                     {{ formatBoolean(row.isQualified) }}
                   </el-tag>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
             </el-table>

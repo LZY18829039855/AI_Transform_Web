@@ -316,12 +316,12 @@ export interface AppointmentAuditRecord {
   expiryDate: string
   isCadre: boolean
   cadreType?: string
-  isExpert: boolean
-  isFrontlineManager: boolean
-  organizationMaturity: 'L1' | 'L2' | 'L3'
-  positionMaturity: 'L1' | 'L2' | 'L3'
-  requiredCertificate: string
-  isQualified: boolean
+  isExpert?: boolean
+  isFrontlineManager?: boolean
+  organizationMaturity?: 'L1' | 'L2' | 'L3'
+  positionMaturity?: 'L1' | 'L2' | 'L3'
+  requiredCertificate?: string
+  isQualified?: boolean
 }
 
 export interface StaffChartPoint {
