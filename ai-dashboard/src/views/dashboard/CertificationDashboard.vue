@@ -532,7 +532,10 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="complianceRate" label="按要求持证率" min-width="130">
                 <template #default="{ row }">
-                  {{ formatPercent(row.complianceRate) }}
+                  <span v-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
+                    {{ formatPercent(row.complianceRate) }}
+                  </span>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
             </el-table>
