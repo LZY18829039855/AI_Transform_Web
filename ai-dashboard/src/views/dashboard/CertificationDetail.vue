@@ -97,15 +97,20 @@ const fetchDetail = async () => {
       const deptCode = routeDeptCode || getDeptCodeFromPath(filters.value.departmentPath)
       const aiMaturity = route.query.maturity as string | undefined
       const jobCategory = route.query.jobCategory as string | undefined
+      const column = route.query.column as string | undefined
       
       // 如果maturity是"全部"，则不传递该参数
       const maturityParam = aiMaturity && aiMaturity !== '全部' ? aiMaturity : undefined
+      
+      // 根据column参数决定queryType：baseline=2（基线人数），appointed或appointedByRequirement=1（任职人数）
+      const queryType = column === 'baseline' ? 2 : 1
       
       const response = await fetchCadreQualifiedDetails(
         deptCode,
         maturityParam,
         jobCategory,
-        1
+        1,
+        queryType
       )
 
       if (response && response.employeeDetails) {

@@ -728,12 +728,14 @@ export const fetchCadreQualifiedDetails = async (
   deptCode: string,
   aiMaturity?: string,
   jobCategory?: string,
-  personType: number = 1
+  personType: number = 1,
+  queryType: number = 1
 ): Promise<EmployeeDrillDownResponseVO | null> => {
   try {
     const query = new URLSearchParams({
       deptCode: deptCode || '0',
       personType: String(personType),
+      queryType: String(queryType),
     })
     if (aiMaturity && aiMaturity.trim().length) {
       query.append('aiMaturity', aiMaturity)

@@ -49,6 +49,11 @@ router.get('/cadre-qualified-details', (req, res) => {
       : typeof req.query.personType === 'number'
       ? req.query.personType
       : 1
+    const queryType = typeof req.query.queryType === 'string' 
+      ? parseInt(req.query.queryType, 10) 
+      : typeof req.query.queryType === 'number'
+      ? req.query.queryType
+      : 1
 
     // 参数验证
     if (!deptCode || deptCode.trim().length === 0) {
@@ -59,7 +64,12 @@ router.get('/cadre-qualified-details', (req, res) => {
       return res.status(400).json(errorResponse('人员类型不能为空', 400))
     }
 
-    const data = getCadreQualifiedDetails(deptCode, aiMaturity, jobCategory, personType)
+    // 验证 queryType 参数
+    if (queryType !== 1 && queryType !== 2) {
+      return res.status(400).json(errorResponse('查询类型参数错误，只支持1（任职人数）或2（基线人数）', 400))
+    }
+
+    const data = getCadreQualifiedDetails(deptCode, aiMaturity, jobCategory, personType, queryType)
     return res.json(successResponse(data, '查询成功'))
   } catch (error) {
     console.error('[mock] 获取干部任职详情失败:', error)

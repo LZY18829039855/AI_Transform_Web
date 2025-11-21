@@ -202,12 +202,14 @@ const mockEmployeeDetails: EmployeeDetailVO[] = [
  * @param aiMaturity 岗位AI成熟度（可选）
  * @param jobCategory 职位类（可选）
  * @param personType 人员类型（1-干部）
+ * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1
  */
 export const getCadreQualifiedDetails = (
   deptCode: string,
   aiMaturity?: string,
   jobCategory?: string,
   personType: number = 1,
+  queryType: number = 1,
 ): EmployeeDrillDownResponseVO => {
   // 根据部门编码过滤数据
   let filtered = mockEmployeeDetails.filter((emp) => {
@@ -236,6 +238,14 @@ export const getCadreQualifiedDetails = (
   // 人员类型过滤（只返回干部数据）
   if (personType === 1) {
     filtered = filtered.filter((emp) => emp.isCadre === 1 || emp.cadreType)
+  }
+
+  // queryType=1（任职人数）时，需要过滤有任职记录的员工
+  // queryType=2（基线人数）时，返回所有干部，不过滤任职条件
+  // 注意：mock 数据中可能没有任职相关字段，这里仅做参数接收，实际过滤逻辑由后端实现
+  if (queryType === 1) {
+    // 任职人数：可以在这里添加任职相关的过滤逻辑（如果有任职字段）
+    // 由于 mock 数据可能没有任职字段，这里暂时不做额外过滤
   }
 
   return {
