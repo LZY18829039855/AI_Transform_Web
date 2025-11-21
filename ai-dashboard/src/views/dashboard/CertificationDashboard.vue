@@ -152,13 +152,23 @@ const resolveDepartmentCode = (deptPath?: string[]) => {
 
 const handleCellClick = (row: Record<string, unknown>, column: string) => {
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取成熟度级别和职位类
+  let maturityLevel = (row.maturityLevel as string) || ''
+  const jobCategory = (row.jobCategory as string) || ''
+  
+  // 如果是总计行，将maturityLevel改为L5（代表查询L2和L3的数据）
+  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
+    maturityLevel = 'L5'
+  }
+  
   router.push({
     name: 'CertificationDetail',
     params: { id: 'detail' },
     query: {
       column,
-      maturity: (row.maturityLevel as string) ?? '',
-      jobCategory: (row.jobCategory as string) ?? '',
+      maturity: maturityLevel || undefined,
+      jobCategory: jobCategory || undefined,
       role: filters.value.role,
       deptCode: deptCode,
     },

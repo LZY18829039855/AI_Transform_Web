@@ -717,11 +717,54 @@ export const fetchDepartmentChildren = (
 }
 
 /**
+ * 查询干部或专家认证数据详情
+ * @param deptCode 部门ID（部门编码）
+ * @param aiMaturity 岗位AI成熟度（可选，L5代表查询L2和L3的数据）
+ * @param jobCategory 职位类（可选）
+ * @param personType 人员类型（1-干部，2-专家）
+ * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1，仅对干部类型有效
+ * @returns 员工详细信息列表
+ */
+export const fetchPersonCertDetails = async (
+  deptCode: string,
+  aiMaturity?: string,
+  jobCategory?: string,
+  personType: number = 1,
+  queryType: number = 1
+): Promise<EmployeeDrillDownResponseVO | null> => {
+  try {
+    const query = new URLSearchParams({
+      deptCode: deptCode || '0',
+      personType: String(personType),
+      queryType: String(queryType),
+    })
+    if (aiMaturity && aiMaturity.trim().length) {
+      query.append('aiMaturity', aiMaturity)
+    }
+    if (jobCategory && jobCategory.trim().length) {
+      query.append('jobCategory', jobCategory)
+    }
+    const response = await get<Result<EmployeeDrillDownResponseVO>>(
+      `/expert-cert-statistics/person-cert-details?${query.toString()}`
+    )
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取干部或专家认证数据详情失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取干部或专家认证数据详情异常：', error)
+    return null
+  }
+}
+
+/**
  * 查询干部任职数据详情
  * @param deptCode 部门ID（部门编码）
  * @param aiMaturity 岗位AI成熟度（可选）
  * @param jobCategory 职位类（可选）
  * @param personType 人员类型（1-干部）
+ * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1
  * @returns 员工详细信息列表
  */
 export const fetchCadreQualifiedDetails = async (

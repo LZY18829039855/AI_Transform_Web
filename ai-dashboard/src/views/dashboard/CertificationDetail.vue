@@ -2,7 +2,7 @@
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchCertificationDetailData, fetchCadreQualifiedDetails } from '@/api/dashboard'
+import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
 import type {
@@ -155,13 +155,112 @@ const fetchDetail = async () => {
         })
       }
     } else {
-      // 使用原有的接口
-      detailData.value = await fetchCertificationDetailData(props.id, {
-        ...filters.value,
-        departmentPath: filters.value.departmentPath?.length
-          ? [...(filters.value.departmentPath ?? [])]
-          : undefined,
-      })
+      // 检查是否是干部或专家认证数据查询
+      const isPersonCertQuery = 
+        (normalizedRole === '1' || normalizedRole === '2') && 
+        route.query.column && 
+        ['aiCertificateHolders', 'certification'].includes(route.query.column as string)
+
+      if (isPersonCertQuery) {
+        // 调用干部或专家认证详情接口
+        const routeDeptCode = route.query.deptCode as string | undefined
+        const deptCode = routeDeptCode || getDeptCodeFromPath(filters.value.departmentPath)
+        const aiMaturity = route.query.maturity as string | undefined
+        const jobCategory = route.query.jobCategory as string | undefined
+        
+        // 如果maturity是"全部"，则不传递该参数
+        let maturityParam = aiMaturity && aiMaturity !== '全部' ? aiMaturity : undefined
+        
+        // 如果是总计行，将maturityParam改为L5（代表查询L2和L3的数据）
+        if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
+          maturityParam = 'L5'
+        }
+        
+        // 根据role参数决定personType：1-干部，2-专家
+        const personType = normalizedRole === '1' ? 1 : 2
+        
+        const response = await fetchPersonCertDetails(
+          deptCode,
+          maturityParam,
+          jobCategory,
+          personType,
+          1 // queryType默认为1（任职人数），认证数据查询不使用此参数
+        )
+
+        if (response && response.employeeDetails) {
+          // 转换为CertificationAuditRecord格式
+          const certificationRecords: CertificationAuditRecord[] = response.employeeDetails.map(
+            (emp) => ({
+              id: emp.employeeNumber || '',
+              name: emp.name || '',
+              employeeId: emp.employeeNumber || '',
+              positionCategory: emp.competenceCategory || '',
+              positionSubCategory: emp.competenceSubcategory || '',
+              departmentLevel1: emp.firstLevelDept || '',
+              departmentLevel2: emp.secondLevelDept || '',
+              departmentLevel3: emp.thirdLevelDept || '',
+              departmentLevel4: emp.fourthLevelDept || '',
+              departmentLevel5: emp.fifthLevelDept || '',
+              departmentLevel6: emp.sixthLevelDept || '',
+              minDepartment: emp.miniDeptName || '',
+              certificateName: emp.certTitle || '',
+              certificateEffectiveDate: emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '',
+              subjectTwoPassed: emp.isPassedSubject2 === 1,
+              isCadre: emp.isCadre === 1,
+              cadreType: emp.cadreType || undefined,
+              isExpert: normalizedRole === '2',
+              isFrontlineManager: false,
+              organizationMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+              positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+              requiredCertificate: '',
+              isQualified: false,
+            })
+          )
+
+          // 构建detailData对象
+          detailData.value = {
+            summary: null,
+            certificationRecords: certificationRecords,
+            appointmentRecords: [],
+            filters: {
+              departmentTree: departmentOptions.value,
+              jobFamilies: [],
+              jobCategories: [],
+              jobSubCategories: [],
+              roles: [
+                { label: '全员', value: '0' },
+                { label: '干部', value: '1' },
+                { label: '专家', value: '2' },
+                { label: '基层主管', value: '3' },
+              ],
+              maturityOptions: [
+                { label: '全部', value: '全部' },
+                { label: 'L1', value: 'L1' },
+                { label: 'L2', value: 'L2' },
+                { label: 'L3', value: 'L3' },
+              ],
+            },
+          }
+          // 默认显示认证标签页
+          activeTab.value = 'certification'
+        } else {
+          // 如果没有数据，使用默认的空数据结构
+          detailData.value = await fetchCertificationDetailData(props.id, {
+            ...filters.value,
+            departmentPath: filters.value.departmentPath?.length
+              ? [...(filters.value.departmentPath ?? [])]
+              : undefined,
+          })
+        }
+      } else {
+        // 使用原有的接口
+        detailData.value = await fetchCertificationDetailData(props.id, {
+          ...filters.value,
+          departmentPath: filters.value.departmentPath?.length
+            ? [...(filters.value.departmentPath ?? [])]
+            : undefined,
+        })
+      }
     }
   } finally {
     loading.value = false
