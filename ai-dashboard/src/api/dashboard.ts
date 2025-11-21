@@ -266,7 +266,7 @@ export const fetchCertificationDashboard = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: Number(maturity.certRate),
+          complianceRate: null, // 按要求持证率数据暂无，直接置为null
           isMaturityRow: true, // 标记为成熟度行
         })
 
@@ -280,7 +280,7 @@ export const fetchCertificationDashboard = async (
             subjectTwoPassed: jobCategory.subject2PassCount,
             certificateRate: Number(jobCategory.certRate),
             subjectTwoRate: Number(jobCategory.subject2PassRate),
-            complianceRate: Number(jobCategory.certRate),
+            complianceRate: null, // 按要求持证率数据暂无，直接置为null
             isMaturityRow: false, // 标记为职位类行
           })
         })
@@ -294,7 +294,7 @@ export const fetchCertificationDashboard = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: Number(maturity.certRate),
+          complianceRate: null, // 按要求持证率数据暂无，直接置为null
           isMaturityRow: true, // 标记为成熟度行
         })
       }
@@ -310,7 +310,7 @@ export const fetchCertificationDashboard = async (
         subjectTwoPassed: stats.totalStatistics.subject2PassCount,
         certificateRate: Number(stats.totalStatistics.certRate),
         subjectTwoRate: Number(stats.totalStatistics.subject2PassRate),
-        complianceRate: Number(stats.totalStatistics.certRate),
+        complianceRate: null, // 按要求持证率数据暂无，直接置为null
         isMaturityRow: true, // 标记为成熟度行
       })
     }
