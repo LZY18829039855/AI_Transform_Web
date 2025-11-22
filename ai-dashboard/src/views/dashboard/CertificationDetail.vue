@@ -20,6 +20,8 @@ const route = useRoute()
 const loading = ref(false)
 const detailData = ref<CertificationDetailData | null>(null)
 const activeTab = ref<'certification' | 'appointment'>('certification')
+// 标记是否是用户主动点击查询按钮
+const isUserQuery = ref(false)
 const ROLE_VALUES: CertificationRole[] = ['0', '1', '2', '3']
 const routeRole = route.query.role as string | undefined
 const normalizedRole: CertificationRole = ROLE_VALUES.includes(routeRole as CertificationRole)
@@ -134,22 +136,36 @@ const fetchDetail = async () => {
       const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
       const jobCategory = filters.value.jobCategory || undefined
       
-      // 处理成熟度参数：优先检查路由参数中是否有L5（从总计行跳转过来的情况）
-      // 如果有L5，则传递给后端；否则使用筛选条件中的值
+      // 处理成熟度参数：
+      // 1. 如果用户点击查询按钮（isUserQuery为true），使用筛选条件中的值
+      // 2. 如果是首次加载（从看板跳转），优先检查路由参数中是否有L5
       let maturityParam: string | undefined = undefined
       const maturityFromRoute = route.query.maturity as string | undefined
       const aiMaturity = filters.value.maturity
       
-      // 如果路由参数中有L5，直接使用L5（这是从总计行跳转过来的情况）
-      if (maturityFromRoute === 'L5') {
-        maturityParam = 'L5' // L5代表查询L2和L3的数据
-      } else if (aiMaturity && aiMaturity !== '全部') {
-        if (aiMaturity === 'L5') {
+      if (isUserQuery.value) {
+        // 用户点击查询按钮，使用筛选条件中的值
+        if (aiMaturity && aiMaturity !== '全部') {
+          if (aiMaturity === 'L5') {
+            maturityParam = 'L5' // L5代表查询L2和L3的数据
+          } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
+          } else {
+            maturityParam = aiMaturity
+          }
+        }
+      } else {
+        // 首次加载（从看板跳转），优先检查路由参数
+        if (maturityFromRoute === 'L5') {
           maturityParam = 'L5' // L5代表查询L2和L3的数据
-        } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
-          maturityParam = 'L5' // 总计行转换为L5
-        } else {
-          maturityParam = aiMaturity
+        } else if (aiMaturity && aiMaturity !== '全部') {
+          if (aiMaturity === 'L5') {
+            maturityParam = 'L5' // L5代表查询L2和L3的数据
+          } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
+          } else {
+            maturityParam = aiMaturity
+          }
         }
       }
 
@@ -280,22 +296,36 @@ const fetchDetail = async () => {
         const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
         const jobCategory = filters.value.jobCategory || undefined
         
-        // 处理成熟度参数：优先检查路由参数中是否有L5（从总计行跳转过来的情况）
-        // 如果有L5，则传递给后端；否则使用筛选条件中的值
+        // 处理成熟度参数：
+        // 1. 如果用户点击查询按钮（isUserQuery为true），使用筛选条件中的值
+        // 2. 如果是首次加载（从看板跳转），优先检查路由参数中是否有L5
         let maturityParam: string | undefined = undefined
         const maturityFromRoute = route.query.maturity as string | undefined
         const aiMaturity = filters.value.maturity
         
-        // 如果路由参数中有L5，直接使用L5（这是从总计行跳转过来的情况）
-        if (maturityFromRoute === 'L5') {
-          maturityParam = 'L5' // L5代表查询L2和L3的数据
-        } else if (aiMaturity && aiMaturity !== '全部') {
-          if (aiMaturity === 'L5') {
+        if (isUserQuery.value) {
+          // 用户点击查询按钮，使用筛选条件中的值
+          if (aiMaturity && aiMaturity !== '全部') {
+            if (aiMaturity === 'L5') {
+              maturityParam = 'L5' // L5代表查询L2和L3的数据
+            } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+              maturityParam = 'L5' // 总计行转换为L5
+            } else {
+              maturityParam = aiMaturity
+            }
+          }
+        } else {
+          // 首次加载（从看板跳转），优先检查路由参数
+          if (maturityFromRoute === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
-          } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
-            maturityParam = 'L5' // 总计行转换为L5
-          } else {
-            maturityParam = aiMaturity
+          } else if (aiMaturity && aiMaturity !== '全部') {
+            if (aiMaturity === 'L5') {
+              maturityParam = 'L5' // L5代表查询L2和L3的数据
+            } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+              maturityParam = 'L5' // 总计行转换为L5
+            } else {
+              maturityParam = aiMaturity
+            }
           }
         }
         
@@ -393,6 +423,8 @@ const fetchDetail = async () => {
     }
   } finally {
     loading.value = false
+    // 查询完成后，重置用户查询标志（下次如果是首次加载，会使用路由参数）
+    isUserQuery.value = false
   }
 }
 
@@ -402,6 +434,7 @@ const handleBack = () => {
 
 // 查询按钮点击事件（用于其他筛选条件）
 const handleQuery = () => {
+  isUserQuery.value = true
   fetchDetail()
 }
 
