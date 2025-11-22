@@ -35,9 +35,21 @@ const parseDepartmentPathFromQuery = (): string[] => {
   return []
 }
 
+// 从路由参数中解析成熟度，如果是L5则显示为"全部"
+const parseMaturityFromQuery = (): '全部' | 'L1' | 'L2' | 'L3' => {
+  const maturityFromQuery = route.query.maturity as string | undefined
+  if (maturityFromQuery === 'L5') {
+    return '全部' // L5代表总计，显示为"全部"
+  }
+  if (maturityFromQuery && ['全部', 'L1', 'L2', 'L3'].includes(maturityFromQuery)) {
+    return maturityFromQuery as '全部' | 'L1' | 'L2' | 'L3'
+  }
+  return '全部'
+}
+
 const filters = ref<CertificationDetailFilters>({
   role: normalizedRole,
-  maturity: (route.query.maturity as string) || '全部', // 从路由参数中读取成熟度，如果没有则默认为"全部"
+  maturity: parseMaturityFromQuery(),
   departmentPath: parseDepartmentPathFromQuery(),
   jobCategory: (route.query.jobCategory as string) || undefined,
   name: undefined,
@@ -217,7 +229,6 @@ const fetchDetail = async () => {
           ],
           maturityOptions: [
             { label: '全部', value: '全部' },
-            { label: 'L1', value: 'L1' },
             { label: 'L2', value: 'L2' },
             { label: 'L3', value: 'L3' },
           ],
@@ -329,7 +340,6 @@ const fetchDetail = async () => {
               ],
               maturityOptions: [
                 { label: '全部', value: '全部' },
-                { label: 'L1', value: 'L1' },
                 { label: 'L2', value: 'L2' },
                 { label: 'L3', value: 'L3' },
               ],
@@ -363,6 +373,11 @@ const fetchDetail = async () => {
 
 const handleBack = () => {
   router.push({ name: 'CertificationDashboard' })
+}
+
+// 查询按钮点击事件（用于其他筛选条件）
+const handleQuery = () => {
+  fetchDetail()
 }
 
 const resetFilters = () => {
@@ -460,21 +475,22 @@ const summaryMetrics = computed(() => {
   ]
 })
 
-watch(
-  () => [
-    filters.value.role,
-    filters.value.maturity,
-    filters.value.departmentPath,
-    filters.value.jobFamily,
-    filters.value.jobCategory,
-    filters.value.jobSubCategory,
-  ],
-  () => {
-    // 只有这些字段变化时才重新加载数据，姓名和工号是前端过滤，不需要重新加载
-    fetchDetail()
-  },
-  { deep: true }
-)
+// 移除自动触发的watch，改为手动点击查询按钮触发
+// watch(
+//   () => [
+//     filters.value.role,
+//     filters.value.maturity,
+//     filters.value.departmentPath,
+//     filters.value.jobFamily,
+//     filters.value.jobCategory,
+//     filters.value.jobSubCategory,
+//   ],
+//   () => {
+//     // 只有这些字段变化时才重新加载数据，姓名和工号是前端过滤，不需要重新加载
+//     fetchDetail()
+//   },
+//   { deep: true }
+// )
 
 onMounted(() => {
   initDepartmentTree()
@@ -490,10 +506,12 @@ onMounted(() => {
     filters.value.jobCategory = jobCategoryFromQuery
   }
   
-  // 从路由参数中读取成熟度，如果没有或为空则保持默认值"全部"
+  // 从路由参数中读取成熟度，如果是L5则显示为"全部"
   const maturityFromQuery = route.query.maturity as string | undefined
-  if (maturityFromQuery) {
-    filters.value.maturity = maturityFromQuery
+  if (maturityFromQuery === 'L5') {
+    filters.value.maturity = '全部' // L5代表总计，显示为"全部"
+  } else if (maturityFromQuery && ['全部', 'L1', 'L2', 'L3'].includes(maturityFromQuery)) {
+    filters.value.maturity = maturityFromQuery as '全部' | 'L1' | 'L2' | 'L3'
   } else {
     filters.value.maturity = '全部'
   }
@@ -526,10 +544,12 @@ onActivated(() => {
     filters.value.jobCategory = jobCategoryFromQuery
   }
   
-  // 从路由参数中读取成熟度，如果没有或为空则保持默认值"全部"
+  // 从路由参数中读取成熟度，如果是L5则显示为"全部"
   const maturityFromQuery = route.query.maturity as string | undefined
-  if (maturityFromQuery) {
-    filters.value.maturity = maturityFromQuery
+  if (maturityFromQuery === 'L5') {
+    filters.value.maturity = '全部' // L5代表总计，显示为"全部"
+  } else if (maturityFromQuery && ['全部', 'L1', 'L2', 'L3'].includes(maturityFromQuery)) {
+    filters.value.maturity = maturityFromQuery as '全部' | 'L1' | 'L2' | 'L3'
   } else {
     filters.value.maturity = '全部'
   }
@@ -552,6 +572,7 @@ onActivated(() => {
       </div>
     </header>
 
+    <!-- 第一行：姓名和工号筛选 -->
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
         <el-form-item label="姓名">
@@ -570,6 +591,15 @@ onActivated(() => {
             style="width: 160px"
           />
         </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleQuery">查询</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 第二行：其他筛选条件 -->
+    <el-card shadow="hover" class="filter-card">
+      <el-form :inline="true" :model="filters" label-width="90">
         <el-form-item label="部门筛选">
           <el-cascader
             v-model="filters.departmentPath"
@@ -642,7 +672,8 @@ onActivated(() => {
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
+          <el-button type="primary" @click="handleQuery">查询</el-button>
+          <el-button text type="primary" @click="resetFilters" style="margin-left: 8px">重置筛选</el-button>
         </el-form-item>
       </el-form>
     </el-card>
