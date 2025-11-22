@@ -319,17 +319,24 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
     maturityLevel = 'L5'
   }
   
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    column,
+    maturity: maturityLevel || undefined,
+    jobCategory: jobCategory || undefined,
+    role: filters.value.role,
+    deptCode: deptCode,
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
+  }
+  
   router.push({
     name: 'CertificationDetail',
     params: { id: 'detail' },
-    query: {
-      column,
-      maturity: maturityLevel || undefined,
-      jobCategory: jobCategory || undefined,
-      role: filters.value.role,
-      deptCode: deptCode,
-      departmentPath: filters.value.departmentPath?.length ? filters.value.departmentPath.join(',') : undefined,
-    },
+    query: queryParams,
   })
 }
 
@@ -361,17 +368,24 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
     maturityLevel = 'L5'
   }
   
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    column,
+    maturity: maturityLevel || undefined,
+    jobCategory: jobCategory || undefined,
+    role: '1', // 强制设置为干部角色
+    deptCode: deptCode,
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
+  }
+  
   router.push({
     name: 'CertificationDetail',
     params: { id: 'detail' },
-    query: {
-      column,
-      maturity: maturityLevel || undefined,
-      jobCategory: jobCategory || undefined,
-      role: '1', // 强制设置为干部角色
-      deptCode: deptCode,
-      departmentPath: filters.value.departmentPath?.length ? filters.value.departmentPath.join(',') : undefined,
-    },
+    query: queryParams,
   })
 }
 

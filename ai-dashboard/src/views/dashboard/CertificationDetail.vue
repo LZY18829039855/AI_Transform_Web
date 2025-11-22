@@ -28,8 +28,9 @@ const normalizedRole: CertificationRole = ROLE_VALUES.includes(routeRole as Cert
 // 从路由参数中解析部门路径
 const parseDepartmentPathFromQuery = (): string[] => {
   const departmentPathStr = route.query.departmentPath as string | undefined
-  if (departmentPathStr && departmentPathStr.trim()) {
-    return departmentPathStr.split(',').filter((dept) => dept.trim().length > 0)
+  if (departmentPathStr && typeof departmentPathStr === 'string' && departmentPathStr.trim()) {
+    const pathArray = departmentPathStr.split(',').filter((dept) => dept.trim().length > 0)
+    return pathArray
   }
   return []
 }
@@ -403,6 +404,18 @@ watch(
 
 onMounted(() => {
   initDepartmentTree()
+  
+  // 从路由参数中更新filters（确保路由参数已准备好）
+  const departmentPathFromQuery = parseDepartmentPathFromQuery()
+  if (departmentPathFromQuery.length > 0) {
+    filters.value.departmentPath = departmentPathFromQuery
+  }
+  
+  const jobCategoryFromQuery = route.query.jobCategory as string | undefined
+  if (jobCategoryFromQuery) {
+    filters.value.jobCategory = jobCategoryFromQuery
+  }
+  
   // 如果是干部任职数据查询，默认显示任职标签页
   const isCadreQualifiedQuery = 
     normalizedRole === '1' && 
@@ -419,6 +432,18 @@ onMounted(() => {
 
 onActivated(() => {
   refreshDepartmentTree()
+  
+  // 从路由参数中更新filters（当从其他页面返回时，路由参数可能已变化）
+  const departmentPathFromQuery = parseDepartmentPathFromQuery()
+  if (departmentPathFromQuery.length > 0) {
+    filters.value.departmentPath = departmentPathFromQuery
+  }
+  
+  const jobCategoryFromQuery = route.query.jobCategory as string | undefined
+  if (jobCategoryFromQuery) {
+    filters.value.jobCategory = jobCategoryFromQuery
+  }
+  
   fetchDetail()
 })
 </script>
