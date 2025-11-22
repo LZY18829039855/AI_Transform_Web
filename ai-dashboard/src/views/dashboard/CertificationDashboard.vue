@@ -175,6 +175,47 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   })
 }
 
+// 处理干部认证数据表格的点击事件
+const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) => {
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取成熟度级别和职位类
+  let maturityLevel = (row.maturityLevel as string) || ''
+  const jobCategory = (row.jobCategory as string) || ''
+  
+  // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
+  if (!maturityLevel && jobCategory && dashboardData.value?.cadreCertification) {
+    const currentIndex = dashboardData.value.cadreCertification.findIndex(
+      (r) => r === row
+    )
+    // 向上查找最近的成熟度行
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevRow = dashboardData.value.cadreCertification[i]
+      if (prevRow.isMaturityRow && prevRow.maturityLevel) {
+        maturityLevel = prevRow.maturityLevel as string
+        break
+      }
+    }
+  }
+  
+  // 如果是总计行，将maturityLevel改为L5（代表查询L2和L3的数据）
+  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
+    maturityLevel = 'L5'
+  }
+  
+  router.push({
+    name: 'CertificationDetail',
+    params: { id: 'detail' },
+    query: {
+      column,
+      maturity: maturityLevel || undefined,
+      jobCategory: jobCategory || undefined,
+      role: '1', // 强制设置为干部角色
+      deptCode: deptCode,
+    },
+  })
+}
+
 // 处理干部任职数据表格的点击事件
 const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: string) => {
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
@@ -497,7 +538,7 @@ onActivated(() => {
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
-                    @click="handleCellClick(row, 'baseline')"
+                    @click="handleCadreCertCellClick(row, 'baseline')"
                   >
                     {{ formatNumber(row.baseline) }}
                   </el-link>
@@ -509,7 +550,7 @@ onActivated(() => {
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
-                    @click="handleCellClick(row, 'aiCertificateHolders')"
+                    @click="handleCadreCertCellClick(row, 'aiCertificateHolders')"
                   >
                     {{ formatNumber(row.aiCertificateHolders) }}
                   </el-link>

@@ -159,7 +159,7 @@ const fetchDetail = async () => {
       const isPersonCertQuery = 
         (normalizedRole === '1' || normalizedRole === '2') && 
         route.query.column && 
-        ['aiCertificateHolders', 'certification'].includes(route.query.column as string)
+        ['aiCertificateHolders', 'certification', 'baseline'].includes(route.query.column as string)
 
       if (isPersonCertQuery) {
         // 调用干部或专家认证详情接口
@@ -179,12 +179,15 @@ const fetchDetail = async () => {
         // 根据role参数决定personType：1-干部，2-专家
         const personType = normalizedRole === '1' ? 1 : 2
         
+        // 根据column参数决定queryType：baseline=2（基线人数），aiCertificateHolders或certification=1（任职人数）
+        const queryType = route.query.column === 'baseline' ? 2 : 1
+        
         const response = await fetchPersonCertDetails(
           deptCode,
           maturityParam,
           jobCategory,
           personType,
-          1 // queryType默认为1（任职人数），认证数据查询不使用此参数
+          queryType
         )
 
         if (response && response.employeeDetails) {
