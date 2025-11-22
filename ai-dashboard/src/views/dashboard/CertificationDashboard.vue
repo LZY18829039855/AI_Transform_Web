@@ -2,7 +2,15 @@
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { Medal } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { fetchCertificationDashboard } from '@/api/dashboard'
+import {
+  fetchCertificationDashboard,
+  fetchExpertData,
+  fetchCadreData,
+  fetchAllStaffTrends,
+  fetchDepartmentStats,
+  fetchJobCategoryStats,
+  fetchDashboardFilters,
+} from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import StatCard from '@/components/common/StatCard.vue'
@@ -14,11 +22,85 @@ import type {
   CompetenceCategoryCertStatistics,
   DepartmentCertStatistic,
   StaffChartPoint,
+  ExpertCertificationSummaryRow,
+  ExpertAppointmentSummaryRow,
+  CadreCertificationSummaryRow,
+  CadreAppointmentSummaryRow,
+  EmployeeCertStatisticsResponse,
+  CompetenceCategoryCertStatisticsResponse,
+  DepartmentNode,
+  SelectOption,
+  CertificationRole,
 } from '@/types/dashboard'
 
 const router = useRouter()
-const loading = ref(false)
-const dashboardData = ref<CertificationDashboardData | null>(null)
+
+// 各个数据块的独立loading状态
+const loadingExpert = ref(false)
+const loadingCadre = ref(false)
+const loadingAllStaffTrends = ref(false)
+const loadingDepartmentStats = ref(false)
+const loadingJobCategoryStats = ref(false)
+const loadingFilters = ref(false)
+
+// 各个数据块的数据
+const expertData = ref<{
+  certification: ExpertCertificationSummaryRow[]
+  appointment: ExpertAppointmentSummaryRow[]
+} | null>(null)
+const cadreData = ref<{
+  certification: (CadreCertificationSummaryRow & { isMaturityRow?: boolean })[]
+  appointment: (CadreAppointmentSummaryRow & { isMaturityRow?: boolean })[]
+} | null>(null)
+const allStaffTrends = ref<{
+  departmentAppointment: StaffChartPoint[]
+  organizationAppointment: StaffChartPoint[]
+  jobCategoryAppointment: StaffChartPoint[]
+  departmentCertification: StaffChartPoint[]
+  organizationCertification: StaffChartPoint[]
+  jobCategoryCertification: StaffChartPoint[]
+} | null>(null)
+const departmentStats = ref<{
+  departmentAppointment: StaffChartPoint[]
+  departmentCertification: StaffChartPoint[]
+  employeeCertStatistics: EmployeeCertStatisticsResponse | null
+} | null>(null)
+const jobCategoryStats = ref<{
+  jobCategoryAppointment: StaffChartPoint[]
+  jobCategoryCertification: StaffChartPoint[]
+  competenceCategoryCertStatistics: CompetenceCategoryCertStatisticsResponse | null
+} | null>(null)
+const dashboardFilters = ref<{
+  departmentTree: DepartmentNode[]
+  roles: SelectOption<CertificationRole>[]
+} | null>(null)
+
+// 为了兼容现有代码，保留dashboardData的computed属性
+const dashboardData = computed<CertificationDashboardData | null>(() => {
+  if (!expertData.value || !cadreData.value || !allStaffTrends.value || !dashboardFilters.value) {
+    return null
+  }
+
+  return {
+    metrics: [],
+    expertCertification: expertData.value.certification,
+    expertAppointment: expertData.value.appointment,
+    cadreCertification: cadreData.value.certification,
+    cadreAppointment: cadreData.value.appointment,
+    allStaff: {
+      departmentAppointment: departmentStats.value?.departmentAppointment ?? allStaffTrends.value.departmentAppointment,
+      organizationAppointment: allStaffTrends.value.organizationAppointment,
+      jobCategoryAppointment: jobCategoryStats.value?.jobCategoryAppointment ?? allStaffTrends.value.jobCategoryAppointment,
+      departmentCertification: departmentStats.value?.departmentCertification ?? allStaffTrends.value.departmentCertification,
+      organizationCertification: allStaffTrends.value.organizationCertification,
+      jobCategoryCertification: jobCategoryStats.value?.jobCategoryCertification ?? allStaffTrends.value.jobCategoryCertification,
+    },
+    employeeCertStatistics: departmentStats.value?.employeeCertStatistics ?? null,
+    competenceCategoryCertStatistics: jobCategoryStats.value?.competenceCategoryCertStatistics ?? null,
+    filters: dashboardFilters.value,
+  }
+})
+
 const filters = ref<CertificationDashboardFilters>({
   role: '0',
   departmentPath: [],
@@ -31,9 +113,9 @@ const {
   refreshDepartmentTree,
 } = useDepartmentFilter()
 
-const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
+const roleOptions = computed(() => normalizeRoleOptions(dashboardFilters.value?.roles ?? []))
 const departmentStatistics = computed(
-  () => dashboardData.value?.employeeCertStatistics?.departmentStatistics ?? []
+  () => departmentStats.value?.employeeCertStatistics?.departmentStatistics ?? []
 )
 const resolveQualifiedCount = (item?: DepartmentCertStatistic | null) =>
   item?.qualifiedCount ?? 0
@@ -59,13 +141,13 @@ const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
 )
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
 const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
-  () => dashboardData.value?.allStaff.departmentAppointment ?? []
+  () => allStaffTrends.value?.departmentAppointment ?? []
 )
 const departmentChartPoints = computed<StaffChartPoint[]>(() =>
   hasDepartmentStats.value ? departmentStatsPoints.value : fallbackDepartmentPoints.value
 )
 const fallbackDepartmentCertificationPoints = computed<StaffChartPoint[]>(
-  () => dashboardData.value?.allStaff.departmentCertification ?? []
+  () => allStaffTrends.value?.departmentCertification ?? []
 )
 const departmentCertificationChartPoints = computed<StaffChartPoint[]>(() =>
   hasDepartmentStats.value
@@ -75,7 +157,7 @@ const departmentCertificationChartPoints = computed<StaffChartPoint[]>(() =>
 const departmentCountLabel = computed(() => '任职总人数')
 const departmentLegendTotals = computed<Record<string, string> | undefined>(() => {
   if (!hasDepartmentStats.value) return undefined
-  const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
+  const total = departmentStats.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
     [departmentCountLabel.value]: `${resolveQualifiedCount(total)}人`,
@@ -84,7 +166,7 @@ const departmentLegendTotals = computed<Record<string, string> | undefined>(() =
 })
 const departmentCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
   if (!hasDepartmentStats.value) return undefined
-  const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
+  const total = departmentStats.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
     认证总人数: `${resolveCertificationCount(total)}人`,
@@ -94,7 +176,7 @@ const departmentCertificationLegendTotals = computed<Record<string, string> | un
 
 // 职位类统计数据
 const competenceCategoryStatistics = computed(
-  () => dashboardData.value?.competenceCategoryCertStatistics?.categoryStatistics ?? []
+  () => jobCategoryStats.value?.competenceCategoryCertStatistics?.categoryStatistics ?? []
 )
 const hasJobCategoryStats = computed(() => competenceCategoryStatistics.value.length > 0)
 const resolveJobCategoryQualifiedCount = (item?: CompetenceCategoryCertStatistics | null) =>
@@ -109,7 +191,7 @@ const resolveJobCategoryCertificationRate = (item?: CompetenceCategoryCertStatis
 // 职位类任职数据图例总计
 const jobCategoryAppointmentLegendTotals = computed<Record<string, string> | undefined>(() => {
   if (!hasJobCategoryStats.value) return undefined
-  const total = dashboardData.value?.competenceCategoryCertStatistics?.totalStatistics
+  const total = jobCategoryStats.value?.competenceCategoryCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
     任职人数: `${resolveJobCategoryQualifiedCount(total)}人`,
@@ -120,7 +202,7 @@ const jobCategoryAppointmentLegendTotals = computed<Record<string, string> | und
 // 职位类认证数据图例总计
 const jobCategoryCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
   if (!hasJobCategoryStats.value) return undefined
-  const total = dashboardData.value?.competenceCategoryCertStatistics?.totalStatistics
+  const total = jobCategoryStats.value?.competenceCategoryCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
     认证人数: `${resolveJobCategoryCertificationCount(total)}人`,
@@ -128,18 +210,93 @@ const jobCategoryCertificationLegendTotals = computed<Record<string, string> | u
   }
 })
 
-const fetchData = async () => {
-  loading.value = true
+// 渐进式加载各个数据块
+const loadExpertData = async () => {
+  loadingExpert.value = true
   try {
-    dashboardData.value = await fetchCertificationDashboard({
-      ...filters.value,
-      departmentPath: filters.value.departmentPath?.length
-        ? [...(filters.value.departmentPath ?? [])]
-        : undefined,
-    })
+    expertData.value = await fetchExpertData()
+  } catch (error) {
+    console.error('加载专家数据失败:', error)
   } finally {
-    loading.value = false
+    loadingExpert.value = false
   }
+}
+
+const loadCadreData = async () => {
+  loadingCadre.value = true
+  try {
+    const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+    cadreData.value = await fetchCadreData(deptCode)
+  } catch (error) {
+    console.error('加载干部数据失败:', error)
+  } finally {
+    loadingCadre.value = false
+  }
+}
+
+const loadAllStaffTrends = async () => {
+  loadingAllStaffTrends.value = true
+  try {
+    allStaffTrends.value = await fetchAllStaffTrends()
+  } catch (error) {
+    console.error('加载全员趋势数据失败:', error)
+  } finally {
+    loadingAllStaffTrends.value = false
+  }
+}
+
+const loadDepartmentStats = async () => {
+  loadingDepartmentStats.value = true
+  try {
+    const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+    const personType = filters.value.role ?? '0'
+    departmentStats.value = await fetchDepartmentStats(deptCode, personType)
+  } catch (error) {
+    console.error('加载部门统计数据失败:', error)
+  } finally {
+    loadingDepartmentStats.value = false
+  }
+}
+
+const loadJobCategoryStats = async () => {
+  loadingJobCategoryStats.value = true
+  try {
+    const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+    const personType = filters.value.role ?? '0'
+    jobCategoryStats.value = await fetchJobCategoryStats(deptCode, personType)
+  } catch (error) {
+    console.error('加载职位类统计数据失败:', error)
+  } finally {
+    loadingJobCategoryStats.value = false
+  }
+}
+
+const loadFilters = async () => {
+  loadingFilters.value = true
+  try {
+    dashboardFilters.value = await fetchDashboardFilters()
+  } catch (error) {
+    console.error('加载筛选器数据失败:', error)
+  } finally {
+    loadingFilters.value = false
+  }
+}
+
+// 加载所有数据（并行加载，不阻塞页面渲染）
+const fetchData = async () => {
+  // 先加载筛选器数据（用于显示筛选组件）
+  await loadFilters()
+  
+  // 然后并行加载其他数据块
+  Promise.all([
+    loadExpertData(),
+    loadCadreData(),
+    loadAllStaffTrends(),
+    loadDepartmentStats(),
+    loadJobCategoryStats(),
+  ]).catch((error) => {
+    console.error('加载数据失败:', error)
+  })
 }
 
 const resolveDepartmentCode = (deptPath?: string[]) => {
@@ -184,13 +341,13 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
   const jobCategory = (row.jobCategory as string) || ''
   
   // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
-  if (!maturityLevel && jobCategory && dashboardData.value?.cadreCertification) {
-    const currentIndex = dashboardData.value.cadreCertification.findIndex(
+  if (!maturityLevel && jobCategory && cadreData.value?.certification) {
+    const currentIndex = cadreData.value.certification.findIndex(
       (r) => r === row
     )
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
-      const prevRow = dashboardData.value.cadreCertification[i]
+      const prevRow = cadreData.value.certification[i]
       if (prevRow.isMaturityRow && prevRow.maturityLevel) {
         maturityLevel = prevRow.maturityLevel as string
         break
@@ -225,13 +382,13 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
   const jobCategory = (row.jobCategory as string) || ''
   
   // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
-  if (!maturityLevel && jobCategory && dashboardData.value?.cadreAppointment) {
-    const currentIndex = dashboardData.value.cadreAppointment.findIndex(
+  if (!maturityLevel && jobCategory && cadreData.value?.appointment) {
+    const currentIndex = cadreData.value.appointment.findIndex(
       (r) => r === row
     )
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
-      const prevRow = dashboardData.value.cadreAppointment[i]
+      const prevRow = cadreData.value.appointment[i]
       if (prevRow.isMaturityRow && prevRow.maturityLevel) {
         maturityLevel = prevRow.maturityLevel as string
         break
@@ -292,7 +449,10 @@ const resetFilters = () => {
 watch(
   filters,
   () => {
-    fetchData()
+    // 筛选条件改变时，只重新加载依赖筛选条件的数据块
+    loadCadreData()
+    loadDepartmentStats()
+    loadJobCategoryStats()
   },
   { deep: true }
 )
@@ -343,115 +503,122 @@ onActivated(() => {
       </el-form>
     </el-card>
 
-    <el-skeleton :rows="6" animated v-if="loading" />
-    <template v-else-if="dashboardData">
-      <el-row :gutter="16" class="metric-row">
-        <el-col v-for="metric in dashboardData.metrics" :key="metric.id" :xs="24" :sm="12" :md="6">
-          <StatCard
-            :title="metric.title"
-            :value="metric.value"
-            :unit="metric.unit"
-            :delta="metric.delta"
-            :trend="metric.trend"
-            subtitle="较上期"
-          />
-        </el-col>
-      </el-row>
+    <!-- 指标卡片区域 -->
+    <el-row :gutter="16" class="metric-row" v-if="dashboardData">
+      <el-col v-for="metric in dashboardData.metrics" :key="metric.id" :xs="24" :sm="12" :md="6">
+        <StatCard
+          :title="metric.title"
+          :value="metric.value"
+          :unit="metric.unit"
+          :delta="metric.delta"
+          :trend="metric.trend"
+          subtitle="较上期"
+        />
+      </el-col>
+    </el-row>
 
-      <el-row :gutter="16" class="summary-table-grid">
-        <!-- 1. 专家认证数据 -->
-        <el-col :xs="24" :lg="24">
-          <CertificationSummaryTable
-            title="专家AI认证数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'certified',
-                label: '已完成AI认证人数',
-                width: 170,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'certificationRate',
-                label: 'AI认证人数占比',
-                width: 150,
-                valueType: 'percent',
-              },
-            ]"
-            :data="dashboardData.expertCertification"
-            :on-cell-click="handleCellClick"
-          />
-        </el-col>
-        <!-- 2. 专家任职数据 -->
-        <el-col :xs="24" :lg="24">
-          <CertificationSummaryTable
-            title="专家AI任职数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointed',
-                label: 'AI任职人数',
-                width: 130,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointedByRequirement',
-                label: '按要求AI任职人数',
-                width: 180,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointmentRate',
-                label: 'AI任职率',
-                width: 130,
-                valueType: 'percent',
-              },
-              {
-                prop: 'certificationCompliance',
-                label: '按要求AI认证人数占比',
-                width: 190,
-                valueType: 'percent',
-              },
-            ]"
-            :data="dashboardData.expertAppointment"
-            :on-cell-click="handleCellClick"
-          />
-        </el-col>
-        <!-- 3. 干部任职数据 -->
-        <el-col :xs="24" :lg="24">
-          <el-card shadow="hover" class="summary-table-card">
-            <template #header>
-              <div class="summary-table-card__header">
-                <h3>干部AI任职数据</h3>
-              </div>
-            </template>
-            <el-table
-              :data="dashboardData.cadreAppointment"
-              border
-              stripe
-              size="small"
-              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
-              :row-class-name="getRowClassName"
-            >
+    <el-row :gutter="16" class="summary-table-grid">
+      <!-- 1. 专家认证数据 -->
+      <el-col :xs="24" :lg="24">
+        <el-skeleton :rows="4" animated v-if="loadingExpert" />
+        <CertificationSummaryTable
+          v-else-if="expertData"
+          title="专家AI认证数据"
+          :columns="[
+            { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
+            { prop: 'jobCategory', label: '职位类', width: 140 },
+            {
+              prop: 'baseline',
+              label: '基线人数',
+              width: 110,
+              clickable: true,
+              valueType: 'number',
+            },
+            {
+              prop: 'certified',
+              label: '已完成AI认证人数',
+              width: 170,
+              clickable: true,
+              valueType: 'number',
+            },
+            {
+              prop: 'certificationRate',
+              label: 'AI认证人数占比',
+              width: 150,
+              valueType: 'percent',
+            },
+          ]"
+          :data="expertData.certification"
+          :on-cell-click="handleCellClick"
+        />
+        <el-empty v-else description="暂无数据" :image-size="80" />
+      </el-col>
+      <!-- 2. 专家任职数据 -->
+      <el-col :xs="24" :lg="24">
+        <el-skeleton :rows="4" animated v-if="loadingExpert" />
+        <CertificationSummaryTable
+          v-else-if="expertData"
+          title="专家AI任职数据"
+          :columns="[
+            { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
+            { prop: 'jobCategory', label: '职位类', width: 140 },
+            {
+              prop: 'baseline',
+              label: '基线人数',
+              width: 110,
+              clickable: true,
+              valueType: 'number',
+            },
+            {
+              prop: 'appointed',
+              label: 'AI任职人数',
+              width: 130,
+              clickable: true,
+              valueType: 'number',
+            },
+            {
+              prop: 'appointedByRequirement',
+              label: '按要求AI任职人数',
+              width: 180,
+              clickable: true,
+              valueType: 'number',
+            },
+            {
+              prop: 'appointmentRate',
+              label: 'AI任职率',
+              width: 130,
+              valueType: 'percent',
+            },
+            {
+              prop: 'certificationCompliance',
+              label: '按要求AI认证人数占比',
+              width: 190,
+              valueType: 'percent',
+            },
+          ]"
+          :data="expertData.appointment"
+          :on-cell-click="handleCellClick"
+        />
+        <el-empty v-else description="暂无数据" :image-size="80" />
+      </el-col>
+      <!-- 3. 干部任职数据 -->
+      <el-col :xs="24" :lg="24">
+        <el-card shadow="hover" class="summary-table-card">
+          <template #header>
+            <div class="summary-table-card__header">
+              <h3>干部AI任职数据</h3>
+            </div>
+          </template>
+          <el-skeleton :rows="4" animated v-if="loadingCadre" />
+          <el-table
+            v-else-if="cadreData"
+            :data="cadreData.appointment"
+            border
+            stripe
+            size="small"
+            :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+            :row-class-name="getRowClassName"
+          >
               <!-- 合并的成熟度/职位类列 -->
               <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180">
                 <template #default="{ row }">
@@ -503,24 +670,27 @@ onActivated(() => {
                 </template>
               </el-table-column>
             </el-table>
-          </el-card>
-        </el-col>
-        <!-- 4. 干部认证数据 -->
-        <el-col :xs="24" :lg="24">
-          <el-card shadow="hover" class="summary-table-card">
-            <template #header>
-              <div class="summary-table-card__header">
-                <h3>干部AI认证数据</h3>
-              </div>
-            </template>
-            <el-table
-              :data="dashboardData.cadreCertification"
-              border
-              stripe
-              size="small"
-              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
-              :row-class-name="getRowClassName"
-            >
+          <el-empty v-else description="暂无数据" :image-size="80" />
+        </el-card>
+      </el-col>
+      <!-- 4. 干部认证数据 -->
+      <el-col :xs="24" :lg="24">
+        <el-card shadow="hover" class="summary-table-card">
+          <template #header>
+            <div class="summary-table-card__header">
+              <h3>干部AI认证数据</h3>
+            </div>
+          </template>
+          <el-skeleton :rows="4" animated v-if="loadingCadre" />
+          <el-table
+            v-else-if="cadreData"
+            :data="cadreData.certification"
+            border
+            stripe
+            size="small"
+            :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+            :row-class-name="getRowClassName"
+          >
               <!-- 合并的成熟度/职位类列 -->
               <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180">
                 <template #default="{ row }">
@@ -580,85 +750,96 @@ onActivated(() => {
                 </template>
               </el-table-column>
             </el-table>
-          </el-card>
-        </el-col>
-      </el-row>
+          <el-empty v-else description="暂无数据" :image-size="80" />
+        </el-card>
+      </el-col>
+    </el-row>
 
-      <el-card shadow="hover" class="charts-section">
-        <template #header>
-          <div class="charts-header">
-            <div class="charts-title">
-              <el-icon><Medal /></el-icon>
-              <div>
-                <h3>全员任职/认证趋势</h3>
-                <p>任职、认证人数使用柱状图展示，同时叠加占比折线辅助判读效率</p>
-              </div>
+    <el-card shadow="hover" class="charts-section">
+      <template #header>
+        <div class="charts-header">
+          <div class="charts-title">
+            <el-icon><Medal /></el-icon>
+            <div>
+              <h3>全员任职/认证趋势</h3>
+              <p>任职、认证人数使用柱状图展示，同时叠加占比折线辅助判读效率</p>
             </div>
           </div>
-        </template>
-        <el-row :gutter="16">
-          <el-col :xs="24" :sm="24" :md="24" :lg="24">
-            <BarLineChart
-              title="部门任职数据"
-              :points="departmentChartPoints"
-              :count-label="departmentCountLabel"
-              rate-label="占比"
-              :legend-totals="departmentLegendTotals"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24">
-            <BarLineChart
-              title="部门认证数据"
-              :points="departmentCertificationChartPoints"
-              count-label="认证总人数"
-              rate-label="占比"
-              :legend-totals="departmentCertificationLegendTotals"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24">
-            <BarLineChart
-              title="组织AI成熟度任职数据"
-              :points="dashboardData.allStaff.organizationAppointment"
-              count-label="任职人数"
-              rate-label="占比"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24">
-            <BarLineChart
-              title="组织AI成熟度认证数据"
-              :points="dashboardData.allStaff.organizationCertification"
-              count-label="认证人数"
-              rate-label="占比"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24">
-            <BarLineChart
-              title="职位类任职数据"
-              :points="dashboardData.allStaff.jobCategoryAppointment"
-              count-label="任职人数"
-              rate-label="占比"
-              :legend-totals="jobCategoryAppointmentLegendTotals"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24">
-            <BarLineChart
-              title="职位类认证数据"
-              :points="dashboardData.allStaff.jobCategoryCertification"
-              count-label="认证人数"
-              rate-label="占比"
-              :legend-totals="jobCategoryCertificationLegendTotals"
-              :height="320"
-            />
-          </el-col>
-        </el-row>
-      </el-card>
-    </template>
-    <el-empty v-else description="暂无数据" />
+        </div>
+      </template>
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+          <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
+          <BarLineChart
+            v-else-if="dashboardData"
+            title="部门任职数据"
+            :points="departmentChartPoints"
+            :count-label="departmentCountLabel"
+            rate-label="占比"
+            :legend-totals="departmentLegendTotals"
+            :height="320"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+          <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
+          <BarLineChart
+            v-else-if="dashboardData"
+            title="部门认证数据"
+            :points="departmentCertificationChartPoints"
+            count-label="认证总人数"
+            rate-label="占比"
+            :legend-totals="departmentCertificationLegendTotals"
+            :height="320"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+          <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
+          <BarLineChart
+            v-else-if="allStaffTrends"
+            title="组织AI成熟度任职数据"
+            :points="allStaffTrends.organizationAppointment"
+            count-label="任职人数"
+            rate-label="占比"
+            :height="320"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+          <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
+          <BarLineChart
+            v-else-if="allStaffTrends"
+            title="组织AI成熟度认证数据"
+            :points="allStaffTrends.organizationCertification"
+            count-label="认证人数"
+            rate-label="占比"
+            :height="320"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+          <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
+          <BarLineChart
+            v-else-if="dashboardData"
+            title="职位类任职数据"
+            :points="dashboardData.allStaff.jobCategoryAppointment"
+            count-label="任职人数"
+            rate-label="占比"
+            :legend-totals="jobCategoryAppointmentLegendTotals"
+            :height="320"
+          />
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+          <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
+          <BarLineChart
+            v-else-if="dashboardData"
+            title="职位类认证数据"
+            :points="dashboardData.allStaff.jobCategoryCertification"
+            count-label="认证人数"
+            rate-label="占比"
+            :legend-totals="jobCategoryCertificationLegendTotals"
+            :height="320"
+          />
+        </el-col>
+      </el-row>
+    </el-card>
   </section>
 </template>
 
