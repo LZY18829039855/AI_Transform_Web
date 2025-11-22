@@ -37,9 +37,11 @@ const parseDepartmentPathFromQuery = (): string[] => {
 
 const filters = ref<CertificationDetailFilters>({
   role: normalizedRole,
-  maturity: '全部', // 成熟度不从路由参数读取，因为看板页面的成熟度和详情页面的成熟度概念不同
+  maturity: (route.query.maturity as string) || '全部', // 从路由参数中读取成熟度，如果没有则默认为"全部"
   departmentPath: parseDepartmentPathFromQuery(),
   jobCategory: (route.query.jobCategory as string) || undefined,
+  name: undefined,
+  employeeId: undefined,
 })
 
 const {
@@ -363,14 +365,70 @@ const resetFilters = () => {
     jobFamily: undefined,
     jobCategory: undefined,
     jobSubCategory: undefined,
+    name: undefined,
+    employeeId: undefined,
   }
 }
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
+// 过滤认证记录（根据姓名和工号）
+const filteredCertificationRecords = computed(() => {
+  if (!detailData.value) {
+    return []
+  }
+  let records = detailData.value.certificationRecords
+  
+  // 根据姓名筛选
+  if (filters.value.name && filters.value.name.trim()) {
+    const nameFilter = filters.value.name.trim().toLowerCase()
+    records = records.filter((record) => 
+      record.name && record.name.toLowerCase().includes(nameFilter)
+    )
+  }
+  
+  // 根据工号筛选
+  if (filters.value.employeeId && filters.value.employeeId.trim()) {
+    const employeeIdFilter = filters.value.employeeId.trim().toLowerCase()
+    records = records.filter((record) => 
+      record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
+    )
+  }
+  
+  return records
+})
+
+// 过滤任职记录（根据姓名和工号）
+const filteredAppointmentRecords = computed(() => {
+  if (!detailData.value) {
+    return []
+  }
+  let records = detailData.value.appointmentRecords
+  
+  // 根据姓名筛选
+  if (filters.value.name && filters.value.name.trim()) {
+    const nameFilter = filters.value.name.trim().toLowerCase()
+    records = records.filter((record) => 
+      record.name && record.name.toLowerCase().includes(nameFilter)
+    )
+  }
+  
+  // 根据工号筛选
+  if (filters.value.employeeId && filters.value.employeeId.trim()) {
+    const employeeIdFilter = filters.value.employeeId.trim().toLowerCase()
+    records = records.filter((record) => 
+      record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
+    )
+  }
+  
+  return records
+})
+
 const summaryMetrics = computed(() => {
   if (!detailData.value) return []
-  const { certificationRecords, appointmentRecords } = detailData.value
+  // 使用过滤后的数据计算统计指标
+  const certificationRecords = filteredCertificationRecords.value
+  const appointmentRecords = filteredAppointmentRecords.value
   const qualifiedCount = certificationRecords.filter((item) => item.isQualified).length
   const appointmentQualified = appointmentRecords.filter((item) => item.isQualified).length
 
@@ -395,8 +453,16 @@ const summaryMetrics = computed(() => {
 })
 
 watch(
-  filters,
+  () => [
+    filters.value.role,
+    filters.value.maturity,
+    filters.value.departmentPath,
+    filters.value.jobFamily,
+    filters.value.jobCategory,
+    filters.value.jobSubCategory,
+  ],
   () => {
+    // 只有这些字段变化时才重新加载数据，姓名和工号是前端过滤，不需要重新加载
     fetchDetail()
   },
   { deep: true }
@@ -414,6 +480,14 @@ onMounted(() => {
   const jobCategoryFromQuery = route.query.jobCategory as string | undefined
   if (jobCategoryFromQuery) {
     filters.value.jobCategory = jobCategoryFromQuery
+  }
+  
+  // 从路由参数中读取成熟度，如果没有或为空则保持默认值"全部"
+  const maturityFromQuery = route.query.maturity as string | undefined
+  if (maturityFromQuery) {
+    filters.value.maturity = maturityFromQuery
+  } else {
+    filters.value.maturity = '全部'
   }
   
   // 如果是干部任职数据查询，默认显示任职标签页
@@ -444,6 +518,14 @@ onActivated(() => {
     filters.value.jobCategory = jobCategoryFromQuery
   }
   
+  // 从路由参数中读取成熟度，如果没有或为空则保持默认值"全部"
+  const maturityFromQuery = route.query.maturity as string | undefined
+  if (maturityFromQuery) {
+    filters.value.maturity = maturityFromQuery
+  } else {
+    filters.value.maturity = '全部'
+  }
+  
   fetchDetail()
 })
 </script>
@@ -464,6 +546,22 @@ onActivated(() => {
 
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
+        <el-form-item label="姓名">
+          <el-input
+            v-model="filters.name"
+            placeholder="请输入姓名"
+            clearable
+            style="width: 160px"
+          />
+        </el-form-item>
+        <el-form-item label="工号">
+          <el-input
+            v-model="filters.employeeId"
+            placeholder="请输入工号"
+            clearable
+            style="width: 160px"
+          />
+        </el-form-item>
         <el-form-item label="部门筛选">
           <el-cascader
             v-model="filters.departmentPath"
@@ -560,7 +658,7 @@ onActivated(() => {
       <el-card shadow="hover" class="detail-card">
         <el-tabs v-model="activeTab" stretch class="detail-tabs">
           <el-tab-pane label="AI 认证盘点" name="certification">
-            <el-table :data="detailData.certificationRecords" border stripe height="520" highlight-current-row>
+            <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row>
               <el-table-column prop="name" label="姓名" width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" width="140" />
               <el-table-column prop="positionCategory" label="职位类" width="140" />
@@ -610,7 +708,7 @@ onActivated(() => {
             </el-table>
           </el-tab-pane>
           <el-tab-pane label="AI 任职盘点" name="appointment">
-            <el-table :data="detailData.appointmentRecords" border stripe height="520" highlight-current-row>
+            <el-table :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row>
               <el-table-column prop="name" label="姓名" width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" width="140" />
               <el-table-column prop="positionCategory" label="职位类" width="140" />

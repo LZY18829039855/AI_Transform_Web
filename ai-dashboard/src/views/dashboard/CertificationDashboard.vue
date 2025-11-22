@@ -314,15 +314,13 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   let maturityLevel = (row.maturityLevel as string) || ''
   const jobCategory = (row.jobCategory as string) || ''
   
-  // 如果是总计行，将maturityLevel改为L5（代表查询L2和L3的数据）
-  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
-    maturityLevel = 'L5'
-  }
+  // 如果是总计行，成熟度置为空（不传递成熟度参数）
+  const isTotalRow = maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     column,
-    maturity: maturityLevel || undefined,
+    maturity: isTotalRow ? undefined : (maturityLevel || undefined), // 总计行不传递成熟度
     jobCategory: jobCategory || undefined,
     role: filters.value.role,
     deptCode: deptCode,
@@ -363,15 +361,13 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
     }
   }
   
-  // 如果是总计行，将maturityLevel改为L5（代表查询L2和L3的数据）
-  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
-    maturityLevel = 'L5'
-  }
+  // 如果是总计行，成熟度置为空（不传递成熟度参数）
+  const isTotalRow = maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     column,
-    maturity: maturityLevel || undefined,
+    maturity: isTotalRow ? undefined : (maturityLevel || undefined), // 总计行不传递成熟度
     jobCategory: jobCategory || undefined,
     role: '1', // 强制设置为干部角色
     deptCode: deptCode,
@@ -412,21 +408,27 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
     }
   }
   
-  // 如果是总计行，将maturityLevel改为L5（代表查询L2和L3的数据）
-  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
-    maturityLevel = 'L5'
+  // 如果是总计行，成熟度置为空（不传递成熟度参数）
+  const isTotalRow = maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    column, // 'baseline', 'appointed', 'appointedByRequirement'
+    maturity: isTotalRow ? undefined : (maturityLevel || undefined), // 总计行不传递成熟度
+    jobCategory: jobCategory || undefined, // 如果为空则不传递
+    role: '1', // 强制设置为干部角色
+    deptCode: deptCode,
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
   router.push({
     name: 'CertificationDetail',
     params: { id: 'detail' },
-    query: {
-      column, // 'baseline', 'appointed', 'appointedByRequirement'
-      maturity: maturityLevel || undefined, // 如果为空则不传递
-      jobCategory: jobCategory || undefined, // 如果为空则不传递
-      role: '1', // 强制设置为干部角色
-      deptCode: deptCode,
-    },
+    query: queryParams,
   })
 }
 

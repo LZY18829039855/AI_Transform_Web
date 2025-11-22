@@ -573,6 +573,8 @@ export interface CertificationDetailFilters {
   jobSubCategory?: string
   role?: CertificationRole
   maturity?: '全部' | 'L1' | 'L2' | 'L3'
+  name?: string
+  employeeId?: string
 }
 
 export interface CertificationDetailData {
