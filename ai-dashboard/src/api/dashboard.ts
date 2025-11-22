@@ -11,13 +11,11 @@ import type {
   CertificationDetailData,
   CertificationDetailFilters,
   CertificationItem,
-  CertificationRole,
   CompetenceCategoryCertStatisticsResponse,
   CourseItem,
   DepartmentInfoVO,
   DepartmentNode,
   EmployeeCertStatisticsResponse,
-  EmployeeDrillDownResponseVO,
   ExpertAppointmentSummaryRow,
   ExpertCertificationSummaryRow,
   MetricItem,
@@ -26,7 +24,6 @@ import type {
   SchoolDashboardFilters,
   SchoolDetailData,
   SchoolDetailFilters,
-  SelectOption,
   StaffChartPoint,
   TrendPoint,
   TrainingAllStaffSummaryGroup,
@@ -201,262 +198,6 @@ export const fetchCertificationDetail = async (id: string): Promise<Certificatio
   return list.find((item) => item.id === id)
 }
 
-// 获取专家认证和任职数据
-export const fetchExpertData = async (): Promise<{
-  certification: ExpertCertificationSummaryRow[]
-  appointment: ExpertAppointmentSummaryRow[]
-}> => {
-  await delay()
-  return await fetchExpertCertificationSummary()
-}
-
-// 获取干部认证和任职数据
-export const fetchCadreData = async (
-  deptCode: string
-): Promise<{
-  certification: (CadreCertificationSummaryRow & { isMaturityRow?: boolean })[]
-  appointment: (CadreAppointmentSummaryRow & { isMaturityRow?: boolean })[]
-}> => {
-  await delay()
-  const [cadreData, cadreCertStats, cadreQualifiedStats] = await Promise.all([
-    fetchCadreCertificationSummary(),
-    fetchCadreMaturityJobCategoryCertStatistics(deptCode),
-    fetchCadreMaturityJobCategoryQualifiedStatistics(deptCode),
-  ])
-
-  // 将干部认证数据转换为表格格式
-  const mapCadreCertStatsToRows = (
-    stats?: CadreMaturityJobCategoryCertStatisticsResponse | null
-  ): (CadreCertificationSummaryRow & { isMaturityRow?: boolean })[] => {
-    if (!stats || !stats.maturityStatistics || stats.maturityStatistics.length === 0) {
-      return cadreData.certification
-    }
-
-    const rows: (CadreCertificationSummaryRow & { isMaturityRow?: boolean })[] = []
-
-    stats.maturityStatistics.forEach((maturity) => {
-      if (maturity.jobCategoryStatistics && maturity.jobCategoryStatistics.length > 0) {
-        rows.push({
-          maturityLevel: maturity.maturityLevel,
-          jobCategory: '',
-          baseline: maturity.baselineCount,
-          aiCertificateHolders: maturity.certifiedCount,
-          subjectTwoPassed: maturity.subject2PassCount,
-          certificateRate: Number(maturity.certRate),
-          subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: null,
-          isMaturityRow: true,
-        })
-
-        maturity.jobCategoryStatistics.forEach((jobCategory) => {
-          rows.push({
-            maturityLevel: '',
-            jobCategory: jobCategory.jobCategory,
-            baseline: jobCategory.baselineCount,
-            aiCertificateHolders: jobCategory.certifiedCount,
-            subjectTwoPassed: jobCategory.subject2PassCount,
-            certificateRate: Number(jobCategory.certRate),
-            subjectTwoRate: Number(jobCategory.subject2PassRate),
-            complianceRate: null,
-            isMaturityRow: false,
-          })
-        })
-      } else {
-        rows.push({
-          maturityLevel: maturity.maturityLevel,
-          jobCategory: '',
-          baseline: maturity.baselineCount,
-          aiCertificateHolders: maturity.certifiedCount,
-          subjectTwoPassed: maturity.subject2PassCount,
-          certificateRate: Number(maturity.certRate),
-          subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: null,
-          isMaturityRow: true,
-        })
-      }
-    })
-
-    if (stats.totalStatistics) {
-      rows.push({
-        maturityLevel: stats.totalStatistics.maturityLevel,
-        jobCategory: '',
-        baseline: stats.totalStatistics.baselineCount,
-        aiCertificateHolders: stats.totalStatistics.certifiedCount,
-        subjectTwoPassed: stats.totalStatistics.subject2PassCount,
-        certificateRate: Number(stats.totalStatistics.certRate),
-        subjectTwoRate: Number(stats.totalStatistics.subject2PassRate),
-        complianceRate: null,
-        isMaturityRow: true,
-      })
-    }
-
-    return rows.length > 0 ? rows : cadreData.certification
-  }
-
-  // 将干部任职数据转换为表格格式
-  const mapCadreQualifiedStatsToRows = (
-    stats?: CadreMaturityJobCategoryQualifiedStatisticsResponse | null
-  ): (CadreAppointmentSummaryRow & { isMaturityRow?: boolean })[] => {
-    if (!stats || !stats.maturityStatistics || stats.maturityStatistics.length === 0) {
-      return cadreData.appointment
-    }
-
-    const rows: (CadreAppointmentSummaryRow & { isMaturityRow?: boolean })[] = []
-
-    stats.maturityStatistics.forEach((maturity) => {
-      if (maturity.jobCategoryStatistics && maturity.jobCategoryStatistics.length > 0) {
-        rows.push({
-          maturityLevel: maturity.maturityLevel,
-          jobCategory: '',
-          baseline: maturity.baselineCount,
-          appointed: maturity.qualifiedCount,
-          appointedByRequirement: maturity.qualifiedCount,
-          appointmentRate: Number(maturity.qualifiedRate),
-          certificationCompliance: Number(maturity.qualifiedRate),
-          isMaturityRow: true,
-        })
-
-        maturity.jobCategoryStatistics.forEach((jobCategory) => {
-          rows.push({
-            maturityLevel: '',
-            jobCategory: jobCategory.jobCategory,
-            baseline: jobCategory.baselineCount,
-            appointed: jobCategory.qualifiedCount,
-            appointedByRequirement: jobCategory.qualifiedCount,
-            appointmentRate: Number(jobCategory.qualifiedRate),
-            certificationCompliance: Number(jobCategory.qualifiedRate),
-            isMaturityRow: false,
-          })
-        })
-      } else {
-        rows.push({
-          maturityLevel: maturity.maturityLevel,
-          jobCategory: '',
-          baseline: maturity.baselineCount,
-          appointed: maturity.qualifiedCount,
-          appointedByRequirement: maturity.qualifiedCount,
-          appointmentRate: Number(maturity.qualifiedRate),
-          certificationCompliance: Number(maturity.qualifiedRate),
-          isMaturityRow: true,
-        })
-      }
-    })
-
-    if (stats.totalStatistics) {
-      rows.push({
-        maturityLevel: stats.totalStatistics.maturityLevel,
-        jobCategory: '',
-        baseline: stats.totalStatistics.baselineCount,
-        appointed: stats.totalStatistics.qualifiedCount,
-        appointedByRequirement: stats.totalStatistics.qualifiedCount,
-        appointmentRate: Number(stats.totalStatistics.qualifiedRate),
-        certificationCompliance: Number(stats.totalStatistics.qualifiedRate),
-        isMaturityRow: true,
-      })
-    }
-
-    return rows.length > 0 ? rows : cadreData.appointment
-  }
-
-  return {
-    certification: mapCadreCertStatsToRows(cadreCertStats),
-    appointment: mapCadreQualifiedStatsToRows(cadreQualifiedStats),
-  }
-}
-
-// 获取全员趋势数据
-export const fetchAllStaffTrends = async (): Promise<{
-  departmentAppointment: StaffChartPoint[]
-  organizationAppointment: StaffChartPoint[]
-  jobCategoryAppointment: StaffChartPoint[]
-  departmentCertification: StaffChartPoint[]
-  organizationCertification: StaffChartPoint[]
-  jobCategoryCertification: StaffChartPoint[]
-}> => {
-  await delay()
-  return await fetchOverallCertificationTrends()
-}
-
-// 获取部门统计数据
-export const fetchDepartmentStats = async (
-  deptCode: string,
-  personType: string
-): Promise<{
-  departmentAppointment: StaffChartPoint[]
-  departmentCertification: StaffChartPoint[]
-  employeeCertStatistics: EmployeeCertStatisticsResponse | null
-}> => {
-  await delay()
-  const employeeCertStats = await fetchEmployeeCertStatistics(deptCode, personType)
-  const departmentCharts = mapDepartmentCertStatsToCharts(employeeCertStats?.departmentStatistics)
-
-  return {
-    departmentAppointment: departmentCharts?.appointment ?? [],
-    departmentCertification: departmentCharts?.certification ?? [],
-    employeeCertStatistics: employeeCertStats,
-  }
-}
-
-// 获取职位类统计数据
-export const fetchJobCategoryStats = async (
-  deptCode: string,
-  personType: string
-): Promise<{
-  jobCategoryAppointment: StaffChartPoint[]
-  jobCategoryCertification: StaffChartPoint[]
-  competenceCategoryCertStatistics: CompetenceCategoryCertStatisticsResponse | null
-}> => {
-  await delay()
-  const competenceCategoryStats = await fetchCompetenceCategoryCertStatistics(deptCode, personType)
-
-  const mapCompetenceCategoryToCharts = (
-    stats?: CompetenceCategoryCertStatisticsResponse
-  ): { appointment: StaffChartPoint[]; certification: StaffChartPoint[] } | null => {
-    if (!stats || !stats.categoryStatistics || stats.categoryStatistics.length === 0) {
-      return null
-    }
-
-    return {
-      appointment: stats.categoryStatistics.map((item) => ({
-        label: item.competenceCategory,
-        count: item.qualifiedCount ?? 0,
-        rate: Number(item.qualifiedRate ?? 0),
-      })),
-      certification: stats.categoryStatistics.map((item) => ({
-        label: item.competenceCategory,
-        count: item.certifiedCount ?? 0,
-        rate: Number(item.certRate ?? 0),
-      })),
-    }
-  }
-
-  const jobCategoryCharts = mapCompetenceCategoryToCharts(competenceCategoryStats ?? undefined)
-
-  return {
-    jobCategoryAppointment: jobCategoryCharts?.appointment ?? [],
-    jobCategoryCertification: jobCategoryCharts?.certification ?? [],
-    competenceCategoryCertStatistics: competenceCategoryStats,
-  }
-}
-
-// 获取部门树和角色选项
-export const fetchDashboardFilters = async (): Promise<{
-  departmentTree: DepartmentNode[]
-  roles: SelectOption<CertificationRole>[]
-}> => {
-  await delay()
-  const deptTree = await fetchDepartmentTree()
-  return {
-    departmentTree: deptTree,
-    roles: [
-      { label: '全员', value: '0' },
-      { label: '干部', value: '1' },
-      { label: '专家', value: '2' },
-      { label: '基层主管', value: '3' },
-    ],
-  }
-}
-
 export const fetchCertificationDashboard = async (
   _filters?: CertificationDashboardFilters
 ): Promise<CertificationDashboardData> => {
@@ -524,7 +265,7 @@ export const fetchCertificationDashboard = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: null, // 按要求持证率数据暂无，直接置为null
+          complianceRate: Number(maturity.certRate),
           isMaturityRow: true, // 标记为成熟度行
         })
 
@@ -538,7 +279,7 @@ export const fetchCertificationDashboard = async (
             subjectTwoPassed: jobCategory.subject2PassCount,
             certificateRate: Number(jobCategory.certRate),
             subjectTwoRate: Number(jobCategory.subject2PassRate),
-            complianceRate: null, // 按要求持证率数据暂无，直接置为null
+            complianceRate: Number(jobCategory.certRate),
             isMaturityRow: false, // 标记为职位类行
           })
         })
@@ -552,7 +293,7 @@ export const fetchCertificationDashboard = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: null, // 按要求持证率数据暂无，直接置为null
+          complianceRate: Number(maturity.certRate),
           isMaturityRow: true, // 标记为成熟度行
         })
       }
@@ -568,7 +309,7 @@ export const fetchCertificationDashboard = async (
         subjectTwoPassed: stats.totalStatistics.subject2PassCount,
         certificateRate: Number(stats.totalStatistics.certRate),
         subjectTwoRate: Number(stats.totalStatistics.subject2PassRate),
-        complianceRate: null, // 按要求持证率数据暂无，直接置为null
+        complianceRate: Number(stats.totalStatistics.certRate),
         isMaturityRow: true, // 标记为成熟度行
       })
     }
@@ -972,88 +713,4 @@ export const fetchDepartmentChildren = (
 
   departmentChildrenPromises.set(cacheKey, requestPromise)
   return requestPromise
-}
-
-/**
- * 查询干部或专家认证数据详情
- * @param deptCode 部门ID（部门编码）
- * @param aiMaturity 岗位AI成熟度（可选，L5代表查询L2和L3的数据）
- * @param jobCategory 职位类（可选）
- * @param personType 人员类型（1-干部，2-专家）
- * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1，仅对干部类型有效
- * @returns 员工详细信息列表
- */
-export const fetchPersonCertDetails = async (
-  deptCode: string,
-  aiMaturity?: string,
-  jobCategory?: string,
-  personType: number = 1,
-  queryType: number = 1
-): Promise<EmployeeDrillDownResponseVO | null> => {
-  try {
-    const query = new URLSearchParams({
-      deptCode: deptCode || '0',
-      personType: String(personType),
-      queryType: String(queryType),
-    })
-    if (aiMaturity && aiMaturity.trim().length) {
-      query.append('aiMaturity', aiMaturity)
-    }
-    if (jobCategory && jobCategory.trim().length) {
-      query.append('jobCategory', jobCategory)
-    }
-    const response = await get<Result<EmployeeDrillDownResponseVO>>(
-      `/expert-cert-statistics/person-cert-details?${query.toString()}`
-    )
-    if (response.code === 200) {
-      return response.data
-    }
-    console.warn('获取干部或专家认证数据详情失败：', response.message)
-    return null
-  } catch (error) {
-    console.error('获取干部或专家认证数据详情异常：', error)
-    return null
-  }
-}
-
-/**
- * 查询干部任职数据详情
- * @param deptCode 部门ID（部门编码）
- * @param aiMaturity 岗位AI成熟度（可选）
- * @param jobCategory 职位类（可选）
- * @param personType 人员类型（1-干部）
- * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1
- * @returns 员工详细信息列表
- */
-export const fetchCadreQualifiedDetails = async (
-  deptCode: string,
-  aiMaturity?: string,
-  jobCategory?: string,
-  personType: number = 1,
-  queryType: number = 1
-): Promise<EmployeeDrillDownResponseVO | null> => {
-  try {
-    const query = new URLSearchParams({
-      deptCode: deptCode || '0',
-      personType: String(personType),
-      queryType: String(queryType),
-    })
-    if (aiMaturity && aiMaturity.trim().length) {
-      query.append('aiMaturity', aiMaturity)
-    }
-    if (jobCategory && jobCategory.trim().length) {
-      query.append('jobCategory', jobCategory)
-    }
-    const response = await get<Result<EmployeeDrillDownResponseVO>>(
-      `/expert-cert-statistics/cadre-qualified-details?${query.toString()}`
-    )
-    if (response.code === 200) {
-      return response.data
-    }
-    console.warn('获取干部任职数据详情失败：', response.message)
-    return null
-  } catch (error) {
-    console.error('获取干部任职数据详情异常：', error)
-    return null
-  }
 }
