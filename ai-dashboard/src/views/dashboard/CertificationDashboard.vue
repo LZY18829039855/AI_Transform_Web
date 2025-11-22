@@ -314,14 +314,13 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   let maturityLevel = (row.maturityLevel as string) || ''
   const jobCategory = (row.jobCategory as string) || ''
   
-  // 如果是总计行，传递L5给后端，但详情页面显示"全部"
+  // 如果是总计行，成熟度置为空（不传递成熟度参数）
   const isTotalRow = maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     column,
-    maturity: isTotalRow ? 'L5' : (maturityLevel || undefined), // 总计行传递L5给后端
-    maturityDisplay: isTotalRow ? '全部' : undefined, // 总计行时，详情页面显示"全部"
+    maturity: isTotalRow ? undefined : (maturityLevel || undefined), // 总计行不传递成熟度
     jobCategory: jobCategory || undefined,
     role: filters.value.role,
     deptCode: deptCode,
@@ -333,8 +332,7 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   }
   
   router.push({
-    name: 'CertificationDetail',
-    params: { id: 'detail' },
+    path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
 }
@@ -362,14 +360,13 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
     }
   }
   
-  // 如果是总计行，传递L5给后端，但详情页面显示"全部"
+  // 如果是总计行，成熟度置为空（不传递成熟度参数）
   const isTotalRow = maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     column,
-    maturity: isTotalRow ? 'L5' : (maturityLevel || undefined), // 总计行传递L5给后端
-    maturityDisplay: isTotalRow ? '全部' : undefined, // 总计行时，详情页面显示"全部"
+    maturity: isTotalRow ? undefined : (maturityLevel || undefined), // 总计行不传递成熟度
     jobCategory: jobCategory || undefined,
     role: '1', // 强制设置为干部角色
     deptCode: deptCode,
@@ -381,8 +378,7 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
   }
   
   router.push({
-    name: 'CertificationDetail',
-    params: { id: 'detail' },
+    path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
 }
@@ -428,8 +424,7 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
   }
   
   router.push({
-    name: 'CertificationDetail',
-    params: { id: 'detail' },
+    path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
 }

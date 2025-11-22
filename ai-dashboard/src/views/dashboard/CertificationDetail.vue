@@ -37,8 +37,7 @@ const parseDepartmentPathFromQuery = (): string[] => {
 
 const filters = ref<CertificationDetailFilters>({
   role: normalizedRole,
-  // 优先使用maturityDisplay参数（用于显示），如果没有则使用maturity参数，都没有则默认为"全部"
-  maturity: (route.query.maturityDisplay as string) || (route.query.maturity as string) || '全部',
+  maturity: (route.query.maturity as string) || '全部', // 从路由参数中读取成熟度，如果没有则默认为"全部"
   departmentPath: parseDepartmentPathFromQuery(),
   jobCategory: (route.query.jobCategory as string) || undefined,
   name: undefined,
@@ -126,13 +125,10 @@ const fetchDetail = async () => {
       const column = route.query.column as string | undefined
       
       // 如果maturity是"全部"，则不传递该参数
-      // 如果maturity是"L5"（来自总计行），则使用L5调用后端接口
       let maturityParam = aiMaturity && aiMaturity !== '全部' ? aiMaturity : undefined
       
-      // 如果maturity是L5，直接使用L5（代表查询L2和L3的数据）
-      if (maturityParam === 'L5') {
-        // 保持L5，用于后端接口调用
-      } else if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
+      // 如果是总计行，将maturityParam改为L5（代表查询L2和L3的数据）
+      if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
         maturityParam = 'L5'
       }
 
@@ -259,13 +255,10 @@ const fetchDetail = async () => {
         const jobCategory = route.query.jobCategory as string | undefined
         
         // 如果maturity是"全部"，则不传递该参数
-        // 如果maturity是"L5"（来自总计行），则使用L5调用后端接口
         let maturityParam = aiMaturity && aiMaturity !== '全部' ? aiMaturity : undefined
         
-        // 如果maturity是L5，直接使用L5（代表查询L2和L3的数据）
-        if (maturityParam === 'L5') {
-          // 保持L5，用于后端接口调用
-        } else if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
+        // 如果是总计行，将maturityParam改为L5（代表查询L2和L3的数据）
+        if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
           maturityParam = 'L5'
         }
         
@@ -362,22 +355,6 @@ const fetchDetail = async () => {
 
 const handleBack = () => {
   router.push({ name: 'CertificationDashboard' })
-}
-
-// 处理标签页切换，防止页面自动滚动到顶部
-const handleTabChange = () => {
-  // 保存当前滚动位置
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
-  
-  // 使用requestAnimationFrame确保在DOM更新后恢复滚动位置
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      window.scrollTo({
-        top: scrollTop,
-        behavior: 'instant', // 立即滚动，不使用平滑动画
-      })
-    })
-  })
 }
 
 const resetFilters = () => {
@@ -505,12 +482,9 @@ onMounted(() => {
     filters.value.jobCategory = jobCategoryFromQuery
   }
   
-  // 从路由参数中读取成熟度，优先使用maturityDisplay（用于显示），如果没有则使用maturity，都没有则默认为"全部"
-  const maturityDisplayFromQuery = route.query.maturityDisplay as string | undefined
+  // 从路由参数中读取成熟度，如果没有或为空则保持默认值"全部"
   const maturityFromQuery = route.query.maturity as string | undefined
-  if (maturityDisplayFromQuery) {
-    filters.value.maturity = maturityDisplayFromQuery
-  } else if (maturityFromQuery) {
+  if (maturityFromQuery) {
     filters.value.maturity = maturityFromQuery
   } else {
     filters.value.maturity = '全部'
@@ -544,12 +518,9 @@ onActivated(() => {
     filters.value.jobCategory = jobCategoryFromQuery
   }
   
-  // 从路由参数中读取成熟度，优先使用maturityDisplay（用于显示），如果没有则使用maturity，都没有则默认为"全部"
-  const maturityDisplayFromQuery = route.query.maturityDisplay as string | undefined
+  // 从路由参数中读取成熟度，如果没有或为空则保持默认值"全部"
   const maturityFromQuery = route.query.maturity as string | undefined
-  if (maturityDisplayFromQuery) {
-    filters.value.maturity = maturityDisplayFromQuery
-  } else if (maturityFromQuery) {
+  if (maturityFromQuery) {
     filters.value.maturity = maturityFromQuery
   } else {
     filters.value.maturity = '全部'
@@ -575,6 +546,22 @@ onActivated(() => {
 
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
+        <el-form-item label="姓名">
+          <el-input
+            v-model="filters.name"
+            placeholder="请输入姓名"
+            clearable
+            style="width: 160px"
+          />
+        </el-form-item>
+        <el-form-item label="工号">
+          <el-input
+            v-model="filters.employeeId"
+            placeholder="请输入工号"
+            clearable
+            style="width: 160px"
+          />
+        </el-form-item>
         <el-form-item label="部门筛选">
           <el-cascader
             v-model="filters.departmentPath"
@@ -649,23 +636,6 @@ onActivated(() => {
         <el-form-item>
           <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
         </el-form-item>
-        <br />
-        <el-form-item label="姓名">
-          <el-input
-            v-model="filters.name"
-            placeholder="请输入姓名"
-            clearable
-            style="width: 160px"
-          />
-        </el-form-item>
-        <el-form-item label="工号">
-          <el-input
-            v-model="filters.employeeId"
-            placeholder="请输入工号"
-            clearable
-            style="width: 160px"
-          />
-        </el-form-item>
       </el-form>
     </el-card>
 
@@ -686,7 +656,7 @@ onActivated(() => {
       </el-card>
 
       <el-card shadow="hover" class="detail-card">
-        <el-tabs v-model="activeTab" stretch class="detail-tabs" @tab-change="handleTabChange">
+        <el-tabs v-model="activeTab" stretch class="detail-tabs">
           <el-tab-pane label="AI 认证盘点" name="certification">
             <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row>
               <el-table-column prop="name" label="姓名" width="120" fixed="left" />
@@ -907,11 +877,6 @@ onActivated(() => {
     &.is-active {
       color: $primary-color;
     }
-  }
-
-  // 防止标签页切换时触发滚动
-  :deep(.el-tabs__item) {
-    scroll-margin: 0;
   }
 }
 
