@@ -973,7 +973,6 @@ export const fetchDepartmentChildren = (
   departmentChildrenPromises.set(cacheKey, requestPromise)
   return requestPromise
 }
-
 /**
  * 查询干部或专家认证数据详情
  * @param deptCode 部门ID（部门编码）
@@ -1057,3 +1056,4 @@ export const fetchCadreQualifiedDetails = async (
     return null
   }
 }
+

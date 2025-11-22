@@ -134,11 +134,16 @@ const fetchDetail = async () => {
       const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
       const jobCategory = filters.value.jobCategory || undefined
       
-      // 处理成熟度参数：从筛选条件中获取
+      // 处理成熟度参数：优先检查路由参数中是否有L5（从总计行跳转过来的情况）
+      // 如果有L5，则传递给后端；否则使用筛选条件中的值
       let maturityParam: string | undefined = undefined
+      const maturityFromRoute = route.query.maturity as string | undefined
       const aiMaturity = filters.value.maturity
       
-      if (aiMaturity && aiMaturity !== '全部') {
+      // 如果路由参数中有L5，直接使用L5（这是从总计行跳转过来的情况）
+      if (maturityFromRoute === 'L5') {
+        maturityParam = 'L5' // L5代表查询L2和L3的数据
+      } else if (aiMaturity && aiMaturity !== '全部') {
         if (aiMaturity === 'L5') {
           maturityParam = 'L5' // L5代表查询L2和L3的数据
         } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
@@ -268,11 +273,16 @@ const fetchDetail = async () => {
         const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
         const jobCategory = filters.value.jobCategory || undefined
         
-        // 处理成熟度参数：从筛选条件中获取
+        // 处理成熟度参数：优先检查路由参数中是否有L5（从总计行跳转过来的情况）
+        // 如果有L5，则传递给后端；否则使用筛选条件中的值
         let maturityParam: string | undefined = undefined
+        const maturityFromRoute = route.query.maturity as string | undefined
         const aiMaturity = filters.value.maturity
         
-        if (aiMaturity && aiMaturity !== '全部') {
+        // 如果路由参数中有L5，直接使用L5（这是从总计行跳转过来的情况）
+        if (maturityFromRoute === 'L5') {
+          maturityParam = 'L5' // L5代表查询L2和L3的数据
+        } else if (aiMaturity && aiMaturity !== '全部') {
           if (aiMaturity === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
           } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
@@ -576,15 +586,15 @@ onActivated(() => {
     <!-- 第一行：姓名和工号筛选 -->
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
-        <el-form-item label="姓名" class="name-filter-item">
+        <el-form-item label="姓名">
           <el-input
             v-model="filters.name"
             placeholder="请输入姓名"
             clearable
-            style="width: 260px"
+            style="width: 160px"
           />
         </el-form-item>
-        <el-form-item label="工号" class="employee-id-filter-item">
+        <el-form-item label="工号">
           <el-input
             v-model="filters.employeeId"
             placeholder="请输入工号"
@@ -862,15 +872,6 @@ onActivated(() => {
   :deep(.el-form-item) {
     margin-right: $spacing-md;
     margin-bottom: $spacing-sm;
-  }
-  
-  // 姓名和工号之间的间距调整
-  :deep(.name-filter-item) {
-    margin-right: 48px; // 两个字的间距（约48px）
-  }
-  
-  :deep(.employee-id-filter-item) {
-    margin-right: $spacing-md;
   }
 }
 
