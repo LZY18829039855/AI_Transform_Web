@@ -546,22 +546,6 @@ onActivated(() => {
 
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
-        <el-form-item label="姓名">
-          <el-input
-            v-model="filters.name"
-            placeholder="请输入姓名"
-            clearable
-            style="width: 160px"
-          />
-        </el-form-item>
-        <el-form-item label="工号">
-          <el-input
-            v-model="filters.employeeId"
-            placeholder="请输入工号"
-            clearable
-            style="width: 160px"
-          />
-        </el-form-item>
         <el-form-item label="部门筛选">
           <el-cascader
             v-model="filters.departmentPath"
@@ -635,6 +619,23 @@ onActivated(() => {
         </el-form-item>
         <el-form-item>
           <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
+        </el-form-item>
+        <br />
+        <el-form-item label="姓名">
+          <el-input
+            v-model="filters.name"
+            placeholder="请输入姓名"
+            clearable
+            style="width: 160px"
+          />
+        </el-form-item>
+        <el-form-item label="工号">
+          <el-input
+            v-model="filters.employeeId"
+            placeholder="请输入工号"
+            clearable
+            style="width: 160px"
+          />
         </el-form-item>
       </el-form>
     </el-card>
