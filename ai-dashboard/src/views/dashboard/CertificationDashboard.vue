@@ -328,6 +328,7 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
       jobCategory: jobCategory || undefined,
       role: filters.value.role,
       deptCode: deptCode,
+      departmentPath: filters.value.departmentPath?.length ? filters.value.departmentPath.join(',') : undefined,
     },
   })
 }
@@ -369,6 +370,7 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
       jobCategory: jobCategory || undefined,
       role: '1', // 强制设置为干部角色
       deptCode: deptCode,
+      departmentPath: filters.value.departmentPath?.length ? filters.value.departmentPath.join(',') : undefined,
     },
   })
 }

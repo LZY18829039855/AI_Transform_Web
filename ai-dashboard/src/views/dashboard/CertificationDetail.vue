@@ -25,10 +25,20 @@ const routeRole = route.query.role as string | undefined
 const normalizedRole: CertificationRole = ROLE_VALUES.includes(routeRole as CertificationRole)
   ? (routeRole as CertificationRole)
   : '0'
+// 从路由参数中解析部门路径
+const parseDepartmentPathFromQuery = (): string[] => {
+  const departmentPathStr = route.query.departmentPath as string | undefined
+  if (departmentPathStr && departmentPathStr.trim()) {
+    return departmentPathStr.split(',').filter((dept) => dept.trim().length > 0)
+  }
+  return []
+}
+
 const filters = ref<CertificationDetailFilters>({
   role: normalizedRole,
-  maturity: '全部',
-  departmentPath: [],
+  maturity: '全部', // 成熟度不从路由参数读取，因为看板页面的成熟度和详情页面的成熟度概念不同
+  departmentPath: parseDepartmentPathFromQuery(),
+  jobCategory: (route.query.jobCategory as string) || undefined,
 })
 
 const {
