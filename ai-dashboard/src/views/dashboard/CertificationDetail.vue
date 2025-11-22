@@ -153,8 +153,15 @@ const fetchDetail = async () => {
         }
       }
 
-      // queryType默认为2
-      const queryType = 2
+      // 确定queryType：
+      // 1. 如果是从看板跳转过来的（有route.query.column），根据column决定：baseline=2，其他=1
+      // 2. 如果是在详情页面点击查询按钮（没有route.query.column），默认为2
+      const column = route.query.column as string | undefined
+      let queryType = 2 // 默认值：在详情页面点击查询按钮时使用
+      if (column) {
+        // 从看板跳转过来，根据点击的列决定queryType
+        queryType = column === 'baseline' ? 2 : 1
+      }
 
       // 并行加载任职和认证数据（对于干部角色，无论点击哪个列，都同时加载两种数据）
       const [qualifiedResponse, certResponse] = await Promise.all([
@@ -292,8 +299,15 @@ const fetchDetail = async () => {
           }
         }
         
-        // queryType默认为2
-        const queryType = 2
+        // 确定queryType：
+        // 1. 如果是从看板跳转过来的（有route.query.column），根据column决定：baseline=2，其他=1
+        // 2. 如果是在详情页面点击查询按钮（没有route.query.column），默认为2
+        const column = route.query.column as string | undefined
+        let queryType = 2 // 默认值：在详情页面点击查询按钮时使用
+        if (column) {
+          // 从看板跳转过来，根据点击的列决定queryType
+          queryType = column === 'baseline' ? 2 : 1
+        }
         
         const response = await fetchPersonCertDetails(
           deptCode,
