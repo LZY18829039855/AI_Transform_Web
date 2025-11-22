@@ -130,14 +130,14 @@ const fetchDetail = async () => {
 
     if (isCadreQuery) {
       // 干部角色：同时加载任职和认证数据
-      const routeDeptCode = route.query.deptCode as string | undefined
-      const deptCode = routeDeptCode || getDeptCodeFromPath(filters.value.departmentPath)
-      const aiMaturity = route.query.maturity as string | undefined
-      const jobCategory = route.query.jobCategory as string | undefined
-      const column = route.query.column as string | undefined
+      // 使用筛选条件中的值（部门、职位类、成熟度）
+      const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
+      const jobCategory = filters.value.jobCategory || undefined
       
-      // 如果maturity是"全部"，则不传递该参数；如果是L5，则直接使用L5
+      // 处理成熟度参数：从筛选条件中获取
       let maturityParam: string | undefined = undefined
+      const aiMaturity = filters.value.maturity
+      
       if (aiMaturity && aiMaturity !== '全部') {
         if (aiMaturity === 'L5') {
           maturityParam = 'L5' // L5代表查询L2和L3的数据
@@ -148,26 +148,26 @@ const fetchDetail = async () => {
         }
       }
 
-      // 确定queryType：baseline=2（基线人数），其他=1
-      const queryType = column === 'baseline' ? 2 : 1
+      // queryType默认为2
+      const queryType = 2
 
       // 并行加载任职和认证数据（对于干部角色，无论点击哪个列，都同时加载两种数据）
       const [qualifiedResponse, certResponse] = await Promise.all([
-        // 加载任职数据（如果点击的是任职相关列，使用对应的queryType；否则也加载，使用相同的参数）
+        // 加载任职数据，queryType默认为2
         fetchCadreQualifiedDetails(
           deptCode,
           maturityParam,
           jobCategory,
           1, // personType: 1-干部
-          isCadreQualifiedQuery ? queryType : 1 // 如果点击的是任职列，使用对应的queryType；否则默认查询任职人数
+          queryType
         ),
-        // 加载认证数据（如果点击的是认证相关列，使用对应的queryType；否则也加载，使用相同的参数）
+        // 加载认证数据，queryType默认为2
         fetchPersonCertDetails(
           deptCode,
           maturityParam,
           jobCategory,
           1, // personType: 1-干部
-          isCadreCertQuery ? queryType : 1 // 如果点击的是认证列，使用对应的queryType；否则默认查询认证人数
+          queryType
         ),
       ])
 
@@ -264,13 +264,14 @@ const fetchDetail = async () => {
 
       if (isExpertCertQuery) {
         // 调用专家认证详情接口
-        const routeDeptCode = route.query.deptCode as string | undefined
-        const deptCode = routeDeptCode || getDeptCodeFromPath(filters.value.departmentPath)
-        const aiMaturity = route.query.maturity as string | undefined
-        const jobCategory = route.query.jobCategory as string | undefined
+        // 使用筛选条件中的值（部门、职位类、成熟度）
+        const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
+        const jobCategory = filters.value.jobCategory || undefined
         
-        // 如果maturity是"全部"，则不传递该参数；如果是L5，则直接使用L5
+        // 处理成熟度参数：从筛选条件中获取
         let maturityParam: string | undefined = undefined
+        const aiMaturity = filters.value.maturity
+        
         if (aiMaturity && aiMaturity !== '全部') {
           if (aiMaturity === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
@@ -281,8 +282,8 @@ const fetchDetail = async () => {
           }
         }
         
-        // 根据column参数决定queryType：baseline=2（基线人数），aiCertificateHolders或certification=1（任职人数）
-        const queryType = route.query.column === 'baseline' ? 2 : 1
+        // queryType默认为2
+        const queryType = 2
         
         const response = await fetchPersonCertDetails(
           deptCode,
@@ -575,15 +576,15 @@ onActivated(() => {
     <!-- 第一行：姓名和工号筛选 -->
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
-        <el-form-item label="姓名">
+        <el-form-item label="姓名" class="name-filter-item">
           <el-input
             v-model="filters.name"
             placeholder="请输入姓名"
             clearable
-            style="width: 160px"
+            style="width: 260px"
           />
         </el-form-item>
-        <el-form-item label="工号">
+        <el-form-item label="工号" class="employee-id-filter-item">
           <el-input
             v-model="filters.employeeId"
             placeholder="请输入工号"
@@ -861,6 +862,15 @@ onActivated(() => {
   :deep(.el-form-item) {
     margin-right: $spacing-md;
     margin-bottom: $spacing-sm;
+  }
+  
+  // 姓名和工号之间的间距调整
+  :deep(.name-filter-item) {
+    margin-right: 48px; // 两个字的间距（约48px）
+  }
+  
+  :deep(.employee-id-filter-item) {
+    margin-right: $spacing-md;
   }
 }
 
