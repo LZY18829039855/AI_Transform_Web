@@ -124,12 +124,16 @@ const fetchDetail = async () => {
       const jobCategory = route.query.jobCategory as string | undefined
       const column = route.query.column as string | undefined
       
-      // 如果maturity是"全部"，则不传递该参数
-      let maturityParam = aiMaturity && aiMaturity !== '全部' ? aiMaturity : undefined
-      
-      // 如果是总计行，将maturityParam改为L5（代表查询L2和L3的数据）
-      if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
-        maturityParam = 'L5'
+      // 如果maturity是"全部"，则不传递该参数；如果是L5，则直接使用L5
+      let maturityParam: string | undefined = undefined
+      if (aiMaturity && aiMaturity !== '全部') {
+        if (aiMaturity === 'L5') {
+          maturityParam = 'L5' // L5代表查询L2和L3的数据
+        } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+          maturityParam = 'L5' // 总计行转换为L5
+        } else {
+          maturityParam = aiMaturity
+        }
       }
 
       // 确定queryType：baseline=2（基线人数），其他=1
@@ -254,12 +258,16 @@ const fetchDetail = async () => {
         const aiMaturity = route.query.maturity as string | undefined
         const jobCategory = route.query.jobCategory as string | undefined
         
-        // 如果maturity是"全部"，则不传递该参数
-        let maturityParam = aiMaturity && aiMaturity !== '全部' ? aiMaturity : undefined
-        
-        // 如果是总计行，将maturityParam改为L5（代表查询L2和L3的数据）
-        if (maturityParam && (maturityParam === '总计' || maturityParam === '全部' || maturityParam === 'Total' || maturityParam === 'total')) {
-          maturityParam = 'L5'
+        // 如果maturity是"全部"，则不传递该参数；如果是L5，则直接使用L5
+        let maturityParam: string | undefined = undefined
+        if (aiMaturity && aiMaturity !== '全部') {
+          if (aiMaturity === 'L5') {
+            maturityParam = 'L5' // L5代表查询L2和L3的数据
+          } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
+          } else {
+            maturityParam = aiMaturity
+          }
         }
         
         // 根据column参数决定queryType：baseline=2（基线人数），aiCertificateHolders或certification=1（任职人数）
