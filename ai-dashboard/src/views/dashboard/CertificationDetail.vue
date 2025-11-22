@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
-import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -355,10 +355,6 @@ onActivated(() => {
           </p>
         </div>
       </div>
-      <el-space>
-        <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
-        <el-button type="primary">导出报表</el-button>
-      </el-space>
     </header>
 
     <el-card shadow="hover" class="filter-card">
@@ -602,8 +598,9 @@ onActivated(() => {
 
   p {
     margin: $spacing-sm 0 0;
-    max-width: 560px;
     color: #000;
+    line-height: 1.6;
+    white-space: nowrap;
   }
 }
 

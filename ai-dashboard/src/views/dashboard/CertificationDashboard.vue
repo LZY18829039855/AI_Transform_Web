@@ -867,8 +867,8 @@ onActivated(() => {
   p {
     margin: $spacing-sm 0 0;
     color: #000;
-    max-width: 600px;
     line-height: 1.6;
+    white-space: nowrap;
   }
 }
 
