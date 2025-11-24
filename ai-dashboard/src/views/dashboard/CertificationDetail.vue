@@ -262,8 +262,10 @@ const fetchDetail = async () => {
         },
       }
 
-      // 根据点击的列决定默认显示的标签页
-      // 优先判断具体的列，再判断baseline
+      // 根据点击的列和来源决定默认显示的标签页
+      // 优先判断具体的列，再判断baseline和source参数
+      const source = route.query.source as string | undefined
+      
       if (column === 'appointed' || column === 'appointedByRequirement') {
         // 明确是任职相关列，默认显示任职tab
         activeTab.value = 'appointment'
@@ -271,15 +273,32 @@ const fetchDetail = async () => {
         // 明确是认证相关列，默认显示认证tab
         activeTab.value = 'certification'
       } else if (column === 'baseline') {
-        // baseline在两个表格中都存在，优先显示任职tab（因为任职表格在前）
-        // 如果isCadreQualifiedQuery为true，说明可能是从任职表格点击的
-        if (isCadreQualifiedQuery && !isCadreCertQuery) {
+        // baseline在两个表格中都存在，根据source参数判断
+        if (source === 'appointment') {
+          // 从干部任职数据表格点击的baseline，显示任职tab
           activeTab.value = 'appointment'
-        } else if (isCadreCertQuery && !isCadreQualifiedQuery) {
+        } else if (source === 'certification') {
+          // 从干部认证数据表格点击的baseline，显示认证tab
           activeTab.value = 'certification'
         } else {
-          // 如果两个都是true（理论上不应该发生），默认显示任职tab
-          activeTab.value = 'appointment'
+          // 如果没有source参数，根据其他列判断
+          const isCadreQualifiedOnlyQuery = 
+            normalizedRole === '1' && 
+            route.query.column && 
+            ['appointed', 'appointedByRequirement'].includes(route.query.column as string)
+          const isCadreCertOnlyQuery = 
+            normalizedRole === '1' && 
+            route.query.column && 
+            ['aiCertificateHolders', 'certification'].includes(route.query.column as string)
+          
+          if (isCadreQualifiedOnlyQuery) {
+            activeTab.value = 'appointment'
+          } else if (isCadreCertOnlyQuery) {
+            activeTab.value = 'certification'
+          } else {
+            // 默认显示认证tab
+            activeTab.value = 'certification'
+          }
         }
       }
     } else {
@@ -572,16 +591,29 @@ onMounted(() => {
     filters.value.maturity = '全部'
   }
   
-  // 如果是干部任职数据查询，默认显示任职标签页
-  const isCadreQualifiedQuery = 
-    normalizedRole === '1' && 
-    route.query.column && 
-    ['appointed', 'appointedByRequirement', 'baseline'].includes(route.query.column as string)
+  // 根据点击的列和来源决定默认显示的标签页
+  // 优先判断具体的列，再判断baseline和source参数
+  const column = route.query.column as string | undefined
+  const source = route.query.source as string | undefined
   
-  if (isCadreQualifiedQuery) {
+  if (column === 'appointed' || column === 'appointedByRequirement') {
+    // 明确是任职相关列，默认显示任职tab
     activeTab.value = 'appointment'
-  } else if (route.query.column === 'baseline') {
+  } else if (column === 'aiCertificateHolders' || column === 'certification') {
+    // 明确是认证相关列，默认显示认证tab
     activeTab.value = 'certification'
+  } else if (column === 'baseline') {
+    // baseline在两个表格中都存在，根据source参数判断
+    if (source === 'appointment') {
+      // 从干部任职数据表格点击的baseline，显示任职tab
+      activeTab.value = 'appointment'
+    } else if (source === 'certification') {
+      // 从干部认证数据表格点击的baseline，显示认证tab
+      activeTab.value = 'certification'
+    } else {
+      // 如果没有source参数，默认显示认证tab
+      activeTab.value = 'certification'
+    }
   }
   fetchDetail()
 })

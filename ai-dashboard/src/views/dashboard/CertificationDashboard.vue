@@ -374,6 +374,7 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
     jobCategory: jobCategory || undefined,
     role: '1', // 强制设置为干部角色
     deptCode: deptCode,
+    source: 'certification', // 标识来自干部认证数据表格
   }
   
   // 如果部门路径存在，添加到查询参数中
@@ -422,6 +423,7 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
     jobCategory: jobCategory || undefined, // 如果为空则不传递
     role: '1', // 强制设置为干部角色
     deptCode: deptCode,
+    source: 'appointment', // 标识来自干部任职数据表格
   }
   
   // 如果部门路径存在，添加到查询参数中
