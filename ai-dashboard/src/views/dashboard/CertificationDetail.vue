@@ -80,6 +80,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     departmentLevel4: employee.fourthLevelDept || '',
     departmentLevel5: employee.fifthLevelDept || '',
     departmentLevel6: '', // 六级部门不展示
+    minDepartment: employee.miniDeptName || '',
     professionalCategory: employee.competenceFamilyCn || '',
     expertCategory: employee.competenceCategoryCn || '',
     professionalSubCategory: employee.competenceSubcategoryCn || '',
@@ -221,7 +222,7 @@ const fetchDetail = async () => {
             departmentLevel3: emp.thirdLevelDept || '',
             departmentLevel4: emp.fourthLevelDept || '',
             departmentLevel5: emp.fifthLevelDept || '',
-            departmentLevel6: emp.sixthLevelDept || '',
+            minDepartment: emp.miniDeptName || '',
             certificateName: emp.certTitle || '',
             certificateEffectiveDate: emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '',
             subjectTwoPassed: emp.isPassedSubject2 === 1,
@@ -230,8 +231,8 @@ const fetchDetail = async () => {
             isExpert: undefined, // 暂无数据
             isFrontlineManager: undefined, // 暂无数据
             organizationMaturity: undefined, // 暂无数据
-            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
-            requiredCertificate: undefined, // 暂无数据
+            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+            requiredCertificate: '',
             isQualified: undefined, // 暂无数据
           })
         )
@@ -359,7 +360,7 @@ const fetchDetail = async () => {
               departmentLevel3: emp.thirdLevelDept || '',
               departmentLevel4: emp.fourthLevelDept || '',
               departmentLevel5: emp.fifthLevelDept || '',
-              departmentLevel6: emp.sixthLevelDept || '',
+              minDepartment: emp.miniDeptName || '',
               certificateName: emp.certTitle || '',
               certificateEffectiveDate: emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '',
               subjectTwoPassed: emp.isPassedSubject2 === 1,
@@ -368,8 +369,8 @@ const fetchDetail = async () => {
               isExpert: undefined, // 暂无数据
               isFrontlineManager: undefined, // 暂无数据
               organizationMaturity: undefined, // 暂无数据
-              positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
-              requiredCertificate: undefined, // 暂无数据
+              positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+              requiredCertificate: '',
               isQualified: undefined, // 暂无数据
             })
           )
@@ -762,7 +763,7 @@ onActivated(() => {
               <el-table-column prop="departmentLevel3" label="三级部门" width="140" />
               <el-table-column prop="departmentLevel4" label="四级部门" width="140" />
               <el-table-column prop="departmentLevel5" label="五级部门" width="140" />
-              <el-table-column prop="departmentLevel6" label="六级部门" width="140" />
+              <el-table-column prop="minDepartment" label="最小部门" width="160" />
               <el-table-column prop="certificateName" label="证书名称" width="160" />
               <el-table-column prop="certificateEffectiveDate" label="证书生效日期" width="160" />
               <el-table-column label="是否通过科目二" width="150">
@@ -780,24 +781,30 @@ onActivated(() => {
               <el-table-column prop="cadreType" label="干部类型" width="140" />
               <el-table-column label="是否专家" width="110">
                 <template #default="{ row }">
-                  <span style="color: #909399;">暂无数据</span>
+                  <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
               <el-table-column label="是否基层主管" width="140">
                 <template #default="{ row }">
-                  <span style="color: #909399;">暂无数据</span>
+                  <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150">
                 <template #default="{ row }">
-                  <span style="color: #909399;">暂无数据</span>
+                  <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" />
               <el-table-column prop="requiredCertificate" label="要求持证类型" width="160" />
               <el-table-column label="是否达标" width="120">
                 <template #default="{ row }">
-                  <span style="color: #909399;">暂无数据</span>
+                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isQualified) }}
+                  </el-tag>
+                  <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -812,6 +819,7 @@ onActivated(() => {
               <el-table-column prop="departmentLevel3" label="三级部门" width="140" />
               <el-table-column prop="departmentLevel4" label="四级部门" width="140" />
               <el-table-column prop="departmentLevel5" label="五级部门" width="140" />
+              <el-table-column prop="minDepartment" label="最小部门" width="160" />
               <el-table-column prop="professionalCategory" label="专业任职资格类" width="180" />
               <el-table-column prop="expertCategory" label="专家任职资格类（仅体现AI）" width="220" />
               <el-table-column prop="professionalSubCategory" label="专业任职资格子类" width="180" />
