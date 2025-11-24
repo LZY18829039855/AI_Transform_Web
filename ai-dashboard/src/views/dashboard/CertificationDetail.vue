@@ -689,12 +689,8 @@ onActivated(() => {
             clearable
             style="width: 160px"
           >
-            <el-option
-              v-for="category in detailData?.filters.jobCategories ?? []"
-              :key="category"
-              :label="category"
-              :value="category"
-            />
+            <el-option label="软件类" value="软件类" />
+            <el-option label="非软件类" value="非软件类" />
           </el-select>
         </el-form-item>
         <el-form-item label="职位子类">

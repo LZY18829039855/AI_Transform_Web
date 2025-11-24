@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
-import { Medal } from '@element-plus/icons-vue'
+import { Medal, QuestionFilled } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import {
   fetchCertificationDashboard,
@@ -571,7 +571,26 @@ onActivated(() => {
           ]"
           :data="expertData.certification"
           :on-cell-click="handleCellClick"
-        />
+        >
+          <template #title-suffix>
+            <el-tooltip
+              placement="top"
+              effect="dark"
+            >
+              <template #content>
+                <div style="line-height: 1.8;">
+                  <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                  <div>AI算法技术</div>
+                  <div>AI决策推理</div>
+                  <div>AI图像语言语义</div>
+                </div>
+              </template>
+              <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </template>
+        </CertificationSummaryTable>
         <el-empty v-else description="暂无数据" :image-size="80" />
       </el-col>
       <!-- 2. 专家任职数据 -->
@@ -619,7 +638,27 @@ onActivated(() => {
           ]"
           :data="expertData.appointment"
           :on-cell-click="handleCellClick"
-        />
+        >
+          <template #title-suffix>
+            <el-tooltip
+              placement="top"
+              effect="dark"
+            >
+              <template #content>
+                <div style="line-height: 1.8;">
+                  <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                  <div>数据科学与AI工程（ICT）</div>
+                  <div>AI算法及应用（ICT）</div>
+                  <div>AI软件工程与工具（ICT）</div>
+                  <div>AI系统测试（ICT）</div>
+                </div>
+              </template>
+              <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </template>
+        </CertificationSummaryTable>
         <el-empty v-else description="暂无数据" :image-size="80" />
       </el-col>
       <!-- 3. 干部任职数据 -->
@@ -627,7 +666,26 @@ onActivated(() => {
         <el-card shadow="hover" class="summary-table-card">
           <template #header>
             <div class="summary-table-card__header">
-              <h3>干部AI任职数据</h3>
+              <h3>
+                干部AI任职数据
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                      <div>数据科学与AI工程（ICT）</div>
+                      <div>AI算法及应用（ICT）</div>
+                      <div>AI软件工程与工具（ICT）</div>
+                      <div>AI系统测试（ICT）</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </h3>
             </div>
           </template>
           <el-skeleton :rows="4" animated v-if="loadingCadre" />
@@ -699,7 +757,25 @@ onActivated(() => {
         <el-card shadow="hover" class="summary-table-card">
           <template #header>
             <div class="summary-table-card__header">
-              <h3>干部AI认证数据</h3>
+              <h3>
+                干部AI认证数据
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                      <div>AI算法技术</div>
+                      <div>AI决策推理</div>
+                      <div>AI图像语言语义</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </h3>
             </div>
           </template>
           <el-skeleton :rows="4" animated v-if="loadingCadre" />
@@ -799,7 +875,27 @@ onActivated(() => {
             rate-label="占比"
             :legend-totals="departmentLegendTotals"
             :height="320"
-          />
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                    <div>数据科学与AI工程（ICT）</div>
+                    <div>AI算法及应用（ICT）</div>
+                    <div>AI软件工程与工具（ICT）</div>
+                    <div>AI系统测试（ICT）</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </BarLineChart>
         </el-col>
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
@@ -811,7 +907,26 @@ onActivated(() => {
             rate-label="占比"
             :legend-totals="departmentCertificationLegendTotals"
             :height="320"
-          />
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                    <div>AI算法技术</div>
+                    <div>AI决策推理</div>
+                    <div>AI图像语言语义</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </BarLineChart>
         </el-col>
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
@@ -822,7 +937,27 @@ onActivated(() => {
             count-label="任职人数"
             rate-label="占比"
             :height="320"
-          />
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                    <div>数据科学与AI工程（ICT）</div>
+                    <div>AI算法及应用（ICT）</div>
+                    <div>AI软件工程与工具（ICT）</div>
+                    <div>AI系统测试（ICT）</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </BarLineChart>
         </el-col>
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
@@ -833,7 +968,26 @@ onActivated(() => {
             count-label="认证人数"
             rate-label="占比"
             :height="320"
-          />
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                    <div>AI算法技术</div>
+                    <div>AI决策推理</div>
+                    <div>AI图像语言语义</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </BarLineChart>
         </el-col>
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
@@ -845,7 +999,27 @@ onActivated(() => {
             rate-label="占比"
             :legend-totals="jobCategoryAppointmentLegendTotals"
             :height="320"
-          />
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                    <div>数据科学与AI工程（ICT）</div>
+                    <div>AI算法及应用（ICT）</div>
+                    <div>AI软件工程与工具（ICT）</div>
+                    <div>AI系统测试（ICT）</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </BarLineChart>
         </el-col>
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
@@ -857,7 +1031,26 @@ onActivated(() => {
             rate-label="占比"
             :legend-totals="jobCategoryCertificationLegendTotals"
             :height="320"
-          />
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                    <div>AI算法技术</div>
+                    <div>AI决策推理</div>
+                    <div>AI图像语言语义</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </BarLineChart>
         </el-col>
       </el-row>
     </el-card>

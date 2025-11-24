@@ -255,7 +255,10 @@ useResizeObserver(chartRef, () => {
   <el-card shadow="hover" class="chart-card">
     <template #header>
       <div class="card-header">
-        <h3>{{ title }}</h3>
+        <h3>
+          {{ title }}
+          <slot name="title-suffix" />
+        </h3>
         <slot name="header-extra" />
       </div>
     </template>

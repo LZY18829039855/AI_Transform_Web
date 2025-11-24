@@ -74,7 +74,10 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
   <el-card shadow="hover" class="summary-table-card">
     <template #header>
       <div class="summary-table-card__header">
-        <h3>{{ title }}</h3>
+        <h3>
+          {{ title }}
+          <slot name="title-suffix" />
+        </h3>
         <slot name="header-extra" />
       </div>
     </template>
