@@ -585,19 +585,66 @@ const triggerFilterConfirm = () => {
     // 查找确认按钮（即使被隐藏）
     const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
     if (confirmBtn) {
+      // 先临时显示按钮以确保可以触发点击
+      const originalDisplay = confirmBtn.style.display
+      const originalVisibility = confirmBtn.style.visibility
+      const originalOpacity = confirmBtn.style.opacity
+      const originalPointerEvents = confirmBtn.style.pointerEvents
+      
+      confirmBtn.style.display = 'block'
+      confirmBtn.style.visibility = 'visible'
+      confirmBtn.style.opacity = '1'
+      confirmBtn.style.pointerEvents = 'auto'
+      
       // 触发确认按钮的点击事件
-      const event = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      })
-      confirmBtn.dispatchEvent(event)
-      // 也尝试直接调用 click 方法
-      if (typeof confirmBtn.click === 'function') {
-        confirmBtn.click()
+      try {
+        // 使用原生 click 方法
+        if (typeof confirmBtn.click === 'function') {
+          confirmBtn.click()
+        }
+        // 也尝试 dispatchEvent
+        const event = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        })
+        confirmBtn.dispatchEvent(event)
+      } catch (e) {
+        console.warn('触发筛选确认失败:', e)
+      } finally {
+        // 恢复隐藏状态
+        confirmBtn.style.display = originalDisplay
+        confirmBtn.style.visibility = originalVisibility
+        confirmBtn.style.opacity = originalOpacity
+        confirmBtn.style.pointerEvents = originalPointerEvents
       }
     }
   })
+}
+
+// 检查筛选面板是否打开
+const isFilterPanelOpen = (panel: Element): boolean => {
+  // 检查面板的父元素（可能是 popper 或 dropdown）
+  let parent = panel.parentElement
+  while (parent && parent !== document.body) {
+    const style = window.getComputedStyle(parent)
+    // 如果父元素被隐藏，面板也不可见
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false
+    }
+    // 检查是否是 popper 容器
+    if (parent.classList.contains('el-popper') || 
+        parent.classList.contains('el-table-filter__dropdown') ||
+        parent.getAttribute('x-placement')) {
+      // 检查 popper 是否可见
+      const popperStyle = window.getComputedStyle(parent)
+      return popperStyle.display !== 'none' && popperStyle.visibility !== 'hidden'
+    }
+    parent = parent.parentElement
+  }
+  // 如果面板在 body 中，检查面板本身是否可见
+  const panelStyle = window.getComputedStyle(panel)
+  return panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden'
 }
 
 // 处理点击外部自动确认筛选
@@ -613,15 +660,16 @@ const handleDocumentClick = (event: MouseEvent) => {
   const filterContent = target.closest('.el-table-filter__content')
   const filterList = target.closest('.el-table-filter__list')
   const filterCheckbox = target.closest('.el-checkbox')
+  const popper = target.closest('.el-popper')
   
   // 如果点击在筛选面板内
-  if (filterPanel || filterDropdown || filterContent || filterList) {
+  if (filterPanel || filterDropdown || filterContent || filterList || (popper && popper.querySelector('.el-table-filter'))) {
     // 检查是否是点击了复选框
     if (filterCheckbox) {
       // 点击了筛选选项，延迟应用筛选（等待复选框状态更新）
       setTimeout(() => {
         triggerFilterConfirm()
-      }, 100)
+      }, 150)
     }
     return
   }
@@ -629,43 +677,56 @@ const handleDocumentClick = (event: MouseEvent) => {
   // 点击在筛选面板外部，查找所有打开的筛选面板并触发确认
   setTimeout(() => {
     const filterPanels = document.querySelectorAll('.el-table-filter')
-    let hasOpenPanel = false
     
     filterPanels.forEach((panel) => {
-      // 检查面板是否可见（通过检查其父元素）
-      const panelElement = panel as HTMLElement
-      const parentElement = panelElement.parentElement
+      // 检查面板是否打开
+      if (!isFilterPanelOpen(panel)) {
+        return
+      }
       
-      // 检查面板是否在 DOM 中且可见
-      if (parentElement && document.body.contains(parentElement)) {
-        const computedStyle = window.getComputedStyle(parentElement)
-        if (computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden') {
-          hasOpenPanel = true
+      // 检查是否有选中的选项
+      const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
+      if (checkedItems.length > 0) {
+        // 有选中的选项，触发确认
+        triggerFilterConfirm()
+      } else {
+        // 没有选中的选项，关闭面板
+        const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
+        if (cancelBtn) {
+          // 临时显示按钮以确保可以触发点击
+          const originalDisplay = cancelBtn.style.display
+          const originalVisibility = cancelBtn.style.visibility
+          const originalOpacity = cancelBtn.style.opacity
+          const originalPointerEvents = cancelBtn.style.pointerEvents
           
-          // 检查是否有选中的选项
-          const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
-          if (checkedItems.length > 0) {
-            // 有选中的选项，触发确认
-            triggerFilterConfirm()
-          } else {
-            // 没有选中的选项，关闭面板
-            const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
-            if (cancelBtn) {
-              const event = new MouseEvent('click', {
-                bubbles: true,
-                cancelable: true,
-                view: window,
-              })
-              cancelBtn.dispatchEvent(event)
-              if (typeof cancelBtn.click === 'function') {
-                cancelBtn.click()
-              }
+          cancelBtn.style.display = 'block'
+          cancelBtn.style.visibility = 'visible'
+          cancelBtn.style.opacity = '1'
+          cancelBtn.style.pointerEvents = 'auto'
+          
+          try {
+            if (typeof cancelBtn.click === 'function') {
+              cancelBtn.click()
             }
+            const event = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window,
+            })
+            cancelBtn.dispatchEvent(event)
+          } catch (e) {
+            console.warn('关闭筛选面板失败:', e)
+          } finally {
+            // 恢复隐藏状态
+            cancelBtn.style.display = originalDisplay
+            cancelBtn.style.visibility = originalVisibility
+            cancelBtn.style.opacity = originalOpacity
+            cancelBtn.style.pointerEvents = originalPointerEvents
           }
         }
       }
     })
-  }, 10)
+  }, 50)
 }
 
 // 过滤认证记录（根据姓名和工号）
