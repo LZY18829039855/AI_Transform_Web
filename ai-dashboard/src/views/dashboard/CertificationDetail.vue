@@ -579,14 +579,18 @@ const setupFilterButtonObserver = () => {
 
 // 触发筛选确认
 const triggerFilterConfirm = () => {
+  console.log('[筛选调试] 开始触发筛选确认')
   // 查找所有筛选面板
   const filterPanels = document.querySelectorAll('.el-table-filter')
+  console.log('[筛选调试] 找到筛选面板数量:', filterPanels.length)
   let triggered = false
   
-  filterPanels.forEach((panel) => {
+  filterPanels.forEach((panel, index) => {
+    console.log(`[筛选调试] 处理第 ${index + 1} 个筛选面板`)
     // 查找确认按钮（即使被隐藏）
     const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
     if (confirmBtn) {
+      console.log('[筛选调试] 找到确认按钮，准备触发')
       // 先临时显示按钮以确保可以触发点击
       const originalDisplay = confirmBtn.style.display
       const originalVisibility = confirmBtn.style.visibility
@@ -610,8 +614,10 @@ const triggerFilterConfirm = () => {
       try {
         // 先尝试直接调用 click 方法
         if (typeof confirmBtn.click === 'function') {
+          console.log('[筛选调试] 调用 confirmBtn.click()')
           confirmBtn.click()
           triggered = true
+          console.log('[筛选调试] click() 方法调用成功')
         }
         
         // 也尝试 dispatchEvent
@@ -621,8 +627,10 @@ const triggerFilterConfirm = () => {
           view: window,
           button: 0,
         })
+        console.log('[筛选调试] 触发 dispatchEvent(click)')
         confirmBtn.dispatchEvent(clickEvent)
         triggered = true
+        console.log('[筛选调试] dispatchEvent 触发成功')
         
         // 尝试触发 mousedown 和 mouseup 事件
         const mouseDownEvent = new MouseEvent('mousedown', {
@@ -640,7 +648,7 @@ const triggerFilterConfirm = () => {
         confirmBtn.dispatchEvent(mouseDownEvent)
         confirmBtn.dispatchEvent(mouseUpEvent)
       } catch (e) {
-        console.warn('触发筛选确认失败:', e)
+        console.warn('[筛选调试] 触发筛选确认失败:', e)
       } finally {
         // 恢复隐藏状态
         confirmBtn.style.display = originalDisplay
@@ -705,6 +713,8 @@ const handleDocumentClick = (event: MouseEvent) => {
     return
   }
   
+  console.log('[筛选调试] 点击事件触发，目标元素:', target.tagName, target.className)
+  
   // 检查是否点击在筛选面板内（包括筛选面板本身和其子元素）
   const filterPanel = target.closest('.el-table-filter')
   const filterDropdown = target.closest('.el-table-filter__dropdown')
@@ -713,13 +723,24 @@ const handleDocumentClick = (event: MouseEvent) => {
   const filterCheckbox = target.closest('.el-checkbox')
   const popper = target.closest('.el-popper')
   
+  console.log('[筛选调试] 筛选面板检测:', {
+    filterPanel: !!filterPanel,
+    filterDropdown: !!filterDropdown,
+    filterContent: !!filterContent,
+    filterList: !!filterList,
+    filterCheckbox: !!filterCheckbox,
+    popper: !!popper,
+  })
+  
   // 检查是否点击在 popper 容器内（包含筛选面板的 popper）
   const isInPopper = popper && popper.querySelector('.el-table-filter')
   
   // 如果点击在筛选面板内
   if (filterPanel || filterDropdown || filterContent || filterList || isInPopper) {
+    console.log('[筛选调试] 点击在筛选面板内')
     // 检查是否是点击了复选框
     if (filterCheckbox) {
+      console.log('[筛选调试] 点击了复选框，延迟触发筛选')
       // 点击了筛选选项，延迟应用筛选（等待复选框状态更新）
       setTimeout(() => {
         triggerFilterConfirm()
@@ -728,38 +749,55 @@ const handleDocumentClick = (event: MouseEvent) => {
     return
   }
   
+  console.log('[筛选调试] 点击在筛选面板外部，准备查找打开的筛选面板')
+  
   // 点击在筛选面板外部，查找所有打开的筛选面板并触发确认
   setTimeout(() => {
+    console.log('[筛选调试] 开始查找打开的筛选面板')
     // 查找所有 popper 容器中的筛选面板
     const allPoppers = document.querySelectorAll('.el-popper')
+    console.log('[筛选调试] 找到 popper 数量:', allPoppers.length)
     const filterPanels: Element[] = []
     
     // 收集所有打开的筛选面板
-    allPoppers.forEach((popper) => {
+    allPoppers.forEach((popper, index) => {
       const panel = popper.querySelector('.el-table-filter')
-      if (panel && isFilterPanelOpen(panel)) {
-        filterPanels.push(panel)
+      if (panel) {
+        const isOpen = isFilterPanelOpen(panel)
+        console.log(`[筛选调试] Popper ${index + 1} 中的筛选面板是否打开:`, isOpen)
+        if (isOpen) {
+          filterPanels.push(panel)
+        }
       }
     })
     
     // 也查找直接挂载在 body 上的筛选面板
     const directPanels = document.querySelectorAll('.el-table-filter')
-    directPanels.forEach((panel) => {
-      if (isFilterPanelOpen(panel) && !filterPanels.includes(panel)) {
+    console.log('[筛选调试] 直接挂载的筛选面板数量:', directPanels.length)
+    directPanels.forEach((panel, index) => {
+      const isOpen = isFilterPanelOpen(panel)
+      console.log(`[筛选调试] 直接挂载面板 ${index + 1} 是否打开:`, isOpen)
+      if (isOpen && !filterPanels.includes(panel)) {
         filterPanels.push(panel)
       }
     })
     
+    console.log('[筛选调试] 总共找到打开的筛选面板数量:', filterPanels.length)
+    
     // 处理每个打开的筛选面板
     if (filterPanels.length > 0) {
-      filterPanels.forEach((panel) => {
+      filterPanels.forEach((panel, index) => {
+        console.log(`[筛选调试] 处理筛选面板 ${index + 1}`)
         // 检查是否有选中的选项
         const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
+        console.log(`[筛选调试] 筛选面板 ${index + 1} 选中的选项数量:`, checkedItems.length)
         if (checkedItems.length > 0) {
           // 有选中的选项，触发确认
+          console.log(`[筛选调试] 筛选面板 ${index + 1} 有选中项，触发确认`)
           triggerFilterConfirm()
           // 如果第一次触发失败，延迟再次尝试
           setTimeout(() => {
+            console.log(`[筛选调试] 筛选面板 ${index + 1} 重试触发确认`)
             triggerFilterConfirm()
           }, 50)
         } else {
