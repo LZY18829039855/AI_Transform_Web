@@ -470,6 +470,34 @@ const resetFilters = () => {
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
+// 通用的过滤方法
+const filterMethod = (value: string | string[], row: any, column: any) => {
+  const property = column.property
+  const cellValue = row[property]
+  if (!value || (Array.isArray(value) && value.length === 0)) {
+    return true
+  }
+  if (cellValue === undefined || cellValue === null || cellValue === '') {
+    return false
+  }
+  const filterValues = Array.isArray(value) ? value : [value]
+  return filterValues.includes(String(cellValue))
+}
+
+// 获取列的过滤选项（从数据中动态提取唯一值）
+const getColumnFilters = (records: AppointmentAuditRecord[], property: string) => {
+  const values = new Set<string>()
+  records.forEach((record) => {
+    const value = (record as any)[property]
+    if (value !== undefined && value !== null && value !== '') {
+      values.add(String(value))
+    }
+  })
+  return Array.from(values)
+    .sort()
+    .map((value) => ({ text: value, value }))
+}
+
 // 过滤认证记录（根据姓名和工号）
 const filteredCertificationRecords = computed(() => {
   if (!detailData.value) {
@@ -841,53 +869,208 @@ onActivated(() => {
             <el-table :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row>
               <el-table-column prop="name" label="姓名" width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" width="140" />
-              <el-table-column prop="positionCategory" label="职位类" width="140" />
-              <el-table-column prop="departmentLevel1" label="一级部门" width="140" />
-              <el-table-column prop="departmentLevel2" label="二级部门" width="140" />
-              <el-table-column prop="departmentLevel3" label="三级部门" width="140" />
-              <el-table-column prop="departmentLevel4" label="四级部门" width="140" />
-              <el-table-column prop="departmentLevel5" label="五级部门" width="140" />
-              <el-table-column prop="minDepartment" label="最小部门" width="160" />
-              <el-table-column prop="professionalCategory" label="专业任职资格类" width="180" />
-              <el-table-column prop="expertCategory" label="专家任职资格类（仅体现AI）" width="220" />
-              <el-table-column prop="professionalSubCategory" label="专业任职资格子类" width="180" />
-              <el-table-column prop="qualificationDirection" label="资格方向" width="160" />
-              <el-table-column prop="qualificationLevel" label="资格级别" width="160" />
-              <el-table-column prop="acquisitionMethod" label="获取方式" width="160" />
+              <el-table-column 
+                prop="positionCategory" 
+                label="职位类" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'positionCategory')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="departmentLevel1" 
+                label="一级部门" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel1')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="departmentLevel2" 
+                label="二级部门" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel2')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="departmentLevel3" 
+                label="三级部门" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel3')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="departmentLevel4" 
+                label="四级部门" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel4')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="departmentLevel5" 
+                label="五级部门" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel5')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="minDepartment" 
+                label="最小部门" 
+                width="160" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'minDepartment')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="professionalCategory" 
+                label="专业任职资格类" 
+                width="180" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'professionalCategory')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="expertCategory" 
+                label="专家任职资格类（仅体现AI）" 
+                width="220" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'expertCategory')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="professionalSubCategory" 
+                label="专业任职资格子类" 
+                width="180" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'professionalSubCategory')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="qualificationDirection" 
+                label="资格方向" 
+                width="160" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationDirection')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="qualificationLevel" 
+                label="资格级别" 
+                width="160" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationLevel')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="acquisitionMethod" 
+                label="获取方式" 
+                width="160" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'acquisitionMethod')"
+                :filter-method="filterMethod"
+              />
               <el-table-column prop="effectiveDate" label="生效日期" width="150" />
               <el-table-column prop="expiryDate" label="失效日期" width="150" />
-              <el-table-column label="是否干部" width="110">
+              <el-table-column 
+                label="是否干部" 
+                width="110" 
+                sortable 
+                :filters="[
+                  { text: '是', value: true },
+                  { text: '否', value: false },
+                ]"
+                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isCadre === value"
+              >
                 <template #default="{ row }">
                   {{ formatBoolean(row.isCadre) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="cadreType" label="干部类型" width="140" />
-              <el-table-column label="是否专家" width="110">
+              <el-table-column 
+                prop="cadreType" 
+                label="干部类型" 
+                width="140" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'cadreType')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                label="是否专家" 
+                width="110" 
+                sortable 
+                :filters="[
+                  { text: '是', value: true },
+                  { text: '否', value: false },
+                ]"
+                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isExpert === value"
+              >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
                   <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
-              <el-table-column label="是否基层主管" width="140">
+              <el-table-column 
+                label="是否基层主管" 
+                width="140" 
+                sortable 
+                :filters="[
+                  { text: '是', value: true },
+                  { text: '否', value: false },
+                ]"
+                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isFrontlineManager === value"
+              >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
                   <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150">
+              <el-table-column 
+                prop="organizationMaturity" 
+                label="组织AI成熟度" 
+                width="150" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'organizationMaturity')"
+                :filter-method="filterMethod"
+              >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
                   <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" />
-              <el-table-column prop="requiredCertificate" label="要求持证类型" width="160">
+              <el-table-column 
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                width="150" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'positionMaturity')"
+                :filter-method="filterMethod"
+              />
+              <el-table-column 
+                prop="requiredCertificate" 
+                label="要求持证类型" 
+                width="160" 
+                sortable 
+                :filters="getColumnFilters(filteredAppointmentRecords, 'requiredCertificate')"
+                :filter-method="filterMethod"
+              >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
                   <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
-              <el-table-column label="是否达标" width="120">
+              <el-table-column 
+                label="是否达标" 
+                width="120" 
+                sortable 
+                :filters="[
+                  { text: '是', value: true },
+                  { text: '否', value: false },
+                ]"
+                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isQualified === value"
+              >
                 <template #default="{ row }">
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
                     {{ formatBoolean(row.isQualified) }}
