@@ -581,6 +581,8 @@ const setupFilterButtonObserver = () => {
 const triggerFilterConfirm = () => {
   // 查找所有筛选面板
   const filterPanels = document.querySelectorAll('.el-table-filter')
+  let triggered = false
+  
   filterPanels.forEach((panel) => {
     // 查找确认按钮（即使被隐藏）
     const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
@@ -590,25 +592,53 @@ const triggerFilterConfirm = () => {
       const originalVisibility = confirmBtn.style.visibility
       const originalOpacity = confirmBtn.style.opacity
       const originalPointerEvents = confirmBtn.style.pointerEvents
+      const originalHeight = confirmBtn.style.height
+      const originalWidth = confirmBtn.style.width
       
-      confirmBtn.style.display = 'block'
-      confirmBtn.style.visibility = 'visible'
-      confirmBtn.style.opacity = '1'
-      confirmBtn.style.pointerEvents = 'auto'
+      // 完全恢复按钮的可见性
+      confirmBtn.style.cssText = `
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        height: auto !important;
+        width: auto !important;
+        position: static !important;
+      `
       
       // 触发确认按钮的点击事件
       try {
-        // 使用原生 click 方法
+        // 先尝试直接调用 click 方法
         if (typeof confirmBtn.click === 'function') {
           confirmBtn.click()
+          triggered = true
         }
+        
         // 也尝试 dispatchEvent
-        const event = new MouseEvent('click', {
+        const clickEvent = new MouseEvent('click', {
           bubbles: true,
           cancelable: true,
           view: window,
+          button: 0,
         })
-        confirmBtn.dispatchEvent(event)
+        confirmBtn.dispatchEvent(clickEvent)
+        triggered = true
+        
+        // 尝试触发 mousedown 和 mouseup 事件
+        const mouseDownEvent = new MouseEvent('mousedown', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          button: 0,
+        })
+        const mouseUpEvent = new MouseEvent('mouseup', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          button: 0,
+        })
+        confirmBtn.dispatchEvent(mouseDownEvent)
+        confirmBtn.dispatchEvent(mouseUpEvent)
       } catch (e) {
         console.warn('触发筛选确认失败:', e)
       } finally {
@@ -617,15 +647,21 @@ const triggerFilterConfirm = () => {
         confirmBtn.style.visibility = originalVisibility
         confirmBtn.style.opacity = originalOpacity
         confirmBtn.style.pointerEvents = originalPointerEvents
+        confirmBtn.style.height = originalHeight
+        confirmBtn.style.width = originalWidth
       }
     }
   })
+  
+  return triggered
 }
 
 // 检查筛选面板是否打开
 const isFilterPanelOpen = (panel: Element): boolean => {
   // 检查面板的父元素（可能是 popper 或 dropdown）
   let parent = panel.parentElement
+  let foundPopper = false
+  
   while (parent && parent !== document.body) {
     const style = window.getComputedStyle(parent)
     // 如果父元素被隐藏，面板也不可见
@@ -635,13 +671,28 @@ const isFilterPanelOpen = (panel: Element): boolean => {
     // 检查是否是 popper 容器
     if (parent.classList.contains('el-popper') || 
         parent.classList.contains('el-table-filter__dropdown') ||
-        parent.getAttribute('x-placement')) {
+        parent.getAttribute('x-placement') ||
+        parent.getAttribute('data-popper-placement')) {
+      foundPopper = true
       // 检查 popper 是否可见
       const popperStyle = window.getComputedStyle(parent)
-      return popperStyle.display !== 'none' && popperStyle.visibility !== 'hidden'
+      if (popperStyle.display === 'none' || popperStyle.visibility === 'hidden') {
+        return false
+      }
+      // 检查 popper 是否有 aria-hidden 属性
+      if (parent.getAttribute('aria-hidden') === 'true') {
+        return false
+      }
     }
     parent = parent.parentElement
   }
+  
+  // 如果找到了 popper，检查面板本身是否可见
+  if (foundPopper) {
+    const panelStyle = window.getComputedStyle(panel)
+    return panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden'
+  }
+  
   // 如果面板在 body 中，检查面板本身是否可见
   const panelStyle = window.getComputedStyle(panel)
   return panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden'
@@ -662,71 +713,97 @@ const handleDocumentClick = (event: MouseEvent) => {
   const filterCheckbox = target.closest('.el-checkbox')
   const popper = target.closest('.el-popper')
   
+  // 检查是否点击在 popper 容器内（包含筛选面板的 popper）
+  const isInPopper = popper && popper.querySelector('.el-table-filter')
+  
   // 如果点击在筛选面板内
-  if (filterPanel || filterDropdown || filterContent || filterList || (popper && popper.querySelector('.el-table-filter'))) {
+  if (filterPanel || filterDropdown || filterContent || filterList || isInPopper) {
     // 检查是否是点击了复选框
     if (filterCheckbox) {
       // 点击了筛选选项，延迟应用筛选（等待复选框状态更新）
       setTimeout(() => {
         triggerFilterConfirm()
-      }, 150)
+      }, 200)
     }
     return
   }
   
   // 点击在筛选面板外部，查找所有打开的筛选面板并触发确认
   setTimeout(() => {
-    const filterPanels = document.querySelectorAll('.el-table-filter')
+    // 查找所有 popper 容器中的筛选面板
+    const allPoppers = document.querySelectorAll('.el-popper')
+    const filterPanels: Element[] = []
     
-    filterPanels.forEach((panel) => {
-      // 检查面板是否打开
-      if (!isFilterPanelOpen(panel)) {
-        return
-      }
-      
-      // 检查是否有选中的选项
-      const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
-      if (checkedItems.length > 0) {
-        // 有选中的选项，触发确认
-        triggerFilterConfirm()
-      } else {
-        // 没有选中的选项，关闭面板
-        const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
-        if (cancelBtn) {
-          // 临时显示按钮以确保可以触发点击
-          const originalDisplay = cancelBtn.style.display
-          const originalVisibility = cancelBtn.style.visibility
-          const originalOpacity = cancelBtn.style.opacity
-          const originalPointerEvents = cancelBtn.style.pointerEvents
-          
-          cancelBtn.style.display = 'block'
-          cancelBtn.style.visibility = 'visible'
-          cancelBtn.style.opacity = '1'
-          cancelBtn.style.pointerEvents = 'auto'
-          
-          try {
-            if (typeof cancelBtn.click === 'function') {
-              cancelBtn.click()
-            }
-            const event = new MouseEvent('click', {
-              bubbles: true,
-              cancelable: true,
-              view: window,
-            })
-            cancelBtn.dispatchEvent(event)
-          } catch (e) {
-            console.warn('关闭筛选面板失败:', e)
-          } finally {
-            // 恢复隐藏状态
-            cancelBtn.style.display = originalDisplay
-            cancelBtn.style.visibility = originalVisibility
-            cancelBtn.style.opacity = originalOpacity
-            cancelBtn.style.pointerEvents = originalPointerEvents
-          }
-        }
+    // 收集所有打开的筛选面板
+    allPoppers.forEach((popper) => {
+      const panel = popper.querySelector('.el-table-filter')
+      if (panel && isFilterPanelOpen(panel)) {
+        filterPanels.push(panel)
       }
     })
-  }, 50)
+    
+    // 也查找直接挂载在 body 上的筛选面板
+    const directPanels = document.querySelectorAll('.el-table-filter')
+    directPanels.forEach((panel) => {
+      if (isFilterPanelOpen(panel) && !filterPanels.includes(panel)) {
+        filterPanels.push(panel)
+      }
+    })
+    
+    // 处理每个打开的筛选面板
+    if (filterPanels.length > 0) {
+      filterPanels.forEach((panel) => {
+        // 检查是否有选中的选项
+        const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
+        if (checkedItems.length > 0) {
+          // 有选中的选项，触发确认
+          triggerFilterConfirm()
+          // 如果第一次触发失败，延迟再次尝试
+          setTimeout(() => {
+            triggerFilterConfirm()
+          }, 50)
+        } else {
+          // 没有选中的选项，关闭面板
+          const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
+          if (cancelBtn) {
+            // 临时显示按钮以确保可以触发点击
+            const originalDisplay = cancelBtn.style.display
+            const originalVisibility = cancelBtn.style.visibility
+            const originalOpacity = cancelBtn.style.opacity
+            const originalPointerEvents = cancelBtn.style.pointerEvents
+            
+            cancelBtn.style.cssText = `
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              pointer-events: auto !important;
+            `
+            
+            try {
+              if (typeof cancelBtn.click === 'function') {
+                cancelBtn.click()
+              }
+              const event = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0,
+              })
+              cancelBtn.dispatchEvent(event)
+            } catch (e) {
+              console.warn('关闭筛选面板失败:', e)
+            } finally {
+              // 恢复隐藏状态
+              cancelBtn.style.display = originalDisplay
+              cancelBtn.style.visibility = originalVisibility
+              cancelBtn.style.opacity = originalOpacity
+              cancelBtn.style.pointerEvents = originalPointerEvents
+            }
+          }
+        }
+      })
+    }
+  }, 150)
 }
 
 // 过滤认证记录（根据姓名和工号）
@@ -876,7 +953,8 @@ onMounted(() => {
   }
   
   // 添加点击监听器，实现点击页面任意位置自动确认筛选
-  document.addEventListener('click', handleDocumentClick)
+  // 使用 capture 模式确保能捕获到事件
+  document.addEventListener('click', handleDocumentClick, true)
   
   // 设置筛选按钮观察器，持续隐藏确认和重置按钮
   nextTick(() => {
@@ -911,7 +989,8 @@ onActivated(() => {
   }
   
   // 添加点击监听器，实现点击页面任意位置自动确认筛选
-  document.addEventListener('click', handleDocumentClick)
+  // 使用 capture 模式确保能捕获到事件
+  document.addEventListener('click', handleDocumentClick, true)
   
   // 设置筛选按钮观察器，持续隐藏确认和重置按钮
   nextTick(() => {
@@ -922,8 +1001,8 @@ onActivated(() => {
 })
 
 onBeforeUnmount(() => {
-  // 移除点击监听器
-  document.removeEventListener('click', handleDocumentClick)
+  // 移除点击监听器（需要与 addEventListener 使用相同的参数）
+  document.removeEventListener('click', handleDocumentClick, true)
   
   // 清理筛选按钮观察器
   if (filterObserver) {
