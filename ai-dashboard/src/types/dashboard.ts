@@ -644,6 +644,7 @@ export interface EmployeeDetailVO {
   competenceGradeCn?: string
   competenceFrom?: string
   competenceTo?: string
+  isQualificationsStandard?: number
 }
 
 /**

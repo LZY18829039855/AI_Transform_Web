@@ -96,7 +96,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     organizationMaturity: undefined, // 暂无数据
     positionMaturity: (employee.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
     requiredCertificate: undefined, // 暂无数据
-    isQualified: undefined, // 暂无数据
+    isQualified: employee.isQualificationsStandard !== undefined ? employee.isQualificationsStandard === 1 : undefined,
   }
 }
 
