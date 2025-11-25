@@ -874,6 +874,7 @@ onActivated(() => {
                 label="职位类" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'positionCategory')"
                 :filter-method="filterMethod"
               />
@@ -882,6 +883,7 @@ onActivated(() => {
                 label="一级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel1')"
                 :filter-method="filterMethod"
               />
@@ -890,6 +892,7 @@ onActivated(() => {
                 label="二级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel2')"
                 :filter-method="filterMethod"
               />
@@ -898,6 +901,7 @@ onActivated(() => {
                 label="三级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel3')"
                 :filter-method="filterMethod"
               />
@@ -906,6 +910,7 @@ onActivated(() => {
                 label="四级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel4')"
                 :filter-method="filterMethod"
               />
@@ -914,6 +919,7 @@ onActivated(() => {
                 label="五级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel5')"
                 :filter-method="filterMethod"
               />
@@ -922,6 +928,7 @@ onActivated(() => {
                 label="最小部门" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'minDepartment')"
                 :filter-method="filterMethod"
               />
@@ -930,6 +937,7 @@ onActivated(() => {
                 label="专业任职资格类" 
                 width="180" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'professionalCategory')"
                 :filter-method="filterMethod"
               />
@@ -938,6 +946,7 @@ onActivated(() => {
                 label="专家任职资格类（仅体现AI）" 
                 width="220" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'expertCategory')"
                 :filter-method="filterMethod"
               />
@@ -946,6 +955,7 @@ onActivated(() => {
                 label="专业任职资格子类" 
                 width="180" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'professionalSubCategory')"
                 :filter-method="filterMethod"
               />
@@ -954,6 +964,7 @@ onActivated(() => {
                 label="资格方向" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationDirection')"
                 :filter-method="filterMethod"
               />
@@ -962,6 +973,7 @@ onActivated(() => {
                 label="资格级别" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationLevel')"
                 :filter-method="filterMethod"
               />
@@ -970,6 +982,7 @@ onActivated(() => {
                 label="获取方式" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'acquisitionMethod')"
                 :filter-method="filterMethod"
               />
@@ -979,11 +992,15 @@ onActivated(() => {
                 label="是否干部" 
                 width="110" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isCadre === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => {
+                  const filterValues = Array.isArray(value) ? value : [value]
+                  return filterValues.length === 0 || filterValues.includes(row.isCadre)
+                }"
               >
                 <template #default="{ row }">
                   {{ formatBoolean(row.isCadre) }}
@@ -994,6 +1011,7 @@ onActivated(() => {
                 label="干部类型" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'cadreType')"
                 :filter-method="filterMethod"
               />
@@ -1001,11 +1019,16 @@ onActivated(() => {
                 label="是否专家" 
                 width="110" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isExpert === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => {
+                  if (row.isExpert === undefined) return false
+                  const filterValues = Array.isArray(value) ? value : [value]
+                  return filterValues.length === 0 || filterValues.includes(row.isExpert)
+                }"
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
@@ -1016,11 +1039,16 @@ onActivated(() => {
                 label="是否基层主管" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isFrontlineManager === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => {
+                  if (row.isFrontlineManager === undefined) return false
+                  const filterValues = Array.isArray(value) ? value : [value]
+                  return filterValues.length === 0 || filterValues.includes(row.isFrontlineManager)
+                }"
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
@@ -1032,6 +1060,7 @@ onActivated(() => {
                 label="组织AI成熟度" 
                 width="150" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'organizationMaturity')"
                 :filter-method="filterMethod"
               >
@@ -1045,6 +1074,7 @@ onActivated(() => {
                 label="岗位AI成熟度" 
                 width="150" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'positionMaturity')"
                 :filter-method="filterMethod"
               />
@@ -1053,6 +1083,7 @@ onActivated(() => {
                 label="要求持证类型" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'requiredCertificate')"
                 :filter-method="filterMethod"
               >
@@ -1065,11 +1096,16 @@ onActivated(() => {
                 label="是否达标" 
                 width="120" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isQualified === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => {
+                  if (row.isQualified === undefined) return false
+                  const filterValues = Array.isArray(value) ? value : [value]
+                  return filterValues.length === 0 || filterValues.includes(row.isQualified)
+                }"
               >
                 <template #default="{ row }">
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
