@@ -580,17 +580,66 @@ const setupFilterButtonObserver = () => {
 // 触发筛选确认
 const triggerFilterConfirm = () => {
   console.log('[筛选调试] 开始触发筛选确认')
-  // 查找所有筛选面板
-  const filterPanels = document.querySelectorAll('.el-table-filter')
-  console.log('[筛选调试] 找到筛选面板数量:', filterPanels.length)
+  // 只查找打开的筛选面板
+  const allPoppers = document.querySelectorAll('.el-popper')
+  const openFilterPanels: Element[] = []
+  
+  // 收集所有打开的筛选面板
+  allPoppers.forEach((popper) => {
+    const panel = popper.querySelector('.el-table-filter')
+    if (panel && isFilterPanelOpen(panel)) {
+      openFilterPanels.push(panel)
+    }
+  })
+  
+  // 也查找直接挂载的打开的筛选面板
+  const directPanels = document.querySelectorAll('.el-table-filter')
+  directPanels.forEach((panel) => {
+    if (isFilterPanelOpen(panel) && !openFilterPanels.includes(panel)) {
+      openFilterPanels.push(panel)
+    }
+  })
+  
+  console.log('[筛选调试] 找到打开的筛选面板数量:', openFilterPanels.length)
   let triggered = false
   
-  filterPanels.forEach((panel, index) => {
+  openFilterPanels.forEach((panel, index) => {
     console.log(`[筛选调试] 处理第 ${index + 1} 个筛选面板`)
-    // 查找确认按钮（即使被隐藏）
-    const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
+    
+    // 尝试多种方式查找确认按钮
+    let confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
+    if (!confirmBtn) {
+      // 尝试查找底部区域中的按钮
+      const bottom = panel.querySelector('.el-table-filter__bottom')
+      if (bottom) {
+        confirmBtn = bottom.querySelector('button') as HTMLElement
+        console.log(`[筛选调试] 在底部区域找到按钮:`, !!confirmBtn)
+      }
+    }
+    if (!confirmBtn) {
+      // 尝试查找所有按钮
+      const allButtons = panel.querySelectorAll('button')
+      console.log(`[筛选调试] 面板 ${index + 1} 中的按钮数量:`, allButtons.length)
+      allButtons.forEach((btn, btnIndex) => {
+        const btnText = btn.textContent || ''
+        const btnClass = btn.className || ''
+        console.log(`[筛选调试] 按钮 ${btnIndex + 1}: 文本="${btnText}", 类名="${btnClass}"`)
+        // 查找包含"确认"或"confirm"的按钮
+        if (btnText.includes('确认') || btnClass.includes('confirm') || btnClass.includes('Confirm')) {
+          confirmBtn = btn as HTMLElement
+          console.log(`[筛选调试] 找到确认按钮（通过文本或类名）`)
+        }
+      })
+    }
+    
     if (confirmBtn) {
-      console.log('[筛选调试] 找到确认按钮，准备触发')
+      console.log('[筛选调试] 找到确认按钮，准备触发，按钮信息:', {
+        tagName: confirmBtn.tagName,
+        className: confirmBtn.className,
+        textContent: confirmBtn.textContent,
+        display: window.getComputedStyle(confirmBtn).display,
+        visibility: window.getComputedStyle(confirmBtn).visibility,
+      })
       // 先临时显示按钮以确保可以触发点击
       const originalDisplay = confirmBtn.style.display
       const originalVisibility = confirmBtn.style.visibility
@@ -658,9 +707,41 @@ const triggerFilterConfirm = () => {
         confirmBtn.style.height = originalHeight
         confirmBtn.style.width = originalWidth
       }
+    } else {
+      console.log(`[筛选调试] 面板 ${index + 1} 未找到确认按钮，尝试直接操作表格筛选`)
+      // 如果没有找到确认按钮，尝试直接操作表格的筛选状态
+      // 获取选中的筛选值
+      const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
+      if (checkedItems.length > 0) {
+        const filterValues: string[] = []
+        checkedItems.forEach((item) => {
+          const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
+          if (checkbox && checkbox.value) {
+            filterValues.push(checkbox.value)
+          }
+        })
+        console.log(`[筛选调试] 面板 ${index + 1} 选中的筛选值:`, filterValues)
+        
+        // 尝试通过表格实例直接设置筛选
+        if (appointmentTableRef.value && filterValues.length > 0) {
+          // 查找对应的列
+          const columnProp = panel.getAttribute('data-column') || panel.closest('[data-column]')?.getAttribute('data-column')
+          if (columnProp) {
+            console.log(`[筛选调试] 尝试通过表格API设置筛选，列: ${columnProp}, 值:`, filterValues)
+            try {
+              // Element Plus 表格的筛选方法
+              ;(appointmentTableRef.value as any).clearFilter()
+              ;(appointmentTableRef.value as any).toggleRowSelection(filterValues)
+            } catch (e) {
+              console.warn('[筛选调试] 通过表格API设置筛选失败:', e)
+            }
+          }
+        }
+      }
     }
   })
   
+  console.log('[筛选调试] 触发筛选确认完成，结果:', triggered)
   return triggered
 }
 
