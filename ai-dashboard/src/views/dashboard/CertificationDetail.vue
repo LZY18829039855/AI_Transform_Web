@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
@@ -510,6 +510,73 @@ const getColumnFilters = (records: AppointmentAuditRecord[], property: string) =
     .map((value) => ({ text: value, value }))
 }
 
+// 隐藏筛选面板中的确认和重置按钮
+const hideFilterButtons = () => {
+  const filterPanels = document.querySelectorAll('.el-table-filter')
+  filterPanels.forEach((panel) => {
+    // 隐藏底部区域
+    const bottom = panel.querySelector('.el-table-filter__bottom') as HTMLElement
+    const footer = panel.querySelector('.el-table-filter__footer') as HTMLElement
+    if (bottom) {
+      bottom.style.display = 'none'
+      bottom.style.height = '0'
+      bottom.style.padding = '0'
+      bottom.style.margin = '0'
+      bottom.style.visibility = 'hidden'
+    }
+    if (footer) {
+      footer.style.display = 'none'
+      footer.style.height = '0'
+      footer.style.padding = '0'
+      footer.style.margin = '0'
+      footer.style.visibility = 'hidden'
+    }
+    
+    // 隐藏所有按钮
+    const buttons = panel.querySelectorAll('button, .el-button')
+    buttons.forEach((btn) => {
+      const button = btn as HTMLElement
+      const classList = button.className || ''
+      if (classList.includes('confirm') || 
+          classList.includes('reset') || 
+          classList.includes('Confirm') || 
+          classList.includes('Reset') ||
+          button.textContent?.includes('确认') ||
+          button.textContent?.includes('重置')) {
+        button.style.display = 'none'
+        button.style.visibility = 'hidden'
+        button.style.opacity = '0'
+        button.style.height = '0'
+        button.style.width = '0'
+        button.style.padding = '0'
+        button.style.margin = '0'
+        button.style.pointerEvents = 'none'
+      }
+    })
+  })
+}
+
+// 使用 MutationObserver 监听 DOM 变化，持续隐藏按钮
+let filterObserver: MutationObserver | null = null
+
+const setupFilterButtonObserver = () => {
+  // 先执行一次隐藏
+  hideFilterButtons()
+  
+  // 创建观察器，监听 DOM 变化
+  filterObserver = new MutationObserver(() => {
+    hideFilterButtons()
+  })
+  
+  // 开始观察整个文档的变化
+  filterObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style'],
+  })
+}
+
 // 触发筛选确认
 const triggerFilterConfirm = () => {
   // 查找所有筛选面板
@@ -750,6 +817,11 @@ onMounted(() => {
   // 添加点击监听器，实现点击页面任意位置自动确认筛选
   document.addEventListener('click', handleDocumentClick)
   
+  // 设置筛选按钮观察器，持续隐藏确认和重置按钮
+  nextTick(() => {
+    setupFilterButtonObserver()
+  })
+  
   fetchDetail()
 })
 
@@ -780,12 +852,23 @@ onActivated(() => {
   // 添加点击监听器，实现点击页面任意位置自动确认筛选
   document.addEventListener('click', handleDocumentClick)
   
+  // 设置筛选按钮观察器，持续隐藏确认和重置按钮
+  nextTick(() => {
+    setupFilterButtonObserver()
+  })
+  
   fetchDetail()
 })
 
 onBeforeUnmount(() => {
   // 移除点击监听器
   document.removeEventListener('click', handleDocumentClick)
+  
+  // 清理筛选按钮观察器
+  if (filterObserver) {
+    filterObserver.disconnect()
+    filterObserver = null
+  }
 })
 </script>
 
@@ -1330,13 +1413,16 @@ onBeforeUnmount(() => {
 }
 
 // 隐藏表格筛选面板的确认和取消按钮
+// 使用更通用的选择器，确保隐藏所有筛选面板中的按钮
 :deep(.el-table-filter) {
+  // 隐藏底部按钮区域
   .el-table-filter__bottom {
     display: none !important;
     height: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
     overflow: hidden !important;
+    visibility: hidden !important;
   }
   
   .el-table-filter__footer {
@@ -1345,16 +1431,33 @@ onBeforeUnmount(() => {
     padding: 0 !important;
     margin: 0 !important;
     overflow: hidden !important;
+    visibility: hidden !important;
   }
   
-  .el-table-filter__confirm,
-  .el-table-filter__reset,
-  button.el-table-filter__confirm,
-  button.el-table-filter__reset,
-  .el-button.el-table-filter__confirm,
-  .el-button.el-table-filter__reset,
+  // 隐藏所有按钮（包括确认和重置）
+  button,
+  .el-button {
+    &.el-table-filter__confirm,
+    &.el-table-filter__reset {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      height: 0 !important;
+      width: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+      pointer-events: none !important;
+    }
+  }
+  
+  // 隐藏底部区域中的所有按钮
   .el-table-filter__bottom button,
-  .el-table-filter__footer button {
+  .el-table-filter__footer button,
+  .el-table-filter__bottom .el-button,
+  .el-table-filter__footer .el-button {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
@@ -1369,16 +1472,43 @@ onBeforeUnmount(() => {
   }
 }
 
-// 隐藏筛选面板底部的按钮区域（全局选择器）
+// 全局隐藏筛选面板底部的按钮区域
 :deep(.el-table-filter__bottom),
-:deep(.el-table-filter__footer),
-:deep(.el-table-filter__bottom *),
-:deep(.el-table-filter__footer *) {
+:deep(.el-table-filter__footer) {
   display: none !important;
   height: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+// 使用属性选择器隐藏所有可能的确认和重置按钮
+:deep(.el-table-filter [class*="confirm"]),
+:deep(.el-table-filter [class*="reset"]),
+:deep(.el-table-filter [class*="Confirm"]),
+:deep(.el-table-filter [class*="Reset"]),
+:deep(.el-table-filter [class*="CONFIRM"]),
+:deep(.el-table-filter [class*="RESET"]) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+// 隐藏筛选面板底部区域的所有子元素
+:deep(.el-table-filter__bottom *),
+:deep(.el-table-filter__footer *) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  pointer-events: none !important;
 }
 
 @media (max-width: 768px) {
