@@ -486,6 +486,16 @@ const filterMethod = (value: string | string[], row: any, column: any) => {
   return filterValues.includes(String(cellValue))
 }
 
+// 布尔类型的过滤方法（支持多选）
+const filterBooleanMethod = (value: boolean | boolean[], row: any, property: string) => {
+  if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) {
+    return true
+  }
+  const cellValue = (row as any)[property]
+  const filterValues = Array.isArray(value) ? value : [value]
+  return filterValues.includes(cellValue)
+}
+
 // 获取列的过滤选项（从数据中动态提取唯一值）
 const getColumnFilters = (records: AppointmentAuditRecord[], property: string) => {
   const values = new Set<string>()
@@ -500,6 +510,21 @@ const getColumnFilters = (records: AppointmentAuditRecord[], property: string) =
     .map((value) => ({ text: value, value }))
 }
 
+// 处理筛选选项点击，立即应用筛选
+const handleFilterOptionClick = () => {
+  // 使用 nextTick 确保 DOM 更新完成
+  setTimeout(() => {
+    const filterPanels = document.querySelectorAll('.el-table-filter')
+    filterPanels.forEach((panel) => {
+      const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
+      if (confirmBtn) {
+        // 立即触发确认，应用筛选
+        confirmBtn.click()
+      }
+    })
+  }, 0)
+}
+
 // 处理点击外部自动确认筛选
 const handleDocumentClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement
@@ -508,37 +533,24 @@ const handleDocumentClick = (event: MouseEvent) => {
   const filterDropdown = target.closest('.el-table-filter__dropdown')
   const filterContent = target.closest('.el-table-filter__content')
   
-  // 如果点击在筛选面板或下拉菜单内，不处理
+  // 如果点击在筛选面板或下拉菜单内，检查是否是点击了筛选选项
   if (filterPanel || filterDropdown || filterContent) {
+    // 检查是否是点击了复选框或标签
+    const isCheckbox = target.closest('.el-checkbox') || target.closest('.el-checkbox__input')
+    if (isCheckbox) {
+      // 点击了筛选选项，立即应用筛选
+      handleFilterOptionClick()
+    }
     return
   }
   
-  // 点击在筛选面板外部，查找所有打开的筛选面板并触发确认
-  // 使用 setTimeout 确保在点击事件处理完成后再执行
+  // 点击在筛选面板外部，关闭筛选面板
   setTimeout(() => {
     const filterPanels = document.querySelectorAll('.el-table-filter')
     filterPanels.forEach((panel) => {
-      // 检查面板是否可见（通过检查其父元素是否可见）
-      const panelElement = panel as HTMLElement
-      const parentElement = panelElement.parentElement
-      if (!parentElement || parentElement.style.display === 'none' || !panelElement.offsetParent) {
-        return
-      }
-      
-      // 查找确认按钮
-      const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
-      if (confirmBtn && !confirmBtn.disabled) {
-        // 如果已经有选中的选项，则触发确认
-        const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
-        if (checkedItems.length > 0) {
-          confirmBtn.click()
-        } else {
-          // 如果没有选中项，触发取消（关闭面板）
-          const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
-          if (cancelBtn) {
-            cancelBtn.click()
-          }
-        }
+      const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
+      if (cancelBtn) {
+        cancelBtn.click()
       }
     })
   }, 10)
@@ -932,6 +944,7 @@ onBeforeUnmount(() => {
                 label="职位类" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'positionCategory')"
                 :filter-method="filterMethod"
               />
@@ -940,6 +953,7 @@ onBeforeUnmount(() => {
                 label="一级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel1')"
                 :filter-method="filterMethod"
               />
@@ -948,6 +962,7 @@ onBeforeUnmount(() => {
                 label="二级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel2')"
                 :filter-method="filterMethod"
               />
@@ -956,6 +971,7 @@ onBeforeUnmount(() => {
                 label="三级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel3')"
                 :filter-method="filterMethod"
               />
@@ -964,6 +980,7 @@ onBeforeUnmount(() => {
                 label="四级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel4')"
                 :filter-method="filterMethod"
               />
@@ -972,6 +989,7 @@ onBeforeUnmount(() => {
                 label="五级部门" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel5')"
                 :filter-method="filterMethod"
               />
@@ -980,6 +998,7 @@ onBeforeUnmount(() => {
                 label="最小部门" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'minDepartment')"
                 :filter-method="filterMethod"
               />
@@ -988,6 +1007,7 @@ onBeforeUnmount(() => {
                 label="专业任职资格类" 
                 width="180" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'professionalCategory')"
                 :filter-method="filterMethod"
               />
@@ -996,6 +1016,7 @@ onBeforeUnmount(() => {
                 label="专家任职资格类（仅体现AI）" 
                 width="220" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'expertCategory')"
                 :filter-method="filterMethod"
               />
@@ -1004,6 +1025,7 @@ onBeforeUnmount(() => {
                 label="专业任职资格子类" 
                 width="180" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'professionalSubCategory')"
                 :filter-method="filterMethod"
               />
@@ -1012,6 +1034,7 @@ onBeforeUnmount(() => {
                 label="资格方向" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationDirection')"
                 :filter-method="filterMethod"
               />
@@ -1020,6 +1043,7 @@ onBeforeUnmount(() => {
                 label="资格级别" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationLevel')"
                 :filter-method="filterMethod"
               />
@@ -1028,6 +1052,7 @@ onBeforeUnmount(() => {
                 label="获取方式" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'acquisitionMethod')"
                 :filter-method="filterMethod"
               />
@@ -1037,11 +1062,12 @@ onBeforeUnmount(() => {
                 label="是否干部" 
                 width="110" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isCadre === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isCadre')"
               >
                 <template #default="{ row }">
                   {{ formatBoolean(row.isCadre) }}
@@ -1052,6 +1078,7 @@ onBeforeUnmount(() => {
                 label="干部类型" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'cadreType')"
                 :filter-method="filterMethod"
               />
@@ -1059,11 +1086,12 @@ onBeforeUnmount(() => {
                 label="是否专家" 
                 width="110" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isExpert === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isExpert')"
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
@@ -1074,11 +1102,12 @@ onBeforeUnmount(() => {
                 label="是否基层主管" 
                 width="140" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isFrontlineManager === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isFrontlineManager')"
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
@@ -1090,6 +1119,7 @@ onBeforeUnmount(() => {
                 label="组织AI成熟度" 
                 width="150" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'organizationMaturity')"
                 :filter-method="filterMethod"
               >
@@ -1103,6 +1133,7 @@ onBeforeUnmount(() => {
                 label="岗位AI成熟度" 
                 width="150" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'positionMaturity')"
                 :filter-method="filterMethod"
               />
@@ -1111,6 +1142,7 @@ onBeforeUnmount(() => {
                 label="要求持证类型" 
                 width="160" 
                 sortable 
+                filter-multiple
                 :filters="getColumnFilters(filteredAppointmentRecords, 'requiredCertificate')"
                 :filter-method="filterMethod"
               >
@@ -1123,11 +1155,12 @@ onBeforeUnmount(() => {
                 label="是否达标" 
                 width="120" 
                 sortable 
+                filter-multiple
                 :filters="[
                   { text: '是', value: true },
                   { text: '否', value: false },
                 ]"
-                :filter-method="(value: boolean, row: AppointmentAuditRecord) => row.isQualified === value"
+                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isQualified')"
               >
                 <template #default="{ row }">
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
@@ -1248,6 +1281,22 @@ onBeforeUnmount(() => {
     &.is-active {
       color: $primary-color;
     }
+  }
+}
+
+// 隐藏表格筛选面板的确认和取消按钮
+:deep(.el-table-filter) {
+  .el-table-filter__bottom {
+    display: none !important;
+  }
+  
+  .el-table-filter__footer {
+    display: none !important;
+  }
+  
+  .el-table-filter__confirm,
+  .el-table-filter__reset {
+    display: none !important;
   }
 }
 
