@@ -737,7 +737,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130">
                 <template #default="{ row }">
-                  <span style="color: #909399;">暂无数据</span>
+                  {{ formatNumber(row.appointedByRequirement) }}
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="AI任职率" min-width="90">
@@ -745,9 +745,9 @@ onActivated(() => {
                   {{ formatPercent(row.appointmentRate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationCompliance" label="按要求AI认证人数占比" min-width="140">
+              <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="140">
                 <template #default="{ row }">
-                  <span style="color: #909399;">暂无数据</span>
+                  {{ formatPercent(row.certificationCompliance) }}
                 </template>
               </el-table-column>
             </el-table>

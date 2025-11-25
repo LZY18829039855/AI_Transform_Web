@@ -392,6 +392,8 @@ export interface CadreJobCategoryQualifiedStatistics {
   baselineCount: number
   qualifiedCount: number
   qualifiedRate: number
+  qualifiedByRequirementCount?: number
+  qualifiedByRequirementRate?: number
 }
 
 export interface CadreMaturityQualifiedStatistics {
@@ -399,6 +401,8 @@ export interface CadreMaturityQualifiedStatistics {
   baselineCount: number
   qualifiedCount: number
   qualifiedRate: number
+  qualifiedByRequirementCount?: number
+  qualifiedByRequirementRate?: number
   jobCategoryStatistics?: CadreJobCategoryQualifiedStatistics[]
 }
 

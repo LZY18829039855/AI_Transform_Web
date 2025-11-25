@@ -310,9 +310,9 @@ export const fetchCadreData = async (
           jobCategory: '',
           baseline: maturity.baselineCount,
           appointed: maturity.qualifiedCount,
-          appointedByRequirement: maturity.qualifiedCount,
+          appointedByRequirement: maturity.qualifiedByRequirementCount ?? 0,
           appointmentRate: Number(maturity.qualifiedRate),
-          certificationCompliance: Number(maturity.qualifiedRate),
+          certificationCompliance: Number(maturity.qualifiedByRequirementRate ?? 0),
           isMaturityRow: true,
         })
 
@@ -322,9 +322,9 @@ export const fetchCadreData = async (
             jobCategory: jobCategory.jobCategory,
             baseline: jobCategory.baselineCount,
             appointed: jobCategory.qualifiedCount,
-            appointedByRequirement: jobCategory.qualifiedCount,
+            appointedByRequirement: jobCategory.qualifiedByRequirementCount ?? 0,
             appointmentRate: Number(jobCategory.qualifiedRate),
-            certificationCompliance: Number(jobCategory.qualifiedRate),
+            certificationCompliance: Number(jobCategory.qualifiedByRequirementRate ?? 0),
             isMaturityRow: false,
           })
         })
@@ -334,9 +334,9 @@ export const fetchCadreData = async (
           jobCategory: '',
           baseline: maturity.baselineCount,
           appointed: maturity.qualifiedCount,
-          appointedByRequirement: maturity.qualifiedCount,
+          appointedByRequirement: maturity.qualifiedByRequirementCount ?? 0,
           appointmentRate: Number(maturity.qualifiedRate),
-          certificationCompliance: Number(maturity.qualifiedRate),
+          certificationCompliance: Number(maturity.qualifiedByRequirementRate ?? 0),
           isMaturityRow: true,
         })
       }
@@ -348,9 +348,9 @@ export const fetchCadreData = async (
         jobCategory: '',
         baseline: stats.totalStatistics.baselineCount,
         appointed: stats.totalStatistics.qualifiedCount,
-        appointedByRequirement: stats.totalStatistics.qualifiedCount,
+        appointedByRequirement: stats.totalStatistics.qualifiedByRequirementCount ?? 0,
         appointmentRate: Number(stats.totalStatistics.qualifiedRate),
-        certificationCompliance: Number(stats.totalStatistics.qualifiedRate),
+        certificationCompliance: Number(stats.totalStatistics.qualifiedByRequirementRate ?? 0),
         isMaturityRow: true,
       })
     }
