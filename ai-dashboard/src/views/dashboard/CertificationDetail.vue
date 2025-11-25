@@ -510,47 +510,92 @@ const getColumnFilters = (records: AppointmentAuditRecord[], property: string) =
     .map((value) => ({ text: value, value }))
 }
 
-// 处理筛选选项点击，立即应用筛选
-const handleFilterOptionClick = () => {
-  // 使用 nextTick 确保 DOM 更新完成
-  setTimeout(() => {
-    const filterPanels = document.querySelectorAll('.el-table-filter')
-    filterPanels.forEach((panel) => {
-      const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
-      if (confirmBtn) {
-        // 立即触发确认，应用筛选
+// 触发筛选确认
+const triggerFilterConfirm = () => {
+  // 查找所有筛选面板
+  const filterPanels = document.querySelectorAll('.el-table-filter')
+  filterPanels.forEach((panel) => {
+    // 查找确认按钮（即使被隐藏）
+    const confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
+    if (confirmBtn) {
+      // 触发确认按钮的点击事件
+      const event = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      })
+      confirmBtn.dispatchEvent(event)
+      // 也尝试直接调用 click 方法
+      if (typeof confirmBtn.click === 'function') {
         confirmBtn.click()
       }
-    })
-  }, 0)
+    }
+  })
 }
 
 // 处理点击外部自动确认筛选
 const handleDocumentClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement
+  if (!target) {
+    return
+  }
+  
   // 检查是否点击在筛选面板内（包括筛选面板本身和其子元素）
   const filterPanel = target.closest('.el-table-filter')
   const filterDropdown = target.closest('.el-table-filter__dropdown')
   const filterContent = target.closest('.el-table-filter__content')
+  const filterList = target.closest('.el-table-filter__list')
+  const filterCheckbox = target.closest('.el-checkbox')
   
-  // 如果点击在筛选面板或下拉菜单内，检查是否是点击了筛选选项
-  if (filterPanel || filterDropdown || filterContent) {
-    // 检查是否是点击了复选框或标签
-    const isCheckbox = target.closest('.el-checkbox') || target.closest('.el-checkbox__input')
-    if (isCheckbox) {
-      // 点击了筛选选项，立即应用筛选
-      handleFilterOptionClick()
+  // 如果点击在筛选面板内
+  if (filterPanel || filterDropdown || filterContent || filterList) {
+    // 检查是否是点击了复选框
+    if (filterCheckbox) {
+      // 点击了筛选选项，延迟应用筛选（等待复选框状态更新）
+      setTimeout(() => {
+        triggerFilterConfirm()
+      }, 100)
     }
     return
   }
   
-  // 点击在筛选面板外部，关闭筛选面板
+  // 点击在筛选面板外部，查找所有打开的筛选面板并触发确认
   setTimeout(() => {
     const filterPanels = document.querySelectorAll('.el-table-filter')
+    let hasOpenPanel = false
+    
     filterPanels.forEach((panel) => {
-      const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
-      if (cancelBtn) {
-        cancelBtn.click()
+      // 检查面板是否可见（通过检查其父元素）
+      const panelElement = panel as HTMLElement
+      const parentElement = panelElement.parentElement
+      
+      // 检查面板是否在 DOM 中且可见
+      if (parentElement && document.body.contains(parentElement)) {
+        const computedStyle = window.getComputedStyle(parentElement)
+        if (computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden') {
+          hasOpenPanel = true
+          
+          // 检查是否有选中的选项
+          const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
+          if (checkedItems.length > 0) {
+            // 有选中的选项，触发确认
+            triggerFilterConfirm()
+          } else {
+            // 没有选中的选项，关闭面板
+            const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
+            if (cancelBtn) {
+              const event = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+              })
+              cancelBtn.dispatchEvent(event)
+              if (typeof cancelBtn.click === 'function') {
+                cancelBtn.click()
+              }
+            }
+          }
+        }
       }
     })
   }, 10)
@@ -1288,16 +1333,52 @@ onBeforeUnmount(() => {
 :deep(.el-table-filter) {
   .el-table-filter__bottom {
     display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
   }
   
   .el-table-filter__footer {
     display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
   }
   
   .el-table-filter__confirm,
-  .el-table-filter__reset {
+  .el-table-filter__reset,
+  button.el-table-filter__confirm,
+  button.el-table-filter__reset,
+  .el-button.el-table-filter__confirm,
+  .el-button.el-table-filter__reset,
+  .el-table-filter__bottom button,
+  .el-table-filter__footer button {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    pointer-events: none !important;
   }
+}
+
+// 隐藏筛选面板底部的按钮区域（全局选择器）
+:deep(.el-table-filter__bottom),
+:deep(.el-table-filter__footer),
+:deep(.el-table-filter__bottom *),
+:deep(.el-table-filter__footer *) {
+  display: none !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
 }
 
 @media (max-width: 768px) {
