@@ -563,6 +563,8 @@ let filterObserver: MutationObserver | null = null
 let isProgrammaticClick = false
 // 防抖定时器，避免重复触发筛选确认
 let filterConfirmTimer: ReturnType<typeof setTimeout> | null = null
+// 记录筛选面板刚刚打开的时间，用于判断是否应该忽略点击
+let filterPanelOpenTime = 0
 
 const setupFilterButtonObserver = () => {
   // 先执行一次隐藏
@@ -760,6 +762,22 @@ const handleDocumentClick = (event: MouseEvent) => {
     return
   }
   
+  // 检查是否点击在表格筛选按钮上（点击筛选按钮打开筛选面板时，应该忽略这次点击）
+  const filterTrigger = target.closest('.el-table__column-filter-trigger')
+  const filterIcon = target.closest('.el-icon-filter')
+  const isFilterButton = filterTrigger || filterIcon || target.classList.contains('el-table__column-filter-trigger') || target.classList.contains('el-icon-filter')
+  
+  // 如果点击在筛选按钮上，记录时间并直接返回，让筛选面板正常打开
+  if (isFilterButton) {
+    filterPanelOpenTime = Date.now()
+    return
+  }
+  
+  // 如果筛选面板刚刚打开（300ms 内），忽略这次点击，避免立即关闭
+  if (Date.now() - filterPanelOpenTime < 300) {
+    return
+  }
+  
   // 检查是否点击在筛选面板内（包括筛选面板本身和其子元素）
   const filterPanel = target.closest('.el-table-filter')
   const filterDropdown = target.closest('.el-table-filter__dropdown')
@@ -771,14 +789,16 @@ const handleDocumentClick = (event: MouseEvent) => {
   // 检查是否点击在 popper 容器内（包含筛选面板的 popper）
   const isInPopper = popper && popper.querySelector('.el-table-filter')
   
-  // 如果点击在筛选面板内，直接返回，不触发筛选（让用户继续选择）
+  // 如果点击在筛选面板内，更新时间戳并直接返回，不触发筛选（让用户继续选择）
   if (filterPanel || filterDropdown || filterContent || filterList || isInPopper) {
+    // 更新筛选面板打开时间，确保后续点击不会误判
+    filterPanelOpenTime = Date.now()
     // 点击复选框时不需要任何操作，让 Element Plus 自己处理
     return
   }
   
-  // 点击在筛选面板外部，立即查找所有打开的筛选面板并触发确认
-  // 使用 nextTick 确保 DOM 更新完成，但不要延迟太久，避免面板已关闭
+  // 点击在筛选面板外部，延迟查找所有打开的筛选面板并触发确认
+  // 延迟时间需要足够长，确保筛选面板已经打开（如果用户点击的是筛选按钮）
   setTimeout(() => {
     // 查找所有 popper 容器中的筛选面板
     const allPoppers = document.querySelectorAll('.el-popper')
@@ -856,7 +876,7 @@ const handleDocumentClick = (event: MouseEvent) => {
         }
       })
     }
-  }, 50) // 减少延迟时间，从 150ms 改为 50ms
+  }, 200) // 增加延迟时间到 200ms，确保筛选面板已经打开后再检查
 }
 
 // 过滤认证记录（根据姓名和工号）
