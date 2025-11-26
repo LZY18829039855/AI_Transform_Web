@@ -559,6 +559,11 @@ const hideFilterButtons = () => {
 // 使用 MutationObserver 监听 DOM 变化，持续隐藏按钮
 let filterObserver: MutationObserver | null = null
 
+// 标记是否是程序触发的点击事件，避免循环触发
+let isProgrammaticClick = false
+// 防抖定时器，避免重复触发筛选确认
+let filterConfirmTimer: ReturnType<typeof setTimeout> | null = null
+
 const setupFilterButtonObserver = () => {
   // 先执行一次隐藏
   hideFilterButtons()
@@ -577,172 +582,110 @@ const setupFilterButtonObserver = () => {
   })
 }
 
-// 触发筛选确认
+// 触发筛选确认（带防抖）
 const triggerFilterConfirm = () => {
-  console.log('[筛选调试] 开始触发筛选确认')
-  // 只查找打开的筛选面板
-  const allPoppers = document.querySelectorAll('.el-popper')
-  const openFilterPanels: Element[] = []
+  // 清除之前的定时器，实现防抖
+  if (filterConfirmTimer) {
+    clearTimeout(filterConfirmTimer)
+  }
   
-  // 收集所有打开的筛选面板
-  allPoppers.forEach((popper) => {
-    const panel = popper.querySelector('.el-table-filter')
-    if (panel && isFilterPanelOpen(panel)) {
-      openFilterPanels.push(panel)
-    }
-  })
-  
-  // 也查找直接挂载的打开的筛选面板
-  const directPanels = document.querySelectorAll('.el-table-filter')
-  directPanels.forEach((panel) => {
-    if (isFilterPanelOpen(panel) && !openFilterPanels.includes(panel)) {
-      openFilterPanels.push(panel)
-    }
-  })
-  
-  console.log('[筛选调试] 找到打开的筛选面板数量:', openFilterPanels.length)
-  let triggered = false
-  
-  openFilterPanels.forEach((panel, index) => {
-    console.log(`[筛选调试] 处理第 ${index + 1} 个筛选面板`)
+  filterConfirmTimer = setTimeout(() => {
+    // 只查找打开的筛选面板
+    const allPoppers = document.querySelectorAll('.el-popper')
+    const openFilterPanels: Element[] = []
     
-    // 尝试多种方式查找确认按钮
-    let confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
-    if (!confirmBtn) {
-      // 尝试查找底部区域中的按钮
-      const bottom = panel.querySelector('.el-table-filter__bottom')
-      if (bottom) {
-        confirmBtn = bottom.querySelector('button') as HTMLElement
-        console.log(`[筛选调试] 在底部区域找到按钮:`, !!confirmBtn)
+    // 收集所有打开的筛选面板
+    allPoppers.forEach((popper) => {
+      const panel = popper.querySelector('.el-table-filter')
+      if (panel && isFilterPanelOpen(panel)) {
+        openFilterPanels.push(panel)
       }
-    }
-    if (!confirmBtn) {
-      // 尝试查找所有按钮
-      const allButtons = panel.querySelectorAll('button')
-      console.log(`[筛选调试] 面板 ${index + 1} 中的按钮数量:`, allButtons.length)
-      allButtons.forEach((btn, btnIndex) => {
-        const btnText = btn.textContent || ''
-        const btnClass = btn.className || ''
-        console.log(`[筛选调试] 按钮 ${btnIndex + 1}: 文本="${btnText}", 类名="${btnClass}"`)
-        // 查找包含"确认"或"confirm"的按钮
-        if (btnText.includes('确认') || btnClass.includes('confirm') || btnClass.includes('Confirm')) {
-          confirmBtn = btn as HTMLElement
-          console.log(`[筛选调试] 找到确认按钮（通过文本或类名）`)
-        }
-      })
+    })
+    
+    // 也查找直接挂载的打开的筛选面板
+    const directPanels = document.querySelectorAll('.el-table-filter')
+    directPanels.forEach((panel) => {
+      if (isFilterPanelOpen(panel) && !openFilterPanels.includes(panel)) {
+        openFilterPanels.push(panel)
+      }
+    })
+    
+    // 如果已经有面板在处理中，直接返回
+    if (openFilterPanels.length === 0) {
+      return
     }
     
-    if (confirmBtn) {
-      console.log('[筛选调试] 找到确认按钮，准备触发，按钮信息:', {
-        tagName: confirmBtn.tagName,
-        className: confirmBtn.className,
-        textContent: confirmBtn.textContent,
-        display: window.getComputedStyle(confirmBtn).display,
-        visibility: window.getComputedStyle(confirmBtn).visibility,
-      })
-      // 先临时显示按钮以确保可以触发点击
-      const originalDisplay = confirmBtn.style.display
-      const originalVisibility = confirmBtn.style.visibility
-      const originalOpacity = confirmBtn.style.opacity
-      const originalPointerEvents = confirmBtn.style.pointerEvents
-      const originalHeight = confirmBtn.style.height
-      const originalWidth = confirmBtn.style.width
-      
-      // 完全恢复按钮的可见性
-      confirmBtn.style.cssText = `
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        height: auto !important;
-        width: auto !important;
-        position: static !important;
-      `
-      
-      // 触发确认按钮的点击事件
-      try {
-        // 先尝试直接调用 click 方法
-        if (typeof confirmBtn.click === 'function') {
-          console.log('[筛选调试] 调用 confirmBtn.click()')
-          confirmBtn.click()
-          triggered = true
-          console.log('[筛选调试] click() 方法调用成功')
-        }
-        
-        // 也尝试 dispatchEvent
-        const clickEvent = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0,
-        })
-        console.log('[筛选调试] 触发 dispatchEvent(click)')
-        confirmBtn.dispatchEvent(clickEvent)
-        triggered = true
-        console.log('[筛选调试] dispatchEvent 触发成功')
-        
-        // 尝试触发 mousedown 和 mouseup 事件
-        const mouseDownEvent = new MouseEvent('mousedown', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0,
-        })
-        const mouseUpEvent = new MouseEvent('mouseup', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0,
-        })
-        confirmBtn.dispatchEvent(mouseDownEvent)
-        confirmBtn.dispatchEvent(mouseUpEvent)
-      } catch (e) {
-        console.warn('[筛选调试] 触发筛选确认失败:', e)
-      } finally {
-        // 恢复隐藏状态
-        confirmBtn.style.display = originalDisplay
-        confirmBtn.style.visibility = originalVisibility
-        confirmBtn.style.opacity = originalOpacity
-        confirmBtn.style.pointerEvents = originalPointerEvents
-        confirmBtn.style.height = originalHeight
-        confirmBtn.style.width = originalWidth
-      }
-    } else {
-      console.log(`[筛选调试] 面板 ${index + 1} 未找到确认按钮，尝试直接操作表格筛选`)
-      // 如果没有找到确认按钮，尝试直接操作表格的筛选状态
-      // 获取选中的筛选值
-      const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
-      if (checkedItems.length > 0) {
-        const filterValues: string[] = []
-        checkedItems.forEach((item) => {
-          const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
-          if (checkbox && checkbox.value) {
-            filterValues.push(checkbox.value)
-          }
-        })
-        console.log(`[筛选调试] 面板 ${index + 1} 选中的筛选值:`, filterValues)
-        
-        // 尝试通过表格实例直接设置筛选
-        if (appointmentTableRef.value && filterValues.length > 0) {
-          // 查找对应的列
-          const columnProp = panel.getAttribute('data-column') || panel.closest('[data-column]')?.getAttribute('data-column')
-          if (columnProp) {
-            console.log(`[筛选调试] 尝试通过表格API设置筛选，列: ${columnProp}, 值:`, filterValues)
-            try {
-              // Element Plus 表格的筛选方法
-              ;(appointmentTableRef.value as any).clearFilter()
-              ;(appointmentTableRef.value as any).toggleRowSelection(filterValues)
-            } catch (e) {
-              console.warn('[筛选调试] 通过表格API设置筛选失败:', e)
-            }
-          }
+    // 标记为程序触发的点击，避免循环
+    isProgrammaticClick = true
+    
+    openFilterPanels.forEach((panel) => {
+      // 尝试多种方式查找确认按钮
+      let confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
+      if (!confirmBtn) {
+        // 尝试查找底部区域中的按钮
+        const bottom = panel.querySelector('.el-table-filter__bottom')
+        if (bottom) {
+          confirmBtn = bottom.querySelector('button') as HTMLElement
         }
       }
-    }
-  })
-  
-  console.log('[筛选调试] 触发筛选确认完成，结果:', triggered)
-  return triggered
+      if (!confirmBtn) {
+        // 尝试查找所有按钮
+        const allButtons = panel.querySelectorAll('button')
+        allButtons.forEach((btn) => {
+          const btnText = btn.textContent || ''
+          const btnClass = btn.className || ''
+          // 查找包含"确认"或"confirm"的按钮
+          if (btnText.includes('确认') || btnClass.includes('confirm') || btnClass.includes('Confirm')) {
+            confirmBtn = btn as HTMLElement
+          }
+        })
+      }
+      
+      if (confirmBtn) {
+        // 先临时显示按钮以确保可以触发点击
+        const originalDisplay = confirmBtn.style.display
+        const originalVisibility = confirmBtn.style.visibility
+        const originalOpacity = confirmBtn.style.opacity
+        const originalPointerEvents = confirmBtn.style.pointerEvents
+        const originalHeight = confirmBtn.style.height
+        const originalWidth = confirmBtn.style.width
+        
+        // 完全恢复按钮的可见性
+        confirmBtn.style.cssText = `
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+          height: auto !important;
+          width: auto !important;
+          position: static !important;
+        `
+        
+        // 触发确认按钮的点击事件
+        try {
+          // 只使用 click 方法，避免重复触发
+          if (typeof confirmBtn.click === 'function') {
+            confirmBtn.click()
+          }
+        } catch (e) {
+          console.warn('触发筛选确认失败:', e)
+        } finally {
+          // 恢复隐藏状态
+          confirmBtn.style.display = originalDisplay
+          confirmBtn.style.visibility = originalVisibility
+          confirmBtn.style.opacity = originalOpacity
+          confirmBtn.style.pointerEvents = originalPointerEvents
+          confirmBtn.style.height = originalHeight
+          confirmBtn.style.width = originalWidth
+        }
+      }
+    })
+    
+    // 重置标志位
+    setTimeout(() => {
+      isProgrammaticClick = false
+    }, 100)
+  }, 200) // 防抖延迟200ms
 }
 
 // 检查筛选面板是否打开
@@ -789,12 +732,15 @@ const isFilterPanelOpen = (panel: Element): boolean => {
 
 // 处理点击外部自动确认筛选
 const handleDocumentClick = (event: MouseEvent) => {
+  // 如果是程序触发的点击事件，直接返回，避免循环
+  if (isProgrammaticClick) {
+    return
+  }
+  
   const target = event.target as HTMLElement
   if (!target) {
     return
   }
-  
-  console.log('[筛选调试] 点击事件触发，目标元素:', target.tagName, target.className)
   
   // 检查是否点击在 Element Plus 下拉组件内（el-select、el-cascader 等）
   const selectDropdown = target.closest('.el-select-dropdown')
@@ -806,7 +752,6 @@ const handleDocumentClick = (event: MouseEvent) => {
   
   // 如果点击在下拉组件内，直接返回，不触发筛选
   if (selectDropdown || cascaderDropdown || selectPopper || cascaderPopper || selectOption || cascaderNode) {
-    console.log('[筛选调试] 点击在下拉组件内，忽略')
     return
   }
   
@@ -818,101 +763,65 @@ const handleDocumentClick = (event: MouseEvent) => {
   const filterCheckbox = target.closest('.el-checkbox')
   const popper = target.closest('.el-popper')
   
-  console.log('[筛选调试] 筛选面板检测:', {
-    filterPanel: !!filterPanel,
-    filterDropdown: !!filterDropdown,
-    filterContent: !!filterContent,
-    filterList: !!filterList,
-    filterCheckbox: !!filterCheckbox,
-    popper: !!popper,
-  })
-  
   // 检查是否点击在 popper 容器内（包含筛选面板的 popper）
   const isInPopper = popper && popper.querySelector('.el-table-filter')
   
-  // 如果点击在筛选面板内
+  // 如果点击在筛选面板内，直接返回，不触发筛选（让用户继续选择）
   if (filterPanel || filterDropdown || filterContent || filterList || isInPopper) {
-    console.log('[筛选调试] 点击在筛选面板内')
-    // 检查是否是点击了复选框
-    if (filterCheckbox) {
-      console.log('[筛选调试] 点击了复选框，延迟触发筛选')
-      // 点击了筛选选项，延迟应用筛选（等待复选框状态更新）
-      setTimeout(() => {
-        triggerFilterConfirm()
-      }, 200)
-    }
+    // 点击复选框时不需要任何操作，让 Element Plus 自己处理
     return
   }
   
-  console.log('[筛选调试] 点击在筛选面板外部，准备查找打开的筛选面板')
-  
   // 点击在筛选面板外部，查找所有打开的筛选面板并触发确认
   setTimeout(() => {
-    console.log('[筛选调试] 开始查找打开的筛选面板')
     // 查找所有 popper 容器中的筛选面板
     const allPoppers = document.querySelectorAll('.el-popper')
-    console.log('[筛选调试] 找到 popper 数量:', allPoppers.length)
     const filterPanels: Element[] = []
     
     // 收集所有打开的筛选面板
-    allPoppers.forEach((popper, index) => {
+    allPoppers.forEach((popper) => {
       const panel = popper.querySelector('.el-table-filter')
-      if (panel) {
-        const isOpen = isFilterPanelOpen(panel)
-        console.log(`[筛选调试] Popper ${index + 1} 中的筛选面板是否打开:`, isOpen)
-        if (isOpen) {
-          filterPanels.push(panel)
-        }
+      if (panel && isFilterPanelOpen(panel)) {
+        filterPanels.push(panel)
       }
     })
     
     // 也查找直接挂载在 body 上的筛选面板
     const directPanels = document.querySelectorAll('.el-table-filter')
-    console.log('[筛选调试] 直接挂载的筛选面板数量:', directPanels.length)
-    directPanels.forEach((panel, index) => {
-      const isOpen = isFilterPanelOpen(panel)
-      console.log(`[筛选调试] 直接挂载面板 ${index + 1} 是否打开:`, isOpen)
-      if (isOpen && !filterPanels.includes(panel)) {
+    directPanels.forEach((panel) => {
+      if (isFilterPanelOpen(panel) && !filterPanels.includes(panel)) {
         filterPanels.push(panel)
       }
     })
     
-    console.log('[筛选调试] 总共找到打开的筛选面板数量:', filterPanels.length)
-    
     // 处理每个打开的筛选面板
     if (filterPanels.length > 0) {
-      filterPanels.forEach((panel, index) => {
-        console.log(`[筛选调试] 处理筛选面板 ${index + 1}`)
+      filterPanels.forEach((panel) => {
         // 检查是否有选中的选项
         const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
-        console.log(`[筛选调试] 筛选面板 ${index + 1} 选中的选项数量:`, checkedItems.length)
         if (checkedItems.length > 0) {
           // 有选中的选项，触发确认
-          console.log(`[筛选调试] 筛选面板 ${index + 1} 有选中项，触发确认`)
           triggerFilterConfirm()
-          // 如果第一次触发失败，延迟再次尝试
-          setTimeout(() => {
-            console.log(`[筛选调试] 筛选面板 ${index + 1} 重试触发确认`)
-            triggerFilterConfirm()
-          }, 50)
         } else {
           // 没有选中的选项，关闭面板
           const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
           if (cancelBtn) {
-            // 临时显示按钮以确保可以触发点击
-            const originalDisplay = cancelBtn.style.display
-            const originalVisibility = cancelBtn.style.visibility
-            const originalOpacity = cancelBtn.style.opacity
-            const originalPointerEvents = cancelBtn.style.pointerEvents
-            
-            cancelBtn.style.cssText = `
-              display: block !important;
-              visibility: visible !important;
-              opacity: 1 !important;
-              pointer-events: auto !important;
-            `
-            
+            // 标记为程序触发的点击
+            isProgrammaticClick = true
             try {
+              // 临时显示按钮以确保可以触发点击
+              const originalDisplay = cancelBtn.style.display
+              const originalVisibility = cancelBtn.style.visibility
+              const originalOpacity = cancelBtn.style.opacity
+              const originalPointerEvents = cancelBtn.style.pointerEvents
+              
+              cancelBtn.style.cssText = `
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+              `
+              
               if (typeof cancelBtn.click === 'function') {
                 cancelBtn.click()
               }
@@ -923,14 +832,19 @@ const handleDocumentClick = (event: MouseEvent) => {
                 button: 0,
               })
               cancelBtn.dispatchEvent(event)
-            } catch (e) {
-              console.warn('关闭筛选面板失败:', e)
-            } finally {
+              
               // 恢复隐藏状态
               cancelBtn.style.display = originalDisplay
               cancelBtn.style.visibility = originalVisibility
               cancelBtn.style.opacity = originalOpacity
               cancelBtn.style.pointerEvents = originalPointerEvents
+            } catch (e) {
+              console.warn('关闭筛选面板失败:', e)
+            } finally {
+              // 重置标志位
+              setTimeout(() => {
+                isProgrammaticClick = false
+              }, 100)
             }
           }
         }
@@ -1141,6 +1055,12 @@ onBeforeUnmount(() => {
   if (filterObserver) {
     filterObserver.disconnect()
     filterObserver = null
+  }
+  
+  // 清理防抖定时器
+  if (filterConfirmTimer) {
+    clearTimeout(filterConfirmTimer)
+    filterConfirmTimer = null
   }
 })
 </script>
