@@ -796,6 +796,20 @@ const handleDocumentClick = (event: MouseEvent) => {
   
   console.log('[筛选调试] 点击事件触发，目标元素:', target.tagName, target.className)
   
+  // 检查是否点击在 Element Plus 下拉组件内（el-select、el-cascader 等）
+  const selectDropdown = target.closest('.el-select-dropdown')
+  const cascaderDropdown = target.closest('.el-cascader__dropdown')
+  const selectPopper = target.closest('.el-popper')?.querySelector('.el-select-dropdown')
+  const cascaderPopper = target.closest('.el-popper')?.querySelector('.el-cascader__dropdown')
+  const selectOption = target.closest('.el-select-dropdown__item')
+  const cascaderNode = target.closest('.el-cascader-node')
+  
+  // 如果点击在下拉组件内，直接返回，不触发筛选
+  if (selectDropdown || cascaderDropdown || selectPopper || cascaderPopper || selectOption || cascaderNode) {
+    console.log('[筛选调试] 点击在下拉组件内，忽略')
+    return
+  }
+  
   // 检查是否点击在筛选面板内（包括筛选面板本身和其子元素）
   const filterPanel = target.closest('.el-table-filter')
   const filterDropdown = target.closest('.el-table-filter__dropdown')
