@@ -823,57 +823,9 @@ const handleDocumentClick = (event: MouseEvent) => {
     // 处理每个打开的筛选面板
     if (filterPanels.length > 0) {
       filterPanels.forEach((panel) => {
-        // 检查是否有选中的选项
-        const checkedItems = panel.querySelectorAll('.el-checkbox.is-checked')
-        if (checkedItems.length > 0) {
-          // 有选中的选项，立即触发确认（不使用防抖）
-          triggerFilterConfirmImmediate()
-        } else {
-          // 没有选中的选项，关闭面板
-          const cancelBtn = panel.querySelector('.el-table-filter__reset') as HTMLElement
-          if (cancelBtn) {
-            // 标记为程序触发的点击
-            isProgrammaticClick = true
-            try {
-              // 临时显示按钮以确保可以触发点击
-              const originalDisplay = cancelBtn.style.display
-              const originalVisibility = cancelBtn.style.visibility
-              const originalOpacity = cancelBtn.style.opacity
-              const originalPointerEvents = cancelBtn.style.pointerEvents
-              
-              cancelBtn.style.cssText = `
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                pointer-events: auto !important;
-              `
-              
-              if (typeof cancelBtn.click === 'function') {
-                cancelBtn.click()
-              }
-              const event = new MouseEvent('click', {
-                bubbles: true,
-                cancelable: true,
-                view: window,
-                button: 0,
-              })
-              cancelBtn.dispatchEvent(event)
-              
-              // 恢复隐藏状态
-              cancelBtn.style.display = originalDisplay
-              cancelBtn.style.visibility = originalVisibility
-              cancelBtn.style.opacity = originalOpacity
-              cancelBtn.style.pointerEvents = originalPointerEvents
-            } catch (e) {
-              console.warn('关闭筛选面板失败:', e)
-            } finally {
-              // 重置标志位
-              setTimeout(() => {
-                isProgrammaticClick = false
-              }, 100)
-            }
-          }
-        }
+        // 无论是否有选中的选项，都触发筛选确认
+        // 如果有选中的选项，会应用筛选；如果没有选中的选项，会清除筛选
+        triggerFilterConfirmImmediate()
       })
     }
   }, 200) // 增加延迟时间到 200ms，确保筛选面板已经打开后再检查
