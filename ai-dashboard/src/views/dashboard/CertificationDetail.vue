@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
@@ -472,364 +472,6 @@ const resetFilters = () => {
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
-// 通用的过滤方法
-const filterMethod = (value: string | string[], row: any, column: any) => {
-  const property = column.property
-  const cellValue = row[property]
-  if (!value || (Array.isArray(value) && value.length === 0)) {
-    return true
-  }
-  if (cellValue === undefined || cellValue === null || cellValue === '') {
-    return false
-  }
-  const filterValues = Array.isArray(value) ? value : [value]
-  return filterValues.includes(String(cellValue))
-}
-
-// 布尔类型的过滤方法（支持多选）
-const filterBooleanMethod = (value: boolean | boolean[], row: any, property: string) => {
-  if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) {
-    return true
-  }
-  const cellValue = (row as any)[property]
-  const filterValues = Array.isArray(value) ? value : [value]
-  return filterValues.includes(cellValue)
-}
-
-// 获取列的过滤选项（从数据中动态提取唯一值）
-const getColumnFilters = (records: AppointmentAuditRecord[], property: string) => {
-  const values = new Set<string>()
-  records.forEach((record) => {
-    const value = (record as any)[property]
-    if (value !== undefined && value !== null && value !== '') {
-      values.add(String(value))
-    }
-  })
-  return Array.from(values)
-    .sort()
-    .map((value) => ({ text: value, value }))
-}
-
-// 隐藏筛选面板中的确认和重置按钮
-const hideFilterButtons = () => {
-  const filterPanels = document.querySelectorAll('.el-table-filter')
-  filterPanels.forEach((panel) => {
-    // 隐藏底部区域
-    const bottom = panel.querySelector('.el-table-filter__bottom') as HTMLElement
-    const footer = panel.querySelector('.el-table-filter__footer') as HTMLElement
-    if (bottom) {
-      bottom.style.display = 'none'
-      bottom.style.height = '0'
-      bottom.style.padding = '0'
-      bottom.style.margin = '0'
-      bottom.style.visibility = 'hidden'
-    }
-    if (footer) {
-      footer.style.display = 'none'
-      footer.style.height = '0'
-      footer.style.padding = '0'
-      footer.style.margin = '0'
-      footer.style.visibility = 'hidden'
-    }
-    
-    // 隐藏所有按钮
-    const buttons = panel.querySelectorAll('button, .el-button')
-    buttons.forEach((btn) => {
-      const button = btn as HTMLElement
-      const classList = button.className || ''
-      if (classList.includes('confirm') || 
-          classList.includes('reset') || 
-          classList.includes('Confirm') || 
-          classList.includes('Reset') ||
-          button.textContent?.includes('确认') ||
-          button.textContent?.includes('重置')) {
-        button.style.display = 'none'
-        button.style.visibility = 'hidden'
-        button.style.opacity = '0'
-        button.style.height = '0'
-        button.style.width = '0'
-        button.style.padding = '0'
-        button.style.margin = '0'
-        button.style.pointerEvents = 'none'
-      }
-    })
-  })
-}
-
-// 使用 MutationObserver 监听 DOM 变化，持续隐藏按钮
-let filterObserver: MutationObserver | null = null
-
-// 标记是否是程序触发的点击事件，避免循环触发
-let isProgrammaticClick = false
-// 防抖定时器，避免重复触发筛选确认
-let filterConfirmTimer: ReturnType<typeof setTimeout> | null = null
-// 记录筛选面板刚刚打开的时间，用于判断是否应该忽略点击
-let filterPanelOpenTime = 0
-
-const setupFilterButtonObserver = () => {
-  // 先执行一次隐藏
-  hideFilterButtons()
-  
-  // 创建观察器，监听 DOM 变化
-  filterObserver = new MutationObserver(() => {
-    hideFilterButtons()
-  })
-  
-  // 开始观察整个文档的变化
-  filterObserver.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'style'],
-  })
-}
-
-// 立即触发筛选确认（用于点击外部时）
-const triggerFilterConfirmImmediate = () => {
-  // 只查找打开的筛选面板
-  const allPoppers = document.querySelectorAll('.el-popper')
-  const openFilterPanels: Element[] = []
-  
-  // 收集所有打开的筛选面板
-  allPoppers.forEach((popper) => {
-    const panel = popper.querySelector('.el-table-filter')
-    if (panel && isFilterPanelOpen(panel)) {
-      openFilterPanels.push(panel)
-    }
-  })
-  
-  // 也查找直接挂载的打开的筛选面板
-  const directPanels = document.querySelectorAll('.el-table-filter')
-  directPanels.forEach((panel) => {
-    if (isFilterPanelOpen(panel) && !openFilterPanels.includes(panel)) {
-      openFilterPanels.push(panel)
-    }
-  })
-  
-  // 如果没有打开的筛选面板，直接返回
-  if (openFilterPanels.length === 0) {
-    return
-  }
-  
-  // 标记为程序触发的点击，避免循环
-  isProgrammaticClick = true
-  
-  openFilterPanels.forEach((panel) => {
-    // 尝试多种方式查找确认按钮
-    let confirmBtn = panel.querySelector('.el-table-filter__confirm') as HTMLElement
-    if (!confirmBtn) {
-      // 尝试查找底部区域中的按钮
-      const bottom = panel.querySelector('.el-table-filter__bottom')
-      if (bottom) {
-        confirmBtn = bottom.querySelector('button') as HTMLElement
-      }
-    }
-    if (!confirmBtn) {
-      // 尝试查找所有按钮
-      const allButtons = panel.querySelectorAll('button')
-      allButtons.forEach((btn) => {
-        const btnText = btn.textContent || ''
-        const btnClass = btn.className || ''
-        // 查找包含"确认"或"confirm"的按钮
-        if (btnText.includes('确认') || btnClass.includes('confirm') || btnClass.includes('Confirm')) {
-          confirmBtn = btn as HTMLElement
-        }
-      })
-    }
-    
-    if (confirmBtn) {
-      // 先临时显示按钮以确保可以触发点击
-      const originalDisplay = confirmBtn.style.display
-      const originalVisibility = confirmBtn.style.visibility
-      const originalOpacity = confirmBtn.style.opacity
-      const originalPointerEvents = confirmBtn.style.pointerEvents
-      const originalHeight = confirmBtn.style.height
-      const originalWidth = confirmBtn.style.width
-      
-      // 完全恢复按钮的可见性
-      confirmBtn.style.cssText = `
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        height: auto !important;
-        width: auto !important;
-        position: static !important;
-      `
-      
-      // 触发确认按钮的点击事件
-      try {
-        // 只使用 click 方法，避免重复触发
-        if (typeof confirmBtn.click === 'function') {
-          confirmBtn.click()
-        }
-      } catch (e) {
-        console.warn('触发筛选确认失败:', e)
-      } finally {
-        // 恢复隐藏状态
-        confirmBtn.style.display = originalDisplay
-        confirmBtn.style.visibility = originalVisibility
-        confirmBtn.style.opacity = originalOpacity
-        confirmBtn.style.pointerEvents = originalPointerEvents
-        confirmBtn.style.height = originalHeight
-        confirmBtn.style.width = originalWidth
-      }
-    }
-  })
-  
-  // 重置标志位
-  setTimeout(() => {
-    isProgrammaticClick = false
-  }, 100)
-}
-
-// 触发筛选确认（带防抖，用于其他场景）
-const triggerFilterConfirm = () => {
-  // 清除之前的定时器，实现防抖
-  if (filterConfirmTimer) {
-    clearTimeout(filterConfirmTimer)
-  }
-  
-  filterConfirmTimer = setTimeout(() => {
-    triggerFilterConfirmImmediate()
-  }, 200) // 防抖延迟200ms
-}
-
-// 检查筛选面板是否打开
-const isFilterPanelOpen = (panel: Element): boolean => {
-  // 检查面板的父元素（可能是 popper 或 dropdown）
-  let parent = panel.parentElement
-  let foundPopper = false
-  
-  while (parent && parent !== document.body) {
-    const style = window.getComputedStyle(parent)
-    // 如果父元素被隐藏，面板也不可见
-    if (style.display === 'none' || style.visibility === 'hidden') {
-      return false
-    }
-    // 检查是否是 popper 容器
-    if (parent.classList.contains('el-popper') || 
-        parent.classList.contains('el-table-filter__dropdown') ||
-        parent.getAttribute('x-placement') ||
-        parent.getAttribute('data-popper-placement')) {
-      foundPopper = true
-      // 检查 popper 是否可见
-      const popperStyle = window.getComputedStyle(parent)
-      if (popperStyle.display === 'none' || popperStyle.visibility === 'hidden') {
-        return false
-      }
-      // 检查 popper 是否有 aria-hidden 属性
-      if (parent.getAttribute('aria-hidden') === 'true') {
-        return false
-      }
-    }
-    parent = parent.parentElement
-  }
-  
-  // 如果找到了 popper，检查面板本身是否可见
-  if (foundPopper) {
-    const panelStyle = window.getComputedStyle(panel)
-    return panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden'
-  }
-  
-  // 如果面板在 body 中，检查面板本身是否可见
-  const panelStyle = window.getComputedStyle(panel)
-  return panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden'
-}
-
-// 处理点击外部自动确认筛选
-const handleDocumentClick = (event: MouseEvent) => {
-  // 如果是程序触发的点击事件，直接返回，避免循环
-  if (isProgrammaticClick) {
-    return
-  }
-  
-  const target = event.target as HTMLElement
-  if (!target) {
-    return
-  }
-  
-  // 检查是否点击在 Element Plus 下拉组件内（el-select、el-cascader 等）
-  const selectDropdown = target.closest('.el-select-dropdown')
-  const cascaderDropdown = target.closest('.el-cascader__dropdown')
-  const selectPopper = target.closest('.el-popper')?.querySelector('.el-select-dropdown')
-  const cascaderPopper = target.closest('.el-popper')?.querySelector('.el-cascader__dropdown')
-  const selectOption = target.closest('.el-select-dropdown__item')
-  const cascaderNode = target.closest('.el-cascader-node')
-  
-  // 如果点击在下拉组件内，直接返回，不触发筛选
-  if (selectDropdown || cascaderDropdown || selectPopper || cascaderPopper || selectOption || cascaderNode) {
-    return
-  }
-  
-  // 检查是否点击在表格筛选按钮上（点击筛选按钮打开筛选面板时，应该忽略这次点击）
-  const filterTrigger = target.closest('.el-table__column-filter-trigger')
-  const filterIcon = target.closest('.el-icon-filter')
-  const isFilterButton = filterTrigger || filterIcon || target.classList.contains('el-table__column-filter-trigger') || target.classList.contains('el-icon-filter')
-  
-  // 如果点击在筛选按钮上，记录时间并直接返回，让筛选面板正常打开
-  if (isFilterButton) {
-    filterPanelOpenTime = Date.now()
-    return
-  }
-  
-  // 如果筛选面板刚刚打开（300ms 内），忽略这次点击，避免立即关闭
-  if (Date.now() - filterPanelOpenTime < 300) {
-    return
-  }
-  
-  // 检查是否点击在筛选面板内（包括筛选面板本身和其子元素）
-  const filterPanel = target.closest('.el-table-filter')
-  const filterDropdown = target.closest('.el-table-filter__dropdown')
-  const filterContent = target.closest('.el-table-filter__content')
-  const filterList = target.closest('.el-table-filter__list')
-  const filterCheckbox = target.closest('.el-checkbox')
-  const popper = target.closest('.el-popper')
-  
-  // 检查是否点击在 popper 容器内（包含筛选面板的 popper）
-  const isInPopper = popper && popper.querySelector('.el-table-filter')
-  
-  // 如果点击在筛选面板内，更新时间戳并直接返回，不触发筛选（让用户继续选择）
-  if (filterPanel || filterDropdown || filterContent || filterList || isInPopper) {
-    // 更新筛选面板打开时间，确保后续点击不会误判
-    filterPanelOpenTime = Date.now()
-    // 点击复选框时不需要任何操作，让 Element Plus 自己处理
-    return
-  }
-  
-  // 点击在筛选面板外部，延迟查找所有打开的筛选面板并触发确认
-  // 延迟时间需要足够长，确保筛选面板已经打开（如果用户点击的是筛选按钮）
-  setTimeout(() => {
-    // 查找所有 popper 容器中的筛选面板
-    const allPoppers = document.querySelectorAll('.el-popper')
-    const filterPanels: Element[] = []
-    
-    // 收集所有打开的筛选面板
-    allPoppers.forEach((popper) => {
-      const panel = popper.querySelector('.el-table-filter')
-      if (panel && isFilterPanelOpen(panel)) {
-        filterPanels.push(panel)
-      }
-    })
-    
-    // 也查找直接挂载在 body 上的筛选面板
-    const directPanels = document.querySelectorAll('.el-table-filter')
-    directPanels.forEach((panel) => {
-      if (isFilterPanelOpen(panel) && !filterPanels.includes(panel)) {
-        filterPanels.push(panel)
-      }
-    })
-    
-    // 处理每个打开的筛选面板
-    if (filterPanels.length > 0) {
-      filterPanels.forEach((panel) => {
-        // 无论是否有选中的选项，都触发筛选确认
-        // 如果有选中的选项，会应用筛选；如果没有选中的选项，会清除筛选
-        triggerFilterConfirmImmediate()
-      })
-    }
-  }, 200) // 增加延迟时间到 200ms，确保筛选面板已经打开后再检查
-}
 
 // 过滤认证记录（根据姓名和工号）
 const filteredCertificationRecords = computed(() => {
@@ -977,15 +619,6 @@ onMounted(() => {
     }
   }
   
-  // 添加点击监听器，实现点击页面任意位置自动确认筛选
-  // 使用 capture 模式确保能捕获到事件
-  document.addEventListener('click', handleDocumentClick, true)
-  
-  // 设置筛选按钮观察器，持续隐藏确认和重置按钮
-  nextTick(() => {
-    setupFilterButtonObserver()
-  })
-  
   fetchDetail()
 })
 
@@ -1013,33 +646,11 @@ onActivated(() => {
     filters.value.maturity = '全部'
   }
   
-  // 添加点击监听器，实现点击页面任意位置自动确认筛选
-  // 使用 capture 模式确保能捕获到事件
-  document.addEventListener('click', handleDocumentClick, true)
-  
-  // 设置筛选按钮观察器，持续隐藏确认和重置按钮
-  nextTick(() => {
-    setupFilterButtonObserver()
-  })
-  
   fetchDetail()
 })
 
 onBeforeUnmount(() => {
-  // 移除点击监听器（需要与 addEventListener 使用相同的参数）
-  document.removeEventListener('click', handleDocumentClick, true)
-  
-  // 清理筛选按钮观察器
-  if (filterObserver) {
-    filterObserver.disconnect()
-    filterObserver = null
-  }
-  
-  // 清理防抖定时器
-  if (filterConfirmTimer) {
-    clearTimeout(filterConfirmTimer)
-    filterConfirmTimer = null
-  }
+  // 清理工作（如果需要）
 })
 </script>
 
@@ -1243,117 +854,78 @@ onBeforeUnmount(() => {
                 label="职位类" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'positionCategory')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel1')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="departmentLevel2" 
                 label="二级部门" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel2')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="departmentLevel3" 
                 label="三级部门" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel3')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="departmentLevel4" 
                 label="四级部门" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel4')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="departmentLevel5" 
                 label="五级部门" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'departmentLevel5')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="minDepartment" 
                 label="最小部门" 
                 width="160" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'minDepartment')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="professionalCategory" 
                 label="专业任职资格类" 
                 width="180" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'professionalCategory')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="expertCategory" 
                 label="专家任职资格类（仅体现AI）" 
                 width="220" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'expertCategory')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="professionalSubCategory" 
                 label="专业任职资格子类" 
                 width="180" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'professionalSubCategory')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="qualificationDirection" 
                 label="资格方向" 
                 width="160" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationDirection')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="qualificationLevel" 
                 label="资格级别" 
                 width="160" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'qualificationLevel')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="acquisitionMethod" 
                 label="获取方式" 
                 width="160" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'acquisitionMethod')"
-                :filter-method="filterMethod"
               />
               <el-table-column prop="effectiveDate" label="生效日期" width="150" />
               <el-table-column prop="expiryDate" label="失效日期" width="150" />
@@ -1361,12 +933,6 @@ onBeforeUnmount(() => {
                 label="是否干部" 
                 width="110" 
                 sortable 
-                filter-multiple
-                :filters="[
-                  { text: '是', value: true },
-                  { text: '否', value: false },
-                ]"
-                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isCadre')"
               >
                 <template #default="{ row }">
                   {{ formatBoolean(row.isCadre) }}
@@ -1377,20 +943,11 @@ onBeforeUnmount(() => {
                 label="干部类型" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'cadreType')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 label="是否专家" 
                 width="110" 
                 sortable 
-                filter-multiple
-                :filters="[
-                  { text: '是', value: true },
-                  { text: '否', value: false },
-                ]"
-                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isExpert')"
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
@@ -1401,12 +958,6 @@ onBeforeUnmount(() => {
                 label="是否基层主管" 
                 width="140" 
                 sortable 
-                filter-multiple
-                :filters="[
-                  { text: '是', value: true },
-                  { text: '否', value: false },
-                ]"
-                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isFrontlineManager')"
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
@@ -1418,9 +969,6 @@ onBeforeUnmount(() => {
                 label="组织AI成熟度" 
                 width="150" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'organizationMaturity')"
-                :filter-method="filterMethod"
               >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
@@ -1432,18 +980,12 @@ onBeforeUnmount(() => {
                 label="岗位AI成熟度" 
                 width="150" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'positionMaturity')"
-                :filter-method="filterMethod"
               />
               <el-table-column 
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 width="160" 
                 sortable 
-                filter-multiple
-                :filters="getColumnFilters(filteredAppointmentRecords, 'requiredCertificate')"
-                :filter-method="filterMethod"
               >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
@@ -1454,12 +996,6 @@ onBeforeUnmount(() => {
                 label="是否达标" 
                 width="120" 
                 sortable 
-                filter-multiple
-                :filters="[
-                  { text: '是', value: true },
-                  { text: '否', value: false },
-                ]"
-                :filter-method="(value: boolean | boolean[], row: AppointmentAuditRecord) => filterBooleanMethod(value, row, 'isQualified')"
               >
                 <template #default="{ row }">
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
@@ -1583,104 +1119,6 @@ onBeforeUnmount(() => {
   }
 }
 
-// 隐藏表格筛选面板的确认和取消按钮
-// 使用更通用的选择器，确保隐藏所有筛选面板中的按钮
-:deep(.el-table-filter) {
-  // 隐藏底部按钮区域
-  .el-table-filter__bottom {
-    display: none !important;
-    height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-    visibility: hidden !important;
-  }
-  
-  .el-table-filter__footer {
-    display: none !important;
-    height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-    visibility: hidden !important;
-  }
-  
-  // 隐藏所有按钮（包括确认和重置）
-  button,
-  .el-button {
-    &.el-table-filter__confirm,
-    &.el-table-filter__reset {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      height: 0 !important;
-      width: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border: none !important;
-      font-size: 0 !important;
-      line-height: 0 !important;
-      pointer-events: none !important;
-    }
-  }
-  
-  // 隐藏底部区域中的所有按钮
-  .el-table-filter__bottom button,
-  .el-table-filter__footer button,
-  .el-table-filter__bottom .el-button,
-  .el-table-filter__footer .el-button {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-    pointer-events: none !important;
-  }
-}
-
-// 全局隐藏筛选面板底部的按钮区域
-:deep(.el-table-filter__bottom),
-:deep(.el-table-filter__footer) {
-  display: none !important;
-  height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-  visibility: hidden !important;
-}
-
-// 使用属性选择器隐藏所有可能的确认和重置按钮
-:deep(.el-table-filter [class*="confirm"]),
-:deep(.el-table-filter [class*="reset"]),
-:deep(.el-table-filter [class*="Confirm"]),
-:deep(.el-table-filter [class*="Reset"]),
-:deep(.el-table-filter [class*="CONFIRM"]),
-:deep(.el-table-filter [class*="RESET"]) {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  height: 0 !important;
-  width: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  pointer-events: none !important;
-}
-
-// 隐藏筛选面板底部区域的所有子元素
-:deep(.el-table-filter__bottom *),
-:deep(.el-table-filter__footer *) {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  height: 0 !important;
-  width: 0 !important;
-  pointer-events: none !important;
-}
 
 @media (max-width: 768px) {
   .glass-card {
