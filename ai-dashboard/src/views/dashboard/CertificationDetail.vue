@@ -51,8 +51,11 @@ const parseMaturityFromQuery = (): '全部' | 'L1' | 'L2' | 'L3' => {
   return '全部'
 }
 
+// 初始化filters时，如果normalizedRole不是'0'，但roleOptions还没有数据，先设置为'0'
+// 等数据加载完成后再根据路由参数设置正确的值
+const initialRole = normalizedRole === '0' ? '0' : '0' // 先统一设置为'0'，避免显示数字
 const filters = ref<CertificationDetailFilters>({
-  role: normalizedRole,
+  role: initialRole,
   maturity: parseMaturityFromQuery(),
   departmentPath: parseDepartmentPathFromQuery(),
   jobCategory: (route.query.jobCategory as string) || undefined,
@@ -444,6 +447,16 @@ const fetchDetail = async () => {
     loading.value = false
     // 查询完成后，重置用户查询标志（下次如果是首次加载，会使用路由参数）
     isUserQuery.value = false
+    
+    // 数据加载完成后，根据路由参数设置正确的角色值
+    if (roleOptions.value.length > 0) {
+      const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
+      if (roleExists) {
+        filters.value.role = normalizedRole
+      } else {
+        filters.value.role = '0'
+      }
+    }
   }
 }
 
