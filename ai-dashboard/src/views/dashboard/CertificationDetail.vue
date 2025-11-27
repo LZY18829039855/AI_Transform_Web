@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -962,7 +962,26 @@ onBeforeUnmount(() => {
               </el-table-column>
             </el-table>
           </el-tab-pane>
-          <el-tab-pane label="AI 任职盘点" name="appointment">
+          <el-tab-pane name="appointment">
+            <template #label>
+              <span>AI 任职盘点</span>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+                style="margin-left: 4px;"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div>干部AI任职能力要求：</div>
+                    <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
+                    <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" min-width="140" />
