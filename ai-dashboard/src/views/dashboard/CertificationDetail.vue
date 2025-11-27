@@ -763,12 +763,12 @@ onBeforeUnmount(() => {
           </el-select>
         </el-form-item>
         <el-form-item label="角色视图">
-          <el-select v-model="filters.role" placeholder="全员" style="width: 150px">
+          <el-select v-model="filters.role" placeholder="全员" style="min-width: 260px">
             <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="成熟度">
-          <el-select v-model="filters.maturity" placeholder="全部" style="width: 140px">
+          <el-select v-model="filters.maturity" placeholder="全部" style="width: 160px">
             <el-option
               v-for="opt in detailData?.filters.maturityOptions ?? []"
               :key="opt.value"
@@ -1212,6 +1212,11 @@ onBeforeUnmount(() => {
   border-radius: $radius-lg;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
+  margin-bottom: $spacing-lg;
+
+  :deep(.el-card__body) {
+    padding-bottom: $spacing-lg;
+  }
 
   :deep(.el-table) {
     font-size: 12px;
