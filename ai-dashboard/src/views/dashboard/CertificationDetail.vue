@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
@@ -472,6 +472,20 @@ const resetFilters = () => {
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
+// 处理tab切换，防止页面滚动到顶部
+const handleTabClick = async (tab: { name: string }) => {
+  // 保存当前滚动位置
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+  // 使用nextTick确保在DOM更新后恢复滚动位置
+  await nextTick()
+  requestAnimationFrame(() => {
+    window.scrollTo({
+      top: scrollTop,
+      behavior: 'instant',
+    })
+  })
+}
+
 
 // 过滤认证记录（根据姓名和工号）
 const filteredCertificationRecords = computed(() => {
@@ -787,7 +801,7 @@ onBeforeUnmount(() => {
       </el-card>
 
       <el-card shadow="hover" class="detail-card">
-        <el-tabs v-model="activeTab" stretch class="detail-tabs">
+        <el-tabs v-model="activeTab" stretch class="detail-tabs" @tab-click="handleTabClick">
           <el-tab-pane label="AI 认证盘点" name="certification">
             <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
@@ -942,6 +956,12 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
+                min-width="140" 
+                sortable 
+              />
+              <el-table-column 
+                prop="positionSubCategory" 
+                label="职位子类" 
                 min-width="140" 
                 sortable 
               />
@@ -1200,6 +1220,11 @@ onBeforeUnmount(() => {
   :deep(.el-table th) {
     font-size: 12px;
     white-space: nowrap;
+    text-align: center;
+  }
+
+  :deep(.el-table th .cell) {
+    text-align: center;
   }
 
   :deep(.el-table td) {
