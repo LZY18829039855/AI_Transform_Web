@@ -60,8 +60,13 @@ const getOption = (): EChartsOption => {
   const counts = props.points.map((item) => item.count)
   const rates = props.points.map((item) => item.rate)
   const longestLabelLength = categories.reduce((max, label) => Math.max(max, label.length), 0)
-  const shouldWrapLabels = longestLabelLength > 4
-  const maxCharsPerLine = 4
+  
+  // 判断是否是职位类任职数据或职位类认证数据图表，且类别数量较多（>=20）时，每行显示2个字
+  const isJobCategoryChart = props.title === '职位类任职数据' || props.title === '职位类认证数据'
+  const hasManyCategories = categories.length >= 20
+  const maxCharsPerLine = (isJobCategoryChart && hasManyCategories) ? 2 : 4
+  
+  const shouldWrapLabels = longestLabelLength > maxCharsPerLine
   const axisLabelMargin = 8
   const fontSize = 12
   const lineHeight = fontSize * 1.2
@@ -171,6 +176,15 @@ const getOption = (): EChartsOption => {
         align: 'center',
         verticalAlign: 'top',
         formatter: (value: string) => {
+          // 如果是职位类图表且类别较多，强制每行显示2个字
+          if (isJobCategoryChart && hasManyCategories) {
+            const lines: string[] = []
+            for (let i = 0; i < value.length; i += maxCharsPerLine) {
+              lines.push(value.slice(i, i + maxCharsPerLine))
+            }
+            return lines.join('\n')
+          }
+          // 其他情况按原逻辑处理
           if (!shouldWrapLabels || value.length <= maxCharsPerLine) {
             return value
           }
