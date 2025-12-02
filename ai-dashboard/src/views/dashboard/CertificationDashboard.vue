@@ -126,18 +126,24 @@ const resolveCertificationRate = (item?: DepartmentCertStatistic | null) =>
 const resolveQualifiedRate = (item?: DepartmentCertStatistic | null) =>
   Number(item?.qualifiedRate ?? 0)
 const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
-  departmentStatistics.value.map((item) => ({
-    label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: resolveQualifiedCount(item),
-    rate: resolveQualifiedRate(item),
-  }))
+  departmentStatistics.value
+    .map((item) => ({
+      label: item.deptName?.trim().length ? item.deptName : item.deptCode,
+      count: resolveQualifiedCount(item),
+      rate: resolveQualifiedRate(item),
+    }))
+    .filter((item) => item.rate > 0)
+    .sort((a, b) => b.rate - a.rate)
 )
 const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
-  departmentStatistics.value.map((item) => ({
-    label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: resolveCertificationCount(item),
-    rate: resolveCertificationRate(item),
-  }))
+  departmentStatistics.value
+    .map((item) => ({
+      label: item.deptName?.trim().length ? item.deptName : item.deptCode,
+      count: resolveCertificationCount(item),
+      rate: resolveCertificationRate(item),
+    }))
+    .filter((item) => item.rate > 0)
+    .sort((a, b) => b.rate - a.rate)
 )
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
 const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
@@ -208,6 +214,22 @@ const jobCategoryCertificationLegendTotals = computed<Record<string, string> | u
     认证人数: `${resolveJobCategoryCertificationCount(total)}人`,
     占比: `${resolveJobCategoryCertificationRate(total)}%`,
   }
+})
+
+// 职位类任职数据（过滤和排序）
+const jobCategoryAppointmentPoints = computed<StaffChartPoint[]>(() => {
+  const points = dashboardData.value?.allStaff.jobCategoryAppointment ?? []
+  return points
+    .filter((item) => item.rate > 0)
+    .sort((a, b) => b.rate - a.rate)
+})
+
+// 职位类认证数据（过滤和排序）
+const jobCategoryCertificationPoints = computed<StaffChartPoint[]>(() => {
+  const points = dashboardData.value?.allStaff.jobCategoryCertification ?? []
+  return points
+    .filter((item) => item.rate > 0)
+    .sort((a, b) => b.rate - a.rate)
 })
 
 // 渐进式加载各个数据块
@@ -676,14 +698,15 @@ onActivated(() => {
                 >
                   <template #content>
                     <div style="line-height: 1.8;">
-                      <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
                       <div>数据科学与AI工程（ICT）</div>
                       <div>AI算法及应用（ICT）</div>
                       <div>AI软件工程与工具（ICT）</div>
                       <div>AI系统测试（ICT）</div>
-                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
-                      <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
-                      <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -764,25 +787,7 @@ onActivated(() => {
                   </template>
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationCompliance" min-width="140" align="center" header-align="center">
-                <template #header>
-                  <span>按要求AI任职人数占比</span>
-                  <el-tooltip
-                    placement="top"
-                    effect="dark"
-                  >
-                    <template #content>
-                      <div style="line-height: 1.8;">
-                        <div style="font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
-                        <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
-                        <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
-                      </div>
-                    </template>
-                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
-                </template>
+              <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <template v-if="(row as any).isL2CalculatedNonSoftware">
                     /
@@ -809,7 +814,11 @@ onActivated(() => {
                 >
                   <template #content>
                     <div style="line-height: 1.8;">
-                      <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
                       <div>AI算法技术</div>
                       <div>AI决策推理</div>
                       <div>AI图像语言语义</div>
@@ -903,7 +912,26 @@ onActivated(() => {
                   </template>
                 </template>
               </el-table-column>
-              <el-table-column prop="complianceRate" label="按要求持证率" min-width="130" align="center" header-align="center">
+              <el-table-column prop="complianceRate" min-width="130" align="center" header-align="center">
+                <template #header>
+                  <span>按要求持证率</span>
+                  <el-tooltip
+                    placement="top"
+                    effect="dark"
+                  >
+                    <template #content>
+                      <div style="line-height: 1.8;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">干部AI认证能力要求：</div>
+                        <div>软件类L2/L3干部要求在26年H1之前完成"AI算法技术"专业级认证；</div>
+                        <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
+                        <div>产品线管理团队成员按L2标准要求。</div>
+                      </div>
+                    </template>
+                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </template>
                 <template #default="{ row }">
                   <template v-if="(row as any).isL2CalculatedNonSoftware">
                     /
@@ -1001,7 +1029,7 @@ onActivated(() => {
           <BarLineChart
             v-else-if="dashboardData"
             title="职位类任职数据"
-            :points="dashboardData.allStaff.jobCategoryAppointment"
+            :points="jobCategoryAppointmentPoints"
             count-label="任职人数"
             rate-label="占比"
             :legend-totals="jobCategoryAppointmentLegendTotals"
@@ -1033,7 +1061,7 @@ onActivated(() => {
           <BarLineChart
             v-else-if="dashboardData"
             title="职位类认证数据"
-            :points="dashboardData.allStaff.jobCategoryCertification"
+            :points="jobCategoryCertificationPoints"
             count-label="认证人数"
             rate-label="占比"
             :legend-totals="jobCategoryCertificationLegendTotals"
