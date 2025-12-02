@@ -90,10 +90,12 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
       :row-class-name="getRowClassName"
     >
       <el-table-column
-        v-for="col in columns"
+        v-for="(col, index) in columns"
         :key="col.prop"
         :prop="col.prop"
         :min-width="col.width || 120"
+        :align="index === 0 ? 'left' : 'center'"
+        :header-align="index === 0 ? 'left' : 'center'"
       >
         <template #header>
           <span style="white-space: normal; word-break: break-word; line-height: 1.4;">{{ col.label }}</span>

@@ -681,6 +681,9 @@ onActivated(() => {
                       <div>AI算法及应用（ICT）</div>
                       <div>AI软件工程与工具（ICT）</div>
                       <div>AI系统测试（ICT）</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
+                      <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
+                      <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -701,7 +704,7 @@ onActivated(() => {
             :row-class-name="getRowClassName"
           >
               <!-- 合并的成熟度/职位类列 -->
-              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180">
+              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180" align="left" header-align="left">
                 <template #default="{ row }">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
@@ -711,9 +714,10 @@ onActivated(() => {
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="baseline" label="基线人数" min-width="80">
+              <el-table-column prop="baseline" label="基线人数" min-width="80" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
+                    v-if="row.jobCategory !== '非软件类'"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -721,11 +725,16 @@ onActivated(() => {
                   >
                     {{ formatNumber(row.baseline) }}
                   </el-link>
+                  <span v-else>{{ formatNumber(row.baseline) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="appointed" label="AI任职人数" min-width="100">
+              <el-table-column prop="appointed" label="AI任职人数" min-width="100" align="center" header-align="center">
                 <template #default="{ row }">
+                  <template v-if="row.jobCategory === '非软件类'">
+                    /
+                  </template>
                   <el-link
+                    v-else
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -735,19 +744,52 @@ onActivated(() => {
                   </el-link>
                 </template>
               </el-table-column>
-              <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130">
+              <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.appointedByRequirement) }}
+                  <template v-if="row.jobCategory === '非软件类'">
+                    /
+                  </template>
+                  <template v-else>
+                    {{ formatNumber(row.appointedByRequirement) }}
+                  </template>
                 </template>
               </el-table-column>
-              <el-table-column prop="appointmentRate" label="AI任职率" min-width="90">
+              <el-table-column prop="appointmentRate" label="AI任职率" min-width="90" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatPercent(row.appointmentRate) }}
+                  <template v-if="row.jobCategory === '非软件类'">
+                    /
+                  </template>
+                  <template v-else>
+                    {{ formatPercent(row.appointmentRate) }}
+                  </template>
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="140">
+              <el-table-column prop="certificationCompliance" min-width="140" align="center" header-align="center">
+                <template #header>
+                  <span>按要求AI任职人数占比</span>
+                  <el-tooltip
+                    placement="top"
+                    effect="dark"
+                  >
+                    <template #content>
+                      <div style="line-height: 1.8;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
+                        <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
+                        <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                      </div>
+                    </template>
+                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </template>
                 <template #default="{ row }">
-                  {{ formatPercent(row.certificationCompliance) }}
+                  <template v-if="row.jobCategory === '非软件类'">
+                    /
+                  </template>
+                  <template v-else>
+                    {{ formatPercent(row.certificationCompliance) }}
+                  </template>
                 </template>
               </el-table-column>
             </el-table>
@@ -791,7 +833,7 @@ onActivated(() => {
             :row-class-name="getRowClassName"
           >
               <!-- 合并的成熟度/职位类列 -->
-              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180">
+              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180" align="left" header-align="left">
                 <template #default="{ row }">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
@@ -801,7 +843,7 @@ onActivated(() => {
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="baseline" label="基线人数" min-width="110">
+              <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
                     type="primary"
@@ -813,7 +855,7 @@ onActivated(() => {
                   </el-link>
                 </template>
               </el-table-column>
-              <el-table-column prop="aiCertificateHolders" label="AI专业级持证人数" min-width="180">
+              <el-table-column prop="aiCertificateHolders" label="AI专业级持证人数" min-width="180" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
                     type="primary"
@@ -825,22 +867,22 @@ onActivated(() => {
                   </el-link>
                 </template>
               </el-table-column>
-              <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160">
+              <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatNumber(row.subjectTwoPassed) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150">
+              <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.certificateRate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="subjectTwoRate" label="科目二通过率" min-width="140">
+              <el-table-column prop="subjectTwoRate" label="科目二通过率" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.subjectTwoRate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="complianceRate" label="按要求持证率" min-width="130">
+              <el-table-column prop="complianceRate" label="按要求持证率" min-width="130" align="center" header-align="center">
                 <template #default="{ row }">
                   <span v-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
                     {{ formatPercent(row.complianceRate) }}
