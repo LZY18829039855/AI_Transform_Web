@@ -846,6 +846,7 @@ onActivated(() => {
               <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
+                    v-if="!(row as any).isL2CalculatedNonSoftware"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -853,11 +854,16 @@ onActivated(() => {
                   >
                     {{ formatNumber(row.baseline) }}
                   </el-link>
+                  <span v-else>{{ formatNumber(row.baseline) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="aiCertificateHolders" label="AI专业级持证人数" min-width="180" align="center" header-align="center">
                 <template #default="{ row }">
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
+                    /
+                  </template>
                   <el-link
+                    v-else
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -869,22 +875,40 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.subjectTwoPassed) }}
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
+                    /
+                  </template>
+                  <template v-else>
+                    {{ formatNumber(row.subjectTwoPassed) }}
+                  </template>
                 </template>
               </el-table-column>
               <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatPercent(row.certificateRate) }}
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
+                    /
+                  </template>
+                  <template v-else>
+                    {{ formatPercent(row.certificateRate) }}
+                  </template>
                 </template>
               </el-table-column>
               <el-table-column prop="subjectTwoRate" label="科目二通过率" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatPercent(row.subjectTwoRate) }}
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
+                    /
+                  </template>
+                  <template v-else>
+                    {{ formatPercent(row.subjectTwoRate) }}
+                  </template>
                 </template>
               </el-table-column>
               <el-table-column prop="complianceRate" label="按要求持证率" min-width="130" align="center" header-align="center">
                 <template #default="{ row }">
-                  <span v-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
+                    /
+                  </template>
+                  <span v-else-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
                     {{ formatPercent(row.complianceRate) }}
                   </span>
                   <span v-else style="color: #909399;">暂无数据</span>
