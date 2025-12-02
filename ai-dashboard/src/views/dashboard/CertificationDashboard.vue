@@ -717,7 +717,7 @@ onActivated(() => {
               <el-table-column prop="baseline" label="基线人数" min-width="80" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
-                    v-if="row.jobCategory !== '非软件类'"
+                    v-if="!(row as any).isL2CalculatedNonSoftware"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -730,7 +730,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="appointed" label="AI任职人数" min-width="100" align="center" header-align="center">
                 <template #default="{ row }">
-                  <template v-if="row.jobCategory === '非软件类'">
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
                     /
                   </template>
                   <el-link
@@ -746,7 +746,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130" align="center" header-align="center">
                 <template #default="{ row }">
-                  <template v-if="row.jobCategory === '非软件类'">
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
                     /
                   </template>
                   <template v-else>
@@ -756,7 +756,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="appointmentRate" label="AI任职率" min-width="90" align="center" header-align="center">
                 <template #default="{ row }">
-                  <template v-if="row.jobCategory === '非软件类'">
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
                     /
                   </template>
                   <template v-else>
@@ -784,7 +784,7 @@ onActivated(() => {
                   </el-tooltip>
                 </template>
                 <template #default="{ row }">
-                  <template v-if="row.jobCategory === '非软件类'">
+                  <template v-if="(row as any).isL2CalculatedNonSoftware">
                     /
                   </template>
                   <template v-else>

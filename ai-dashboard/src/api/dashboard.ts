@@ -316,10 +316,32 @@ export const fetchCadreData = async (
           isMaturityRow: true,
         })
 
+        // 用于L2等级计算非软件类人数
+        let l2SoftwareBaseline = 0
+        let l2HasNonSoftwareFromBackend = false
+
         maturity.jobCategoryStatistics.forEach((jobCategory) => {
           // 判断是否为软件类
           const isSoftwareCategory = jobCategory.jobCategory === '软件类' || jobCategory.jobCategory?.includes('软件')
+          // 判断是否为非软件类
+          const isNonSoftwareCategory = jobCategory.jobCategory === '非软件类'
           
+          // 对于L2等级，记录软件类基线人数，并检查后端是否返回了非软件类
+          if (maturity.maturityLevel === 'L2') {
+            if (isSoftwareCategory) {
+              l2SoftwareBaseline = jobCategory.baselineCount
+            }
+            if (isNonSoftwareCategory) {
+              l2HasNonSoftwareFromBackend = true
+            }
+          }
+
+          // L2等级的非软件类数据由前端计算，不显示后端返回的
+          if (maturity.maturityLevel === 'L2' && isNonSoftwareCategory) {
+            return // 跳过L2的非软件类数据，后面会由前端计算添加
+          }
+
+          // 其他情况正常显示
           rows.push({
             maturityLevel: '',
             jobCategory: jobCategory.jobCategory,
@@ -330,24 +352,25 @@ export const fetchCadreData = async (
             certificationCompliance: Number(jobCategory.qualifiedByRequirementRate ?? 0),
             isMaturityRow: false,
           })
-
-          // 对于L2等级的软件类，立即在后面添加非软件类数据
-          if (maturity.maturityLevel === 'L2' && isSoftwareCategory) {
-            const nonSoftwareBaseline = maturity.baselineCount - jobCategory.baselineCount
-            if (nonSoftwareBaseline > 0) {
-              rows.push({
-                maturityLevel: '',
-                jobCategory: '非软件类',
-                baseline: nonSoftwareBaseline,
-                appointed: null as any,
-                appointedByRequirement: null as any,
-                appointmentRate: null as any,
-                certificationCompliance: null as any,
-                isMaturityRow: false,
-              })
-            }
-          }
         })
+
+        // 对于L2等级，在软件类数据后面添加前端计算的非软件类数据
+        if (maturity.maturityLevel === 'L2' && l2SoftwareBaseline > 0) {
+          const nonSoftwareBaseline = maturity.baselineCount - l2SoftwareBaseline
+          if (nonSoftwareBaseline > 0) {
+            rows.push({
+              maturityLevel: '',
+              jobCategory: '非软件类',
+              baseline: nonSoftwareBaseline,
+              appointed: null as any,
+              appointedByRequirement: null as any,
+              appointmentRate: null as any,
+              certificationCompliance: null as any,
+              isMaturityRow: false,
+              isL2CalculatedNonSoftware: true, // 标记为L2前端计算的非软件类
+            } as any)
+          }
+        }
       } else {
         rows.push({
           maturityLevel: maturity.maturityLevel,
