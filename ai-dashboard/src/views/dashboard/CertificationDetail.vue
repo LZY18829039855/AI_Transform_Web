@@ -523,6 +523,15 @@ const filteredCertificationRecords = computed(() => {
     )
   }
   
+  // 按是否达标排序：达标（true）> 不达标（false）> 暂无数据（undefined）
+  records.sort((a, b) => {
+    if (a.isQualified === true && b.isQualified !== true) return -1
+    if (a.isQualified !== true && b.isQualified === true) return 1
+    if (a.isQualified === false && b.isQualified === undefined) return -1
+    if (a.isQualified === undefined && b.isQualified === false) return 1
+    return 0
+  })
+  
   return records
 })
 
@@ -548,6 +557,15 @@ const filteredAppointmentRecords = computed(() => {
       record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
     )
   }
+  
+  // 按是否达标排序：达标（true）> 不达标（false）> 暂无数据（undefined）
+  records.sort((a, b) => {
+    if (a.isQualified === true && b.isQualified !== true) return -1
+    if (a.isQualified !== true && b.isQualified === true) return 1
+    if (a.isQualified === false && b.isQualified === undefined) return -1
+    if (a.isQualified === undefined && b.isQualified === false) return 1
+    return 0
+  })
   
   return records
 })
@@ -817,6 +835,19 @@ onBeforeUnmount(() => {
         <el-tabs v-model="activeTab" stretch class="detail-tabs" @tab-click="handleTabClick">
           <el-tab-pane label="AI 认证盘点" name="certification">
             <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row size="small">
+              <el-table-column 
+                label="是否达标" 
+                min-width="120" 
+                sortable 
+                fixed="left"
+              >
+                <template #default="{ row }">
+                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isQualified) }}
+                  </el-tag>
+                  <span v-else style="color: #909399;">暂无数据</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" min-width="140" />
               <el-table-column 
@@ -948,18 +979,6 @@ onBeforeUnmount(() => {
                 min-width="160" 
                 sortable 
               />
-              <el-table-column 
-                label="是否达标" 
-                min-width="120" 
-                sortable 
-              >
-                <template #default="{ row }">
-                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
-                    {{ formatBoolean(row.isQualified) }}
-                  </el-tag>
-                  <span v-else style="color: #909399;">暂无数据</span>
-                </template>
-              </el-table-column>
             </el-table>
           </el-tab-pane>
           <el-tab-pane name="appointment">
@@ -983,6 +1002,19 @@ onBeforeUnmount(() => {
               </el-tooltip>
             </template>
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
+              <el-table-column 
+                label="是否达标" 
+                min-width="120" 
+                sortable 
+                fixed="left"
+              >
+                <template #default="{ row }">
+                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isQualified) }}
+                  </el-tag>
+                  <span v-else style="color: #909399;">暂无数据</span>
+                </template>
+              </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
               <el-table-column prop="employeeId" label="工号" min-width="140" />
               <el-table-column 
@@ -1131,18 +1163,6 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                label="是否达标" 
-                min-width="120" 
-                sortable 
-              >
-                <template #default="{ row }">
-                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
-                    {{ formatBoolean(row.isQualified) }}
-                  </el-tag>
                   <span v-else style="color: #909399;">暂无数据</span>
                 </template>
               </el-table-column>
