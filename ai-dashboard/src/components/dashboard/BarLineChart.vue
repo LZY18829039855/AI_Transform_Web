@@ -176,6 +176,10 @@ const getOption = (): EChartsOption => {
         align: 'center',
         verticalAlign: 'top',
         formatter: (value: string) => {
+          // 特殊处理：C Lab（模块）部门名称，让C Lab在一行，后面的（模块）在下一行
+          if (value === 'C Lab（模块）') {
+            return 'C Lab\n（模块）'
+          }
           // 如果是职位类图表且类别较多，强制每行显示2个字
           if (isJobCategoryChart && hasManyCategories) {
             const lines: string[] = []
