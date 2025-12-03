@@ -17,7 +17,6 @@ export function useDepartmentFilter() {
         {
           label: '云核心网产品线',
           value: 'CLOUD_CORE_NETWORK',
-          disabled: true,
           children: [],
         },
       ],
@@ -34,7 +33,6 @@ export function useDepartmentFilter() {
         {
           label: '云核心网产品线',
           value: 'CLOUD_CORE_NETWORK',
-          disabled: true,
           children: [],
         },
       ],
