@@ -845,7 +845,7 @@ onBeforeUnmount(() => {
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
                     {{ formatBoolean(row.isQualified) }}
                   </el-tag>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
@@ -943,7 +943,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -953,7 +953,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -964,7 +964,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1012,7 +1012,7 @@ onBeforeUnmount(() => {
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
                     {{ formatBoolean(row.isQualified) }}
                   </el-tag>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
@@ -1125,7 +1125,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1135,7 +1135,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1146,7 +1146,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1163,7 +1163,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
-                  <span v-else style="color: #909399;">暂无数据</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
             </el-table>
