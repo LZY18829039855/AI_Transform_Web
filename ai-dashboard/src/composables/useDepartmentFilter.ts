@@ -112,19 +112,23 @@ export function useDepartmentFilter() {
    * @param node 当前节点
    * @param resolve 回调函数，用于返回子节点数据
    */
-  const lazyLoadDepartments = async (node: DepartmentNode, resolve: (nodes: DepartmentNode[]) => void) => {
-    if (node.children && node.children.length > 0) {
-      // 如果已有子节点，直接返回
-      resolve(node.children)
+  const lazyLoadDepartments = async (node: any, resolve: (nodes: DepartmentNode[]) => void) => {
+    // 检查节点是否已经有数据，避免重复加载
+    const data = node.data || node
+    if (data.children && data.children.length > 0) {
+      resolve(data.children)
       return
     }
 
-    // 如果是二级部门（云核心网产品线），三级部门通过 deptId=0 查询
     if (node.value === 'CLOUD_CORE_NETWORK') {
       try {
         const departments = await fetchDepartmentChildren('0')
         const childNodes = departments.map(convertToDepartmentNode)
-        node.children = childNodes
+        if (node.data) {
+          node.data.children = childNodes
+        } else {
+          node.children = childNodes
+        }
         resolve(childNodes)
         return
       } catch (error) {
@@ -135,7 +139,7 @@ export function useDepartmentFilter() {
     }
 
     // 其他层级的部门正常懒加载
-    const childNodes = await loadChildDepartments(node.value, node)
+    const childNodes = await loadChildDepartments(node.value, node.data || node)
     resolve(childNodes)
   }
 
