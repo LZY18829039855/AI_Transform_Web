@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
@@ -484,7 +484,7 @@ const resetFilters = () => {
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
 // 处理tab切换，防止页面滚动到顶部
-const handleTabClick = async (tab: { name: string }) => {
+const handleTabClick = async () => {
   // 保存当前滚动位置
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop
   // 使用nextTick确保在DOM更新后恢复滚动位置
@@ -855,7 +855,7 @@ onBeforeUnmount(() => {
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
                     {{ formatBoolean(row.isQualified) }}
                   </el-tag>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
@@ -986,7 +986,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -998,7 +998,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1011,7 +1011,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1032,7 +1032,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -1077,7 +1077,7 @@ onBeforeUnmount(() => {
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
                     {{ formatBoolean(row.isQualified) }}
                   </el-tag>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
@@ -1229,7 +1229,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1241,7 +1241,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1254,7 +1254,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
@@ -1275,7 +1275,7 @@ onBeforeUnmount(() => {
               >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
+                  <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -1433,5 +1433,14 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.pending-data {
+  background-color: rgba(240, 242, 245, 0.7) !important;
+  color: #909399;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 12px;
 }
 </style>

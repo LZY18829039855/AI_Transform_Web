@@ -980,7 +980,7 @@ onActivated(() => {
                     <span v-else-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
                       {{ formatPercent(row.complianceRate) }}
                     </span>
-                    <span v-else style="color: #909399;">待提供数据</span>
+                    <span v-else class="pending-data">待提供数据</span>
                   </template>
                 </el-table-column>
               </el-table>
@@ -1317,14 +1317,9 @@ onActivated(() => {
     }
 
     :deep(.cell-placeholder-bg) {
-      background-color: #f0f2f5 !important;
+      background-color: rgba(240, 242, 245, 0.7) !important;
     }
   }
-}
-
-// 确保 cell-placeholder-bg 样式全局生效（针对当前组件的 scoped 样式穿透）
-:deep(.cell-placeholder-bg) {
-  background-color: rgba(240, 242, 245, 0.7) !important;
 }
 
 
@@ -1365,5 +1360,14 @@ onActivated(() => {
     flex-direction: column;
     gap: $spacing-md;
   }
+}
+
+.pending-data {
+  background-color: rgba(240, 242, 245, 0.7) !important;
+  color: #909399;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 12px;
 }
 </style>
