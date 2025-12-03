@@ -111,6 +111,10 @@ const getDeptCodeFromPath = (path?: string[]): string => {
     return '0'
   }
   const last = path[path.length - 1]
+  // 特殊处理：如果选中了 ICT_BG 或 云核心网产品线，视为一级部门，传0
+  if (last === 'ICT_BG' || last === 'CLOUD_CORE_NETWORK') {
+    return '0'
+  }
   return last && last.trim().length ? last : '0'
 }
 
@@ -122,18 +126,6 @@ const fetchDetail = async () => {
       normalizedRole === '1' && 
       route.query.column && 
       ['appointed', 'appointedByRequirement', 'baseline', 'aiCertificateHolders', 'certification'].includes(route.query.column as string)
-
-    // 检查是否是干部任职数据查询
-    const isCadreQualifiedQuery = 
-      normalizedRole === '1' && 
-      route.query.column && 
-      ['appointed', 'appointedByRequirement', 'baseline'].includes(route.query.column as string)
-
-    // 检查是否是干部认证数据查询
-    const isCadreCertQuery = 
-      normalizedRole === '1' && 
-      route.query.column && 
-      ['aiCertificateHolders', 'certification', 'baseline'].includes(route.query.column as string)
 
     if (isCadreQuery) {
       // 干部角色：同时加载任职和认证数据
@@ -151,12 +143,13 @@ const fetchDetail = async () => {
       if (isUserQuery.value) {
         // 用户点击查询按钮，使用筛选条件中的值
         if (aiMaturity && aiMaturity !== '全部') {
-          if (aiMaturity === 'L5') {
+          const maturityStr = aiMaturity as string
+          if (maturityStr === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
-          } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+          } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
             maturityParam = 'L5' // 总计行转换为L5
           } else {
-            maturityParam = aiMaturity
+            maturityParam = maturityStr
           }
         }
       } else {
@@ -164,12 +157,13 @@ const fetchDetail = async () => {
         if (maturityFromRoute === 'L5') {
           maturityParam = 'L5' // L5代表查询L2和L3的数据
         } else if (aiMaturity && aiMaturity !== '全部') {
-          if (aiMaturity === 'L5') {
+          const maturityStr = aiMaturity as string
+          if (maturityStr === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
-          } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+          } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
             maturityParam = 'L5' // 总计行转换为L5
           } else {
-            maturityParam = aiMaturity
+            maturityParam = maturityStr
           }
         }
       }
@@ -227,9 +221,10 @@ const fetchDetail = async () => {
             departmentLevel3: emp.thirdLevelDept || '',
             departmentLevel4: emp.fourthLevelDept || '',
             departmentLevel5: emp.fifthLevelDept || '',
+            departmentLevel6: emp.sixthLevelDept || '',
             minDepartment: emp.miniDeptName || '',
             certificateName: emp.certTitle || '',
-            certificateEffectiveDate: emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '',
+            certificateEffectiveDate: (emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '') as string,
             subjectTwoPassed: emp.isPassedSubject2 === 1,
             isCadre: emp.isCadre === 1,
             cadreType: emp.cadreType || undefined,
@@ -329,12 +324,13 @@ const fetchDetail = async () => {
         if (isUserQuery.value) {
           // 用户点击查询按钮，使用筛选条件中的值
           if (aiMaturity && aiMaturity !== '全部') {
-            if (aiMaturity === 'L5') {
+            const maturityStr = aiMaturity as string
+            if (maturityStr === 'L5') {
               maturityParam = 'L5' // L5代表查询L2和L3的数据
-            } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+            } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
               maturityParam = 'L5' // 总计行转换为L5
             } else {
-              maturityParam = aiMaturity
+              maturityParam = maturityStr
             }
           }
         } else {
@@ -342,12 +338,13 @@ const fetchDetail = async () => {
           if (maturityFromRoute === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
           } else if (aiMaturity && aiMaturity !== '全部') {
-            if (aiMaturity === 'L5') {
+            const maturityStr = aiMaturity as string
+            if (maturityStr === 'L5') {
               maturityParam = 'L5' // L5代表查询L2和L3的数据
-            } else if (aiMaturity === '总计' || aiMaturity === 'Total' || aiMaturity === 'total') {
+            } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
               maturityParam = 'L5' // 总计行转换为L5
             } else {
-              maturityParam = aiMaturity
+              maturityParam = maturityStr
             }
           }
         }
@@ -384,9 +381,10 @@ const fetchDetail = async () => {
               departmentLevel3: emp.thirdLevelDept || '',
               departmentLevel4: emp.fourthLevelDept || '',
               departmentLevel5: emp.fifthLevelDept || '',
+              departmentLevel6: emp.sixthLevelDept || '',
               minDepartment: emp.miniDeptName || '',
               certificateName: emp.certTitle || '',
-              certificateEffectiveDate: emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '',
+              certificateEffectiveDate: (emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '') as string,
               subjectTwoPassed: emp.isPassedSubject2 === 1,
               isCadre: emp.isCadre === 1,
               cadreType: emp.cadreType || undefined,
@@ -826,7 +824,7 @@ onBeforeUnmount(() => {
             <div class="summary-item">
               <p>{{ item.label }}</p>
               <h3>
-                {{ item.value }}
+                <span :class="{ 'is-placeholder': item.value === '待提供数据' }">{{ item.value }}</span>
                 <small v-if="item.unit">{{ item.unit }}</small>
               </h3>
             </div>
@@ -1300,6 +1298,12 @@ onBeforeUnmount(() => {
       font-size: 22px;
       font-weight: 700;
       color: $text-main-color;
+
+      .is-placeholder {
+        color: #909399;
+        font-weight: normal;
+        font-size: 16px;
+      }
 
       small {
         margin-left: 4px;
