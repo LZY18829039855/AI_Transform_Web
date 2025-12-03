@@ -860,7 +860,7 @@ onBeforeUnmount(() => {
                   <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
+              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
               <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
               <el-table-column 
                 prop="positionCategory" 
