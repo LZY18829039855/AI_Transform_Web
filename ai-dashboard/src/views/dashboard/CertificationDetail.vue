@@ -842,7 +842,16 @@ onBeforeUnmount(() => {
                 label="是否达标" 
                 min-width="120" 
                 sortable 
+                :sort-method="(a, b) => {
+                  if (a.isQualified === true && b.isQualified !== true) return -1
+                  if (a.isQualified !== true && b.isQualified === true) return 1
+                  if (a.isQualified === false && b.isQualified === undefined) return -1
+                  if (a.isQualified === undefined && b.isQualified === false) return 1
+                  return 0
+                }"
                 fixed="left"
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
@@ -852,71 +861,98 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column prop="name" label="姓名" min-width="120" fixed="left" />
-              <el-table-column prop="employeeId" label="工号" min-width="140" />
+              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
                 sortable 
-              />
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
+                </template>
+              </el-table-column>
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="departmentLevel2" 
                 label="二级部门" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="departmentLevel3" 
                 label="三级部门" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="departmentLevel4" 
                 label="四级部门" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="departmentLevel5" 
                 label="五级部门" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="minDepartment" 
                 label="最小部门" 
                 min-width="160" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
                 min-width="160" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="certificateEffectiveDate" 
                 label="证书生效日期" 
                 min-width="160" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 label="是否通过科目二" 
                 min-width="150" 
                 sortable 
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
@@ -928,6 +964,8 @@ onBeforeUnmount(() => {
                 label="是否干部" 
                 min-width="110" 
                 sortable 
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   {{ formatBoolean(row.isCadre) }}
@@ -938,11 +976,15 @@ onBeforeUnmount(() => {
                 label="干部类型" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 label="是否专家" 
                 min-width="110" 
                 sortable 
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
@@ -953,6 +995,8 @@ onBeforeUnmount(() => {
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
@@ -964,6 +1008,8 @@ onBeforeUnmount(() => {
                 label="组织AI成熟度" 
                 min-width="150" 
                 sortable 
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
@@ -975,12 +1021,16 @@ onBeforeUnmount(() => {
                 label="岗位AI成熟度" 
                 min-width="150" 
                 sortable 
+                align="center"
+                header-align="center"
               />
               <el-table-column 
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
                 sortable 
+                align="center"
+                header-align="center"
               >
                 <template #default="{ row }">
                   <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
@@ -1014,6 +1064,13 @@ onBeforeUnmount(() => {
                 label="是否达标" 
                 min-width="120" 
                 sortable 
+                :sort-method="(a, b) => {
+                  if (a.isQualified === true && b.isQualified !== true) return -1
+                  if (a.isQualified !== true && b.isQualified === true) return 1
+                  if (a.isQualified === false && b.isQualified === undefined) return -1
+                  if (a.isQualified === undefined && b.isQualified === false) return 1
+                  return 0
+                }"
                 fixed="left"
                 align="center"
                 header-align="center"
@@ -1042,7 +1099,12 @@ onBeforeUnmount(() => {
                 sortable 
                 align="center"
                 header-align="center"
-              />
+              >
+                <template #default="{ row }">
+                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
+                </template>
+              </el-table-column>
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
