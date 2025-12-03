@@ -578,22 +578,25 @@ const summaryMetrics = computed(() => {
   const qualifiedCount = certificationRecords.filter((item) => item.isQualified).length
   const appointmentQualified = appointmentRecords.filter((item) => item.isQualified).length
 
+  const certificationRate = certificationRecords.length
+    ? Math.round((qualifiedCount / certificationRecords.length) * 100)
+    : 0
+  const appointmentRate = appointmentRecords.length
+    ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
+    : 0
+
   return [
     { label: '认证记录', value: certificationRecords.length, unit: '条' },
     { label: '任职记录', value: appointmentRecords.length, unit: '条' },
     {
       label: '认证达标率',
-      value: certificationRecords.length
-        ? Math.round((qualifiedCount / certificationRecords.length) * 100)
-        : 0,
-      unit: '%',
+      value: certificationRate === 0 ? '待提供数据' : certificationRate,
+      unit: certificationRate === 0 ? '' : '%',
     },
     {
       label: '任职达标率',
-      value: appointmentRecords.length
-        ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
-        : 0,
-      unit: '%',
+      value: appointmentRate === 0 ? '待提供数据' : appointmentRate,
+      unit: appointmentRate === 0 ? '' : '%',
     },
   ]
 })
@@ -824,7 +827,7 @@ onBeforeUnmount(() => {
               <p>{{ item.label }}</p>
               <h3>
                 {{ item.value }}
-                <small>{{ item.unit }}</small>
+                <small v-if="item.unit">{{ item.unit }}</small>
               </h3>
             </div>
           </el-col>
@@ -978,7 +981,12 @@ onBeforeUnmount(() => {
                 label="要求持证类型" 
                 min-width="160" 
                 sortable 
-              />
+              >
+                <template #default="{ row }">
+                  <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
+                </template>
+              </el-table-column>
             </el-table>
           </el-tab-pane>
           <el-tab-pane name="appointment">
