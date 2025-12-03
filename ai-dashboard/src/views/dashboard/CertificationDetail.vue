@@ -77,7 +77,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     id: employee.employeeNumber || '',
     name: employee.name || '',
     employeeId: employee.employeeNumber || '',
-    positionCategory: employee.competenceCategoryCn || employee.competenceCategory || '',
+    positionCategory: employee.competenceCategory || employee.competenceCategoryCn || '',
     positionSubCategory: '', // 职位子类为空，不展示
     departmentLevel1: employee.firstLevelDept || '',
     departmentLevel2: employee.secondLevelDept || '',
