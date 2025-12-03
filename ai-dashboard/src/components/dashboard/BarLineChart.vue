@@ -277,7 +277,7 @@ useResizeObserver(chartRef, () => {
       </div>
     </template>
     <div v-if="points.length" ref="chartRef" class="chart-wrapper" :style="{ height: `${height}px` }" />
-    <el-empty v-else description="暂无数据" :image-size="80" />
+    <el-empty v-else description="待提供数据" :image-size="80" />
   </el-card>
 </template>
 

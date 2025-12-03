@@ -615,7 +615,7 @@ onActivated(() => {
             </el-tooltip>
           </template>
         </CertificationSummaryTable>
-        <el-empty v-else description="暂无数据" :image-size="80" />
+        <el-empty v-else description="待提供数据" :image-size="80" />
       </el-col>
       <!-- 2. 专家任职数据 -->
       <el-col :xs="24" :lg="24">
@@ -683,7 +683,7 @@ onActivated(() => {
             </el-tooltip>
           </template>
         </CertificationSummaryTable>
-        <el-empty v-else description="暂无数据" :image-size="80" />
+        <el-empty v-else description="待提供数据" :image-size="80" />
       </el-col>
       <!-- 3. 干部任职数据 -->
       <el-col :xs="24" :lg="24">
@@ -727,7 +727,7 @@ onActivated(() => {
             :row-class-name="getRowClassName"
           >
               <!-- 合并的成熟度/职位类列 -->
-              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180" align="left" header-align="left">
+              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180" align="left" header-align="center">
                 <template #default="{ row }">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
@@ -798,7 +798,7 @@ onActivated(() => {
                 </template>
               </el-table-column>
             </el-table>
-          <el-empty v-else description="暂无数据" :image-size="80" />
+          <el-empty v-else description="待提供数据" :image-size="80" />
         </el-card>
       </el-col>
       <!-- 4. 干部认证数据 -->
@@ -842,7 +842,7 @@ onActivated(() => {
             :row-class-name="getRowClassName"
           >
               <!-- 合并的成熟度/职位类列 -->
-              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180" align="left" header-align="left">
+              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180" align="left" header-align="center">
                 <template #default="{ row }">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
@@ -943,7 +943,7 @@ onActivated(() => {
                 </template>
               </el-table-column>
             </el-table>
-          <el-empty v-else description="暂无数据" :image-size="80" />
+          <el-empty v-else description="待提供数据" :image-size="80" />
         </el-card>
       </el-col>
     </el-row>
