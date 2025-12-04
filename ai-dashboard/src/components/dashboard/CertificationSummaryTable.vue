@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ElEmpty } from 'element-plus'
 import { useRouter } from 'vue-router'
 
 interface TableColumn {
@@ -82,7 +81,6 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
     </div>
     <div class="summary-table-body">
       <el-table
-        v-if="data && data.length > 0"
         :data="data"
         border
         stripe
@@ -116,8 +114,10 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
             </span>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty description="待提供数据" :image-size="80" />
+        </template>
       </el-table>
-      <el-empty v-else description="待提供数据" :image-size="80" />
     </div>
   </div>
 </template>
