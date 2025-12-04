@@ -1207,9 +1207,9 @@ onActivated(() => {
             </div>
           </div>
           <div class="charts-filter">
-            <el-form :inline="true" :model="filters" label-width="0">
-              <el-form-item>
-                <el-select v-model="filters.role" placeholder="角色视图" style="width: 160px">
+            <el-form :inline="true" :model="filters" label-width="80">
+              <el-form-item label="角色视图">
+                <el-select v-model="filters.role" placeholder="全员" style="width: 160px">
                   <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
                 </el-select>
               </el-form-item>
@@ -1582,6 +1582,11 @@ onActivated(() => {
   .charts-filter {
     display: flex;
     align-items: center;
+
+    :deep(.el-form-item__label) {
+      font-weight: 600;
+      font-size: 16px;
+    }
   }
 }
 
