@@ -522,13 +522,15 @@ const filteredCertificationRecords = computed(() => {
     )
   }
   
-  // 按是否达标排序：达标（true）> 不达标（false）> 暂无数据（undefined）
+  // 按是否达标排序：达标（true）排在前面，不达标（false）排在后面，暂无数据（undefined）排在最后
   records.sort((a, b) => {
-    if (a.isCertStandard === true && b.isCertStandard !== true) return -1
-    if (a.isCertStandard !== true && b.isCertStandard === true) return 1
-    if (a.isCertStandard === false && b.isCertStandard === undefined) return -1
-    if (a.isCertStandard === undefined && b.isCertStandard === false) return 1
-    return 0
+    // 将 true 映射为 0（最前），false 映射为 1（中间），undefined 映射为 2（最后）
+    const getSortValue = (value) => {
+      if (value === true) return 0
+      if (value === false) return 1
+      return 2 // undefined
+    }
+    return getSortValue(a.isCertStandard) - getSortValue(b.isCertStandard)
   })
   
   return records
@@ -1086,7 +1088,7 @@ onBeforeUnmount(() => {
               height="520" 
               highlight-current-row 
               size="small"
-              :default-sort="{ prop: 'isCertStandard', order: 'descending' }"
+              :default-sort="{ prop: 'isCertStandard', order: 'ascending' }"
             >
               <el-table-column 
                 label="是否达标" 
@@ -1094,11 +1096,13 @@ onBeforeUnmount(() => {
                 sortable 
                 prop="isCertStandard"
                 :sort-method="(a, b) => {
-                  if (a.isCertStandard === true && b.isCertStandard !== true) return -1
-                  if (a.isCertStandard !== true && b.isCertStandard === true) return 1
-                  if (a.isCertStandard === false && b.isCertStandard === undefined) return -1
-                  if (a.isCertStandard === undefined && b.isCertStandard === false) return 1
-                  return 0
+                  // 将 true 映射为 0（最前），false 映射为 1（中间），undefined 映射为 2（最后）
+                  const getSortValue = (value) => {
+                    if (value === true) return 0
+                    if (value === false) return 1
+                    return 2 // undefined
+                  }
+                  return getSortValue(a.isCertStandard) - getSortValue(b.isCertStandard)
                 }"
                 fixed="left"
                 align="center"
