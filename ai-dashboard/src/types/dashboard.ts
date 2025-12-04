@@ -291,6 +291,7 @@ export interface CertificationAuditRecord {
   positionMaturity?: 'L1' | 'L2' | 'L3'
   requiredCertificate: string
   isQualified?: boolean
+  isCertStandard?: boolean
 }
 
 export interface AppointmentAuditRecord {
@@ -689,6 +690,7 @@ export interface EmployeeDetailVO {
   competenceFrom?: string
   competenceTo?: string
   isQualificationsStandard?: number
+  isCertStandard?: number
 }
 
 /**

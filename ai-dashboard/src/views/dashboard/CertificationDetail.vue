@@ -234,6 +234,7 @@ const fetchDetail = async () => {
             positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
             requiredCertificate: '',
             isQualified: undefined, // 暂无数据
+            isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
           })
         )
       }
@@ -1084,10 +1085,10 @@ onBeforeUnmount(() => {
                 min-width="120" 
                 sortable 
                 :sort-method="(a, b) => {
-                  if (a.isQualified === true && b.isQualified !== true) return -1
-                  if (a.isQualified !== true && b.isQualified === true) return 1
-                  if (a.isQualified === false && b.isQualified === undefined) return -1
-                  if (a.isQualified === undefined && b.isQualified === false) return 1
+                  if (a.isCertStandard === true && b.isCertStandard !== true) return -1
+                  if (a.isCertStandard !== true && b.isCertStandard === true) return 1
+                  if (a.isCertStandard === false && b.isCertStandard === undefined) return -1
+                  if (a.isCertStandard === undefined && b.isCertStandard === false) return 1
                   return 0
                 }"
                 fixed="left"
@@ -1095,8 +1096,8 @@ onBeforeUnmount(() => {
                 header-align="center"
               >
                 <template #default="{ row }">
-                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
-                    {{ formatBoolean(row.isQualified) }}
+                  <el-tag v-if="row.isCertStandard !== undefined" :type="row.isCertStandard ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isCertStandard) }}
                   </el-tag>
                   <span v-else class="pending-data">待提供数据</span>
                 </template>

@@ -1084,26 +1084,16 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                   <template #default="{ row }">
-                    <el-link
-                      type="primary"
-                      :underline="false"
-                      class="clickable-cell"
-                      @click="handleExpertQualifiedCellClick(row, 'baseline')"
-                    >
+                    <span style="color: #909399;">
                       {{ formatNumber(row.baseline) }}
-                    </el-link>
+                    </span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="appointed" label="AI任职人数" min-width="130" align="center" header-align="center">
                   <template #default="{ row }">
-                    <el-link
-                      type="primary"
-                      :underline="false"
-                      class="clickable-cell"
-                      @click="handleExpertQualifiedCellClick(row, 'appointed')"
-                    >
+                    <span style="color: #909399;">
                       {{ formatNumber(row.appointed) }}
-                    </el-link>
+                    </span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="appointmentRate" label="AI任职率" min-width="130" align="center" header-align="center">
@@ -1181,26 +1171,16 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                   <template #default="{ row }">
-                    <el-link
-                      type="primary"
-                      :underline="false"
-                      class="clickable-cell"
-                      @click="handleExpertCertCellClick(row, 'baseline')"
-                    >
+                    <span style="color: #909399;">
                       {{ formatNumber(row.baseline) }}
-                    </el-link>
+                    </span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certified" label="已完成AI认证人数" min-width="170" align="center" header-align="center">
                   <template #default="{ row }">
-                    <el-link
-                      type="primary"
-                      :underline="false"
-                      class="clickable-cell"
-                      @click="handleExpertCertCellClick(row, 'certified')"
-                    >
+                    <span style="color: #909399;">
                       {{ formatNumber(row.certified) }}
-                    </el-link>
+                    </span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certificationRate" label="AI认证人数占比" min-width="150" align="center" header-align="center">
