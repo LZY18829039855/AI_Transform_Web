@@ -413,6 +413,28 @@ export interface CadreMaturityJobCategoryQualifiedStatisticsResponse {
   totalStatistics: CadreMaturityQualifiedStatistics
 }
 
+export interface ExpertJobCategoryCertStatistics {
+  jobCategory: string
+  baselineCount: number
+  certifiedCount: number
+  certRate: number
+}
+
+export interface ExpertMaturityCertStatistics {
+  maturityLevel: string
+  baselineCount: number
+  certifiedCount: number
+  certRate: number
+  jobCategoryStatistics?: ExpertJobCategoryCertStatistics[]
+}
+
+export interface ExpertAiCertStatisticsResponse {
+  deptCode: string
+  deptName: string
+  maturityStatistics: ExpertMaturityCertStatistics[]
+  totalStatistics: ExpertMaturityCertStatistics
+}
+
 export interface SelectOption<T extends string> {
   label: string
   value: T

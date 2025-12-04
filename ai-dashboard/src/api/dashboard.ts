@@ -5,6 +5,7 @@ import type {
   CadreCertificationSummaryRow,
   CadreMaturityJobCategoryCertStatisticsResponse,
   CadreMaturityJobCategoryQualifiedStatisticsResponse,
+  ExpertAiCertStatisticsResponse,
   CertificationAuditRecord,
   CertificationDashboardData,
   CertificationDashboardFilters,
@@ -176,6 +177,27 @@ export const fetchCadreMaturityJobCategoryQualifiedStatistics = async (
   }
 }
 
+export const fetchExpertAiCertStatistics = async (
+  deptCode: string
+): Promise<ExpertAiCertStatisticsResponse | null> => {
+  try {
+    const query = new URLSearchParams({
+      deptCode: deptCode || '0',
+    })
+    const response = await get<Result<ExpertAiCertStatisticsResponse>>(
+      `/expert-cert-statistics/expert-ai-cert-statistics?${query.toString()}`
+    )
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取专家AI认证数据失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取专家AI认证数据异常：', error)
+    return null
+  }
+}
+
 export const fetchMaturityMetrics = async (): Promise<MetricItem[]> => {
   return []
 }
@@ -202,12 +224,79 @@ export const fetchCertificationDetail = async (id: string): Promise<Certificatio
 }
 
 // 获取专家认证和任职数据
-export const fetchExpertData = async (): Promise<{
+export const fetchExpertData = async (
+  deptCode: string
+): Promise<{
   certification: ExpertCertificationSummaryRow[]
   appointment: ExpertAppointmentSummaryRow[]
 }> => {
   await delay()
-  return await fetchExpertCertificationSummary()
+  const [expertData, expertCertStats] = await Promise.all([
+    fetchExpertCertificationSummary(),
+    fetchExpertAiCertStatistics(deptCode),
+  ])
+
+  // 将专家AI认证数据转换为表格格式
+  const mapExpertCertStatsToRows = (
+    stats?: ExpertAiCertStatisticsResponse | null
+  ): ExpertCertificationSummaryRow[] => {
+    if (!stats || !stats.maturityStatistics || stats.maturityStatistics.length === 0) {
+      return expertData.certification
+    }
+
+    const rows: ExpertCertificationSummaryRow[] = []
+
+    stats.maturityStatistics.forEach((maturity) => {
+      if (maturity.jobCategoryStatistics && maturity.jobCategoryStatistics.length > 0) {
+        // 添加成熟度行
+        rows.push({
+          maturityLevel: maturity.maturityLevel,
+          jobCategory: '',
+          baseline: maturity.baselineCount,
+          certified: maturity.certifiedCount,
+          certificationRate: Number(maturity.certRate),
+        })
+
+        // 添加职位类明细行
+        maturity.jobCategoryStatistics.forEach((jobCategory) => {
+          rows.push({
+            maturityLevel: '',
+            jobCategory: jobCategory.jobCategory,
+            baseline: jobCategory.baselineCount,
+            certified: jobCategory.certifiedCount,
+            certificationRate: Number(jobCategory.certRate),
+          })
+        })
+      } else {
+        // 如果没有职位类明细，只添加成熟度行
+        rows.push({
+          maturityLevel: maturity.maturityLevel,
+          jobCategory: '',
+          baseline: maturity.baselineCount,
+          certified: maturity.certifiedCount,
+          certificationRate: Number(maturity.certRate),
+        })
+      }
+    })
+
+    // 添加总计行
+    if (stats.totalStatistics) {
+      rows.push({
+        maturityLevel: '总计',
+        jobCategory: '',
+        baseline: stats.totalStatistics.baselineCount,
+        certified: stats.totalStatistics.certifiedCount,
+        certificationRate: Number(stats.totalStatistics.certRate),
+      })
+    }
+
+    return rows.length > 0 ? rows : expertData.certification
+  }
+
+  return {
+    certification: mapExpertCertStatsToRows(expertCertStats),
+    appointment: expertData.appointment,
+  }
 }
 
 // 获取干部认证和任职数据

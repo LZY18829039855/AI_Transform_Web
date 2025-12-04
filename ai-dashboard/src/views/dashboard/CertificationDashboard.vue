@@ -294,7 +294,8 @@ const organizationCertificationPoints = computed<StaffChartPoint[]>(() => {
 const loadExpertData = async () => {
   loadingExpert.value = true
   try {
-    expertData.value = await fetchExpertData()
+    const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+    expertData.value = await fetchExpertData(deptCode)
   } catch (error) {
     console.error('加载专家数据失败:', error)
   } finally {
@@ -410,6 +411,55 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
     jobCategory: jobCategory || undefined,
     role: filters.value.role,
     deptCode: deptCode,
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理专家认证数据表格的点击事件
+const handleExpertCertCellClick = (row: Record<string, unknown>, column: string) => {
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取成熟度级别和职位类
+  let maturityLevel = (row.maturityLevel as string) || ''
+  const jobCategory = (row.jobCategory as string) || ''
+  
+  // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
+  if (!maturityLevel && jobCategory && expertData.value?.certification) {
+    const currentIndex = expertData.value.certification.findIndex(
+      (r) => r === row
+    )
+    // 向上查找最近的成熟度行
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevRow = expertData.value.certification[i]
+      if (prevRow && prevRow.maturityLevel) {
+        maturityLevel = prevRow.maturityLevel as string
+        break
+      }
+    }
+  }
+  
+  // 如果是总计行，将成熟度置为L5（代表查询L2和L3的数据）
+  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
+    maturityLevel = 'L5'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    column,
+    maturity: maturityLevel || undefined,
+    jobCategory: jobCategory || undefined,
+    role: '2', // 强制设置为专家角色
+    deptCode: deptCode,
+    source: 'certification', // 标识来自专家认证数据表格
   }
   
   // 如果部门路径存在，添加到查询参数中
@@ -571,15 +621,28 @@ const resetFilters = () => {
   }
 }
 
+// 监听部门路径变化：影响专家、干部、部门和职位类数据
 watch(
-  filters,
+  () => filters.value.departmentPath,
   () => {
-    // 筛选条件改变时，只重新加载依赖筛选条件的数据块
+    // 部门筛选条件改变时，重新加载依赖部门的数据块
+    loadExpertData()
     loadCadreData()
     loadDepartmentStats()
     loadJobCategoryStats()
   },
   { deep: true }
+)
+
+// 监听角色视图变化：只影响全员相关的部门和职位类数据
+watch(
+  () => filters.value.role,
+  () => {
+    // 角色视图切换时，只刷新全员相关的统计数据（部门和职位类）
+    // 专家和干部数据不受角色视图影响，不需要刷新
+    loadDepartmentStats()
+    loadJobCategoryStats()
+  }
 )
 
 onMounted(() => {
@@ -924,61 +987,7 @@ onActivated(() => {
         </div>
       </template>
     <el-row :gutter="16" class="summary-table-grid">
-      <!-- 1. 专家认证数据 -->
-        <el-col :xs="24" :lg="24">
-          <el-skeleton :rows="4" animated v-if="loadingExpert" />
-          <CertificationSummaryTable
-            v-else-if="expertData"
-            title="专家AI认证数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'certified',
-                label: '已完成AI认证人数',
-                width: 170,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'certificationRate',
-                label: 'AI认证人数占比',
-                width: 150,
-                valueType: 'percent',
-              },
-            ]"
-            :data="expertData.certification"
-            :on-cell-click="handleCellClick"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                    <div>AI算法技术</div>
-                    <div>AI决策推理</div>
-                    <div>AI图像语言语义</div>
-                  </div>
-                </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
-            </template>
-          </CertificationSummaryTable>
-          <el-empty v-else description="待提供数据" :image-size="80" />
-        </el-col>
-        <!-- 2. 专家任职数据 -->
+      <!-- 1. 专家任职数据 -->
         <el-col :xs="24" :lg="24">
           <el-skeleton :rows="4" animated v-if="loadingExpert" />
           <CertificationSummaryTable
@@ -1036,6 +1045,60 @@ onActivated(() => {
                     <div>AI算法及应用（ICT）</div>
                     <div>AI软件工程与工具（ICT）</div>
                     <div>AI系统测试（ICT）</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
+          </CertificationSummaryTable>
+          <el-empty v-else description="待提供数据" :image-size="80" />
+        </el-col>
+        <!-- 2. 专家认证数据 -->
+        <el-col :xs="24" :lg="24">
+          <el-skeleton :rows="4" animated v-if="loadingExpert" />
+          <CertificationSummaryTable
+            v-else-if="expertData"
+            title="专家AI认证数据"
+            :columns="[
+              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
+              { prop: 'jobCategory', label: '职位类', width: 140 },
+              {
+                prop: 'baseline',
+                label: '基线人数',
+                width: 110,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'certified',
+                label: '已完成AI认证人数',
+                width: 170,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'certificationRate',
+                label: 'AI认证人数占比',
+                width: 150,
+                valueType: 'percent',
+              },
+            ]"
+            :data="expertData.certification"
+            :on-cell-click="handleExpertCertCellClick"
+          >
+            <template #title-suffix>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                    <div>AI算法技术</div>
+                    <div>AI决策推理</div>
+                    <div>AI图像语言语义</div>
                   </div>
                 </template>
                 <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
