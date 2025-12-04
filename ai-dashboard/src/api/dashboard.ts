@@ -6,6 +6,7 @@ import type {
   CadreMaturityJobCategoryCertStatisticsResponse,
   CadreMaturityJobCategoryQualifiedStatisticsResponse,
   ExpertAiCertStatisticsResponse,
+  ExpertAiQualifiedStatisticsResponse,
   CertificationAuditRecord,
   CertificationDashboardData,
   CertificationDashboardFilters,
@@ -198,6 +199,27 @@ export const fetchExpertAiCertStatistics = async (
   }
 }
 
+export const fetchExpertAiQualifiedStatistics = async (
+  deptCode: string
+): Promise<ExpertAiQualifiedStatisticsResponse | null> => {
+  try {
+    const query = new URLSearchParams({
+      deptCode: deptCode || '0',
+    })
+    const response = await get<Result<ExpertAiQualifiedStatisticsResponse>>(
+      `/expert-cert-statistics/expert-ai-qualified-statistics?${query.toString()}`
+    )
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取专家AI任职数据失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取专家AI任职数据异常：', error)
+    return null
+  }
+}
+
 export const fetchMaturityMetrics = async (): Promise<MetricItem[]> => {
   return []
 }
@@ -231,9 +253,10 @@ export const fetchExpertData = async (
   appointment: ExpertAppointmentSummaryRow[]
 }> => {
   await delay()
-  const [expertData, expertCertStats] = await Promise.all([
+  const [expertData, expertCertStats, expertQualifiedStats] = await Promise.all([
     fetchExpertCertificationSummary(),
     fetchExpertAiCertStatistics(deptCode),
+    fetchExpertAiQualifiedStatistics(deptCode),
   ])
 
   // 将专家AI认证数据转换为表格格式
@@ -340,9 +363,78 @@ export const fetchExpertData = async (
     return rows.length > 0 ? rows : expertData.certification
   }
 
+  // 将专家AI任职数据转换为表格格式
+  const mapExpertQualifiedStatsToRows = (
+    stats?: ExpertAiQualifiedStatisticsResponse | null
+  ): (ExpertAppointmentSummaryRow & { isMaturityRow?: boolean })[] => {
+    if (!stats || !stats.maturityStatistics || stats.maturityStatistics.length === 0) {
+      return expertData.appointment
+    }
+
+    const rows: (ExpertAppointmentSummaryRow & { isMaturityRow?: boolean })[] = []
+
+    stats.maturityStatistics.forEach((maturity) => {
+      if (maturity.jobCategoryStatistics && maturity.jobCategoryStatistics.length > 0) {
+        // 添加成熟度行
+        rows.push({
+          maturityLevel: maturity.maturityLevel,
+          jobCategory: '',
+          baseline: maturity.baselineCount,
+          appointed: maturity.qualifiedCount,
+          appointedByRequirement: 0, // 后端接口暂未返回此字段
+          appointmentRate: Number(maturity.qualifiedRate),
+          certificationCompliance: 0, // 后端接口暂未返回此字段
+          isMaturityRow: true,
+        })
+
+        // 添加职位类明细行
+        maturity.jobCategoryStatistics.forEach((jobCategory) => {
+          rows.push({
+            maturityLevel: '',
+            jobCategory: jobCategory.jobCategory,
+            baseline: jobCategory.baselineCount,
+            appointed: jobCategory.qualifiedCount,
+            appointedByRequirement: 0, // 后端接口暂未返回此字段
+            appointmentRate: Number(jobCategory.qualifiedRate),
+            certificationCompliance: 0, // 后端接口暂未返回此字段
+            isMaturityRow: false,
+          })
+        })
+      } else {
+        // 如果没有职位类明细，只添加成熟度行
+        rows.push({
+          maturityLevel: maturity.maturityLevel,
+          jobCategory: '',
+          baseline: maturity.baselineCount,
+          appointed: maturity.qualifiedCount,
+          appointedByRequirement: 0, // 后端接口暂未返回此字段
+          appointmentRate: Number(maturity.qualifiedRate),
+          certificationCompliance: 0, // 后端接口暂未返回此字段
+          isMaturityRow: true,
+        })
+      }
+    })
+
+    // 添加总计行
+    if (stats.totalStatistics) {
+      rows.push({
+        maturityLevel: '总计',
+        jobCategory: '',
+        baseline: stats.totalStatistics.baselineCount,
+        appointed: stats.totalStatistics.qualifiedCount,
+        appointedByRequirement: 0, // 后端接口暂未返回此字段
+        appointmentRate: Number(stats.totalStatistics.qualifiedRate),
+        certificationCompliance: 0, // 后端接口暂未返回此字段
+        isMaturityRow: true,
+      })
+    }
+
+    return rows.length > 0 ? rows : expertData.appointment
+  }
+
   return {
     certification: mapExpertCertStatsToRows(expertCertStats),
-    appointment: expertData.appointment,
+    appointment: mapExpertQualifiedStatsToRows(expertQualifiedStats),
   }
 }
 

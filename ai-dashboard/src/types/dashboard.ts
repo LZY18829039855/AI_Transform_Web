@@ -435,6 +435,28 @@ export interface ExpertAiCertStatisticsResponse {
   totalStatistics: ExpertMaturityCertStatistics
 }
 
+export interface ExpertJobCategoryQualifiedStatistics {
+  jobCategory: string
+  baselineCount: number
+  qualifiedCount: number
+  qualifiedRate: number
+}
+
+export interface ExpertMaturityQualifiedStatistics {
+  maturityLevel: string
+  baselineCount: number
+  qualifiedCount: number
+  qualifiedRate: number
+  jobCategoryStatistics?: ExpertJobCategoryQualifiedStatistics[]
+}
+
+export interface ExpertAiQualifiedStatisticsResponse {
+  deptCode: string
+  deptName: string
+  maturityStatistics: ExpertMaturityQualifiedStatistics[]
+  totalStatistics: ExpertMaturityQualifiedStatistics
+}
+
 export interface SelectOption<T extends string> {
   label: string
   value: T
