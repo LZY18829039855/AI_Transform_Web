@@ -888,6 +888,56 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
+                prop="professionalCategory" 
+                label="专业任职资格类" 
+                min-width="180" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="expertCategory" 
+                label="专家任职资格类（仅体现AI）" 
+                min-width="220" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="professionalSubCategory" 
+                label="专业任职资格子类" 
+                min-width="180" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="qualificationDirection" 
+                label="资格方向" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="qualificationLevel" 
+                label="资格级别" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="acquisitionMethod" 
+                label="获取方式" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column prop="effectiveDate" label="生效日期" min-width="150" align="center" header-align="center" />
+              <el-table-column prop="expiryDate" label="失效日期" min-width="150" align="center" header-align="center" />
+              <el-table-column 
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -948,56 +998,6 @@ onBeforeUnmount(() => {
                 align="center"
                 header-align="center"
               />
-              <el-table-column 
-                prop="professionalCategory" 
-                label="专业任职资格类" 
-                min-width="180" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="expertCategory" 
-                label="专家任职资格类（仅体现AI）" 
-                min-width="220" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="professionalSubCategory" 
-                label="专业任职资格子类" 
-                min-width="180" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="qualificationDirection" 
-                label="资格方向" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="qualificationLevel" 
-                label="资格级别" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="acquisitionMethod" 
-                label="获取方式" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column prop="effectiveDate" label="生效日期" min-width="150" align="center" header-align="center" />
-              <el-table-column prop="expiryDate" label="失效日期" min-width="150" align="center" header-align="center" />
               <el-table-column 
                 label="是否干部" 
                 min-width="110" 
@@ -1112,6 +1112,35 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
+                prop="certificateName" 
+                label="证书名称" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="certificateEffectiveDate" 
+                label="证书生效日期" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                label="是否通过科目二" 
+                min-width="150" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
+                    {{ formatBoolean(row.subjectTwoPassed) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column 
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1172,35 +1201,6 @@ onBeforeUnmount(() => {
                 align="center"
                 header-align="center"
               />
-              <el-table-column 
-                prop="certificateName" 
-                label="证书名称" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="certificateEffectiveDate" 
-                label="证书生效日期" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                label="是否通过科目二" 
-                min-width="150" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
-                    {{ formatBoolean(row.subjectTwoPassed) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
               <el-table-column 
                 label="是否干部" 
                 min-width="110" 
