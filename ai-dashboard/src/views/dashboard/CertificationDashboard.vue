@@ -1103,18 +1103,12 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span v-if="row.appointedByRequirement !== null && row.appointedByRequirement !== undefined">
-                      {{ formatNumber(row.appointedByRequirement) }}
-                    </span>
-                    <span v-else class="pending-data">待提供数据</span>
+                    <span class="pending-data">待提供数据</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="190" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span v-if="row.certificationCompliance !== null && row.certificationCompliance !== undefined">
-                      {{ formatPercent(row.certificationCompliance) }}
-                    </span>
-                    <span v-else class="pending-data">待提供数据</span>
+                    <span class="pending-data">待提供数据</span>
                   </template>
                 </el-table-column>
                 <template #empty>
