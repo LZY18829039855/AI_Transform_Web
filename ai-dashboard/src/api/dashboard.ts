@@ -239,12 +239,12 @@ export const fetchExpertData = async (
   // 将专家AI认证数据转换为表格格式
   const mapExpertCertStatsToRows = (
     stats?: ExpertAiCertStatisticsResponse | null
-  ): ExpertCertificationSummaryRow[] => {
+  ): (ExpertCertificationSummaryRow & { isMaturityRow?: boolean })[] => {
     if (!stats || !stats.maturityStatistics || stats.maturityStatistics.length === 0) {
       return expertData.certification
     }
 
-    const rows: ExpertCertificationSummaryRow[] = []
+    const rows: (ExpertCertificationSummaryRow & { isMaturityRow?: boolean })[] = []
 
     stats.maturityStatistics.forEach((maturity) => {
       if (maturity.jobCategoryStatistics && maturity.jobCategoryStatistics.length > 0) {
@@ -255,6 +255,7 @@ export const fetchExpertData = async (
           baseline: maturity.baselineCount,
           certified: maturity.certifiedCount,
           certificationRate: Number(maturity.certRate),
+          isMaturityRow: true,
         })
 
         // 添加职位类明细行
@@ -265,6 +266,7 @@ export const fetchExpertData = async (
             baseline: jobCategory.baselineCount,
             certified: jobCategory.certifiedCount,
             certificationRate: Number(jobCategory.certRate),
+            isMaturityRow: false,
           })
         })
       } else {
@@ -275,6 +277,7 @@ export const fetchExpertData = async (
           baseline: maturity.baselineCount,
           certified: maturity.certifiedCount,
           certificationRate: Number(maturity.certRate),
+          isMaturityRow: true,
         })
       }
     })
@@ -287,6 +290,7 @@ export const fetchExpertData = async (
         baseline: stats.totalStatistics.baselineCount,
         certified: stats.totalStatistics.certifiedCount,
         certificationRate: Number(stats.totalStatistics.certRate),
+        isMaturityRow: true,
       })
     }
 
@@ -337,26 +341,8 @@ export const fetchCadreData = async (
           isMaturityRow: true,
         })
 
-        // 用于L2等级计算非软件类人数
-        let l2SoftwareBaseline = 0
-
+        // 直接使用后端返回的所有职位类数据（包括L2的非软件类）
         maturity.jobCategoryStatistics.forEach((jobCategory) => {
-          // 判断是否为软件类
-          const isSoftwareCategory = jobCategory.jobCategory === '软件类' || jobCategory.jobCategory?.includes('软件')
-          // 判断是否为非软件类
-          const isNonSoftwareCategory = jobCategory.jobCategory === '非软件类'
-          
-          // 对于L2等级，记录软件类基线人数
-          if (maturity.maturityLevel === 'L2' && isSoftwareCategory) {
-            l2SoftwareBaseline = jobCategory.baselineCount
-          }
-
-          // L2等级的非软件类数据由前端计算，不显示后端返回的
-          if (maturity.maturityLevel === 'L2' && isNonSoftwareCategory) {
-            return // 跳过L2的非软件类数据，后面会由前端计算添加
-          }
-
-          // 其他情况正常显示
           rows.push({
             maturityLevel: '',
             jobCategory: jobCategory.jobCategory,
@@ -369,25 +355,6 @@ export const fetchCadreData = async (
             isMaturityRow: false,
           })
         })
-
-        // 对于L2等级，在软件类数据后面添加前端计算的非软件类数据
-        if (maturity.maturityLevel === 'L2' && l2SoftwareBaseline > 0) {
-          const nonSoftwareBaseline = maturity.baselineCount - l2SoftwareBaseline
-          if (nonSoftwareBaseline > 0) {
-            rows.push({
-              maturityLevel: '',
-              jobCategory: '非软件类',
-              baseline: nonSoftwareBaseline,
-              aiCertificateHolders: null as any,
-              subjectTwoPassed: null as any,
-              certificateRate: null as any,
-              subjectTwoRate: null as any,
-              complianceRate: null,
-              isMaturityRow: false,
-              isL2CalculatedNonSoftware: true, // 标记为L2前端计算的非软件类
-            } as any)
-          }
-        }
       } else {
         rows.push({
           maturityLevel: maturity.maturityLevel,
