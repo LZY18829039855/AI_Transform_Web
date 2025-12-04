@@ -133,7 +133,14 @@ const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
       rate: resolveQualifiedRate(item),
     }))
     .filter((item) => item.rate > 0)
-    .sort((a, b) => b.rate - a.rate)
+    .sort((a, b) => {
+      // 首先按占比从高到低排序
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate
+      }
+      // 占比一致时，按人数从高到低排序
+      return b.count - a.count
+    })
 )
 const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
   departmentStatistics.value
@@ -143,7 +150,14 @@ const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
       rate: resolveCertificationRate(item),
     }))
     .filter((item) => item.rate > 0)
-    .sort((a, b) => b.rate - a.rate)
+    .sort((a, b) => {
+      // 首先按占比从高到低排序
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate
+      }
+      // 占比一致时，按人数从高到低排序
+      return b.count - a.count
+    })
 )
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
 const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
@@ -221,7 +235,14 @@ const jobCategoryAppointmentPoints = computed<StaffChartPoint[]>(() => {
   const points = dashboardData.value?.allStaff.jobCategoryAppointment ?? []
   return points
     .filter((item) => item.rate > 0)
-    .sort((a, b) => b.rate - a.rate)
+    .sort((a, b) => {
+      // 首先按占比从高到低排序
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate
+      }
+      // 占比一致时，按人数从高到低排序
+      return b.count - a.count
+    })
 })
 
 // 职位类认证数据（过滤和排序）
@@ -229,7 +250,44 @@ const jobCategoryCertificationPoints = computed<StaffChartPoint[]>(() => {
   const points = dashboardData.value?.allStaff.jobCategoryCertification ?? []
   return points
     .filter((item) => item.rate > 0)
-    .sort((a, b) => b.rate - a.rate)
+    .sort((a, b) => {
+      // 首先按占比从高到低排序
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate
+      }
+      // 占比一致时，按人数从高到低排序
+      return b.count - a.count
+    })
+})
+
+// 组织AI成熟度任职数据（过滤和排序）
+const organizationAppointmentPoints = computed<StaffChartPoint[]>(() => {
+  const points = dashboardData.value?.allStaff.organizationAppointment ?? []
+  return points
+    .filter((item) => item.rate > 0)
+    .sort((a, b) => {
+      // 首先按占比从高到低排序
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate
+      }
+      // 占比一致时，按人数从高到低排序
+      return b.count - a.count
+    })
+})
+
+// 组织AI成熟度认证数据（过滤和排序）
+const organizationCertificationPoints = computed<StaffChartPoint[]>(() => {
+  const points = dashboardData.value?.allStaff.organizationCertification ?? []
+  return points
+    .filter((item) => item.rate > 0)
+    .sort((a, b) => {
+      // 首先按占比从高到低排序
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate
+      }
+      // 占比一致时，按人数从高到低排序
+      return b.count - a.count
+    })
 })
 
 // 渐进式加载各个数据块
@@ -1090,9 +1148,9 @@ onActivated(() => {
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
           <BarLineChart
-            v-else-if="allStaffTrends"
+            v-else-if="dashboardData"
             title="组织AI成熟度任职数据"
-            :points="allStaffTrends.organizationAppointment"
+            :points="organizationAppointmentPoints"
             count-label="任职人数"
             rate-label="占比"
             :height="320"
@@ -1121,9 +1179,9 @@ onActivated(() => {
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
           <BarLineChart
-            v-else-if="allStaffTrends"
+            v-else-if="dashboardData"
             title="组织AI成熟度认证数据"
-            :points="allStaffTrends.organizationCertification"
+            :points="organizationCertificationPoints"
             count-label="认证人数"
             rate-label="占比"
             :height="320"

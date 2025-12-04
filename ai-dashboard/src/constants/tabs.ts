@@ -11,10 +11,10 @@ export interface DashboardTabItem {
 
 export const DASHBOARD_TABS: readonly DashboardTabItem[] = [
   {
-    name: 'certification',
-    label: 'AI任职认证看板',
-    route: '/dashboard/certification',
-    icon: Medal,
+    name: 'maturity',
+    label: '组织/岗位AI成熟度看板',
+    route: '/dashboard/maturity',
+    icon: DataAnalysis,
   },
   {
     name: 'training',
@@ -29,10 +29,10 @@ export const DASHBOARD_TABS: readonly DashboardTabItem[] = [
     icon: Reading,
   },
   {
-    name: 'maturity',
-    label: '组织/岗位AI成熟度看板',
-    route: '/dashboard/maturity',
-    icon: DataAnalysis,
+    name: 'certification',
+    label: 'AI任职认证看板',
+    route: '/dashboard/certification',
+    icon: Medal,
   },
 ] as const
 
