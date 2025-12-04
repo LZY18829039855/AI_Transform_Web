@@ -1131,6 +1131,13 @@ onBeforeUnmount(() => {
                 label="是否通过科目二" 
                 min-width="150" 
                 sortable 
+                :sort-method="(a, b) => {
+                  if (a.subjectTwoPassed === true && b.subjectTwoPassed !== true) return -1
+                  if (a.subjectTwoPassed !== true && b.subjectTwoPassed === true) return 1
+                  if (a.subjectTwoPassed === false && b.subjectTwoPassed === undefined) return -1
+                  if (a.subjectTwoPassed === undefined && b.subjectTwoPassed === false) return 1
+                  return 0
+                }"
                 align="center"
                 header-align="center"
               >
