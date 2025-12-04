@@ -584,17 +584,17 @@ const summaryMetrics = computed(() => {
     : 0
 
   return [
-    { label: '认证记录', value: certificationRecords.length, unit: '条' },
     { label: '任职记录', value: appointmentRecords.length, unit: '条' },
-    {
-      label: '认证达标率',
-      value: certificationRate === 0 ? '待提供数据' : certificationRate,
-      unit: certificationRate === 0 ? '' : '%',
-    },
     {
       label: '任职达标率',
       value: appointmentRate === 0 ? '待提供数据' : appointmentRate,
       unit: appointmentRate === 0 ? '' : '%',
+    },
+    { label: '认证记录', value: certificationRecords.length, unit: '条' },
+    {
+      label: '认证达标率',
+      value: certificationRate === 0 ? '待提供数据' : certificationRate,
+      unit: certificationRate === 0 ? '' : '%',
     },
   ]
 })
@@ -834,209 +834,6 @@ onBeforeUnmount(() => {
 
       <el-card shadow="hover" class="detail-card">
         <el-tabs v-model="activeTab" stretch class="detail-tabs" @tab-click="handleTabClick">
-          <el-tab-pane label="AI 认证盘点" name="certification">
-            <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row size="small">
-              <el-table-column 
-                label="是否达标" 
-                min-width="120" 
-                sortable 
-                :sort-method="(a, b) => {
-                  if (a.isQualified === true && b.isQualified !== true) return -1
-                  if (a.isQualified !== true && b.isQualified === true) return 1
-                  if (a.isQualified === false && b.isQualified === undefined) return -1
-                  if (a.isQualified === undefined && b.isQualified === false) return 1
-                  return 0
-                }"
-                fixed="left"
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
-                    {{ formatBoolean(row.isQualified) }}
-                  </el-tag>
-                  <span v-else class="pending-data">待提供数据</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
-              <el-table-column 
-                prop="positionCategory" 
-                label="职位类" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="positionSubCategory" 
-                label="职位子类" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                prop="departmentLevel1" 
-                label="一级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="departmentLevel2" 
-                label="二级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="departmentLevel3" 
-                label="三级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="departmentLevel4" 
-                label="四级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="departmentLevel5" 
-                label="五级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="minDepartment" 
-                label="最小部门" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="certificateName" 
-                label="证书名称" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="certificateEffectiveDate" 
-                label="证书生效日期" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                label="是否通过科目二" 
-                min-width="150" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
-                    {{ formatBoolean(row.subjectTwoPassed) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                label="是否干部" 
-                min-width="110" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  {{ formatBoolean(row.isCadre) }}
-                </template>
-              </el-table-column>
-              <el-table-column 
-                prop="cadreType" 
-                label="干部类型" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                label="是否专家" 
-                min-width="110" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
-                  <span v-else class="pending-data">待提供数据</span>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                label="是否基层主管" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
-                  <span v-else class="pending-data">待提供数据</span>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                prop="organizationMaturity" 
-                label="组织AI成熟度" 
-                min-width="150" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
-                  <span v-else class="pending-data">待提供数据</span>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                min-width="150" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="requiredCertificate" 
-                label="要求持证类型" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
-                  <span v-else class="pending-data">待提供数据</span>
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-tab-pane>
           <el-tab-pane name="appointment">
             <template #label>
               <span>AI 任职盘点</span>
@@ -1201,6 +998,209 @@ onBeforeUnmount(() => {
               />
               <el-table-column prop="effectiveDate" label="生效日期" min-width="150" align="center" header-align="center" />
               <el-table-column prop="expiryDate" label="失效日期" min-width="150" align="center" header-align="center" />
+              <el-table-column 
+                label="是否干部" 
+                min-width="110" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isCadre) }}
+                </template>
+              </el-table-column>
+              <el-table-column 
+                prop="cadreType" 
+                label="干部类型" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                label="是否专家" 
+                min-width="110" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.isExpert !== undefined">{{ formatBoolean(row.isExpert) }}</span>
+                  <span v-else class="pending-data">待提供数据</span>
+                </template>
+              </el-table-column>
+              <el-table-column 
+                label="是否基层主管" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.isFrontlineManager !== undefined">{{ formatBoolean(row.isFrontlineManager) }}</span>
+                  <span v-else class="pending-data">待提供数据</span>
+                </template>
+              </el-table-column>
+              <el-table-column 
+                prop="organizationMaturity" 
+                label="组织AI成熟度" 
+                min-width="150" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.organizationMaturity">{{ row.organizationMaturity }}</span>
+                  <span v-else class="pending-data">待提供数据</span>
+                </template>
+              </el-table-column>
+              <el-table-column 
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                min-width="150" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="requiredCertificate" 
+                label="要求持证类型" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.requiredCertificate">{{ row.requiredCertificate }}</span>
+                  <span v-else class="pending-data">待提供数据</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+          <el-tab-pane label="AI 认证盘点" name="certification">
+            <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row size="small">
+              <el-table-column 
+                label="是否达标" 
+                min-width="120" 
+                sortable 
+                :sort-method="(a, b) => {
+                  if (a.isQualified === true && b.isQualified !== true) return -1
+                  if (a.isQualified !== true && b.isQualified === true) return 1
+                  if (a.isQualified === false && b.isQualified === undefined) return -1
+                  if (a.isQualified === undefined && b.isQualified === false) return 1
+                  return 0
+                }"
+                fixed="left"
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <el-tag v-if="row.isQualified !== undefined" :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isQualified) }}
+                  </el-tag>
+                  <span v-else class="pending-data">待提供数据</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
+              <el-table-column 
+                prop="positionCategory" 
+                label="职位类" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="positionSubCategory" 
+                label="职位子类" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
+                </template>
+              </el-table-column>
+              <el-table-column 
+                prop="departmentLevel1" 
+                label="一级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="departmentLevel2" 
+                label="二级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="departmentLevel3" 
+                label="三级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="departmentLevel4" 
+                label="四级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="departmentLevel5" 
+                label="五级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="minDepartment" 
+                label="最小部门" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="certificateName" 
+                label="证书名称" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="certificateEffectiveDate" 
+                label="证书生效日期" 
+                min-width="160" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                label="是否通过科目二" 
+                min-width="150" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
+                    {{ formatBoolean(row.subjectTwoPassed) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
               <el-table-column 
                 label="是否干部" 
                 min-width="110" 
