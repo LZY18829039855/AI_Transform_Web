@@ -45,7 +45,7 @@ const loadingFilters = ref(false)
 
 // 各个数据块的数据
 const expertData = ref<{
-  certification: ExpertCertificationSummaryRow[]
+  certification: (ExpertCertificationSummaryRow & { isMaturityRow?: boolean })[]
   appointment: ExpertAppointmentSummaryRow[]
 } | null>(null)
 const cadreData = ref<{
@@ -1057,57 +1057,87 @@ onActivated(() => {
         </el-col>
         <!-- 2. 专家认证数据 -->
         <el-col :xs="24" :lg="24">
-          <el-skeleton :rows="4" animated v-if="loadingExpert" />
-          <CertificationSummaryTable
-            v-else-if="expertData"
-            title="专家AI认证数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'certified',
-                label: '已完成AI认证人数',
-                width: 170,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'certificationRate',
-                label: 'AI认证人数占比',
-                width: 150,
-                valueType: 'percent',
-              },
-            ]"
-            :data="expertData.certification"
-            :on-cell-click="handleExpertCertCellClick"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
+          <div class="summary-table-container">
+            <div class="summary-table-header">
+              <h3>
+                专家AI认证数据
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                      <div>AI算法技术</div>
+                      <div>AI决策推理</div>
+                      <div>AI图像语言语义</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </h3>
+            </div>
+            <div class="summary-table-body">
+              <el-skeleton :rows="4" animated v-if="loadingExpert" />
+              <el-table
+                v-else-if="expertData"
+                :data="expertData.certification"
+                border
+                stripe
+                size="small"
+                :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+                :row-class-name="getRowClassName"
               >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                    <div>AI算法技术</div>
-                    <div>AI决策推理</div>
-                    <div>AI图像语言语义</div>
-                  </div>
-                </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
-            </template>
-          </CertificationSummaryTable>
-          <el-empty v-else description="待提供数据" :image-size="80" />
+                <!-- 合并的成熟度/职位类列 -->
+                <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" width="180" align="left" header-align="center">
+                  <template #default="{ row }">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
+                      <span v-else style="flex: 1;"></span>
+                      <span v-if="!row.isMaturityRow">{{ row.jobCategory }}</span>
+                      <span v-else style="flex: 1;"></span>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertCertCellClick(row, 'baseline')"
+                    >
+                      {{ formatNumber(row.baseline) }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="certified" label="已完成AI认证人数" min-width="170" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertCertCellClick(row, 'certified')"
+                    >
+                      {{ formatNumber(row.certified) }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="certificationRate" label="AI认证人数占比" min-width="150" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatPercent(row.certificationRate) }}
+                  </template>
+                </el-table-column>
+              </el-table>
+              <el-empty v-else description="待提供数据" :image-size="80" />
+            </div>
+          </div>
         </el-col>
       </el-row>
     </el-card>
