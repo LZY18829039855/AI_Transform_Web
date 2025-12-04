@@ -524,10 +524,10 @@ const filteredCertificationRecords = computed(() => {
   
   // 按是否达标排序：达标（true）> 不达标（false）> 暂无数据（undefined）
   records.sort((a, b) => {
-    if (a.isQualified === true && b.isQualified !== true) return -1
-    if (a.isQualified !== true && b.isQualified === true) return 1
-    if (a.isQualified === false && b.isQualified === undefined) return -1
-    if (a.isQualified === undefined && b.isQualified === false) return 1
+    if (a.isCertStandard === true && b.isCertStandard !== true) return -1
+    if (a.isCertStandard !== true && b.isCertStandard === true) return 1
+    if (a.isCertStandard === false && b.isCertStandard === undefined) return -1
+    if (a.isCertStandard === undefined && b.isCertStandard === false) return 1
     return 0
   })
   
@@ -1079,11 +1079,20 @@ onBeforeUnmount(() => {
             </el-table>
           </el-tab-pane>
           <el-tab-pane label="AI 认证盘点" name="certification">
-            <el-table :data="filteredCertificationRecords" border stripe height="520" highlight-current-row size="small">
+            <el-table 
+              :data="filteredCertificationRecords" 
+              border 
+              stripe 
+              height="520" 
+              highlight-current-row 
+              size="small"
+              :default-sort="{ prop: 'isCertStandard', order: 'descending' }"
+            >
               <el-table-column 
                 label="是否达标" 
                 min-width="120" 
                 sortable 
+                prop="isCertStandard"
                 :sort-method="(a, b) => {
                   if (a.isCertStandard === true && b.isCertStandard !== true) return -1
                   if (a.isCertStandard !== true && b.isCertStandard === true) return 1
