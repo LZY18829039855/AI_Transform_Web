@@ -278,19 +278,19 @@ export interface CertificationAuditRecord {
   departmentLevel3: string
   departmentLevel4: string
   departmentLevel5: string
-  departmentLevel6: string
+  departmentLevel6?: string
   minDepartment: string
   certificateName: string
   certificateEffectiveDate: string
   subjectTwoPassed: boolean
   isCadre: boolean
   cadreType?: string
-  isExpert: boolean
-  isFrontlineManager: boolean
-  organizationMaturity: 'L1' | 'L2' | 'L3'
-  positionMaturity: 'L1' | 'L2' | 'L3'
+  isExpert?: boolean
+  isFrontlineManager?: boolean
+  organizationMaturity?: 'L1' | 'L2' | 'L3'
+  positionMaturity?: 'L1' | 'L2' | 'L3'
   requiredCertificate: string
-  isQualified: boolean
+  isQualified?: boolean
 }
 
 export interface AppointmentAuditRecord {

@@ -72,80 +72,79 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
 </script>
 
 <template>
-  <el-card shadow="hover" class="summary-table-card">
-    <template #header>
-      <div class="summary-table-card__header">
-        <h3>
-          {{ title }}
-          <slot name="title-suffix" />
-        </h3>
-        <slot name="header-extra" />
-      </div>
-    </template>
-    <el-table
-      v-if="data && data.length > 0"
-      :data="data"
-      border
-      stripe
-      size="small"
-      :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
-      :row-class-name="getRowClassName"
-    >
-      <el-table-column
-        v-for="(col, index) in columns"
-        :key="col.prop"
-        :prop="col.prop"
-        :min-width="col.width || 120"
-        :align="index === 0 ? 'left' : 'center'"
-        :header-align="'center'"
+  <div class="summary-table-container">
+    <div class="summary-table-header">
+      <h3>
+        {{ title }}
+        <slot name="title-suffix" />
+      </h3>
+      <slot name="header-extra" />
+    </div>
+    <div class="summary-table-body">
+      <el-table
+        v-if="data && data.length > 0"
+        :data="data"
+        border
+        stripe
+        size="small"
+        :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+        :row-class-name="getRowClassName"
       >
-        <template #header>
-          <span style="white-space: normal; word-break: break-word; line-height: 1.4;">{{ col.label }}</span>
-        </template>
-        <template #default="{ row }">
-          <el-link
-            v-if="col.clickable"
-            type="primary"
-            :underline="false"
-            class="clickable-cell"
-            @click="handleCellClick(row, col.prop)"
-          >
-            {{ formatCellValue(row, col) }}
-          </el-link>
-          <span v-else>
-            {{ formatCellValue(row, col) }}
-          </span>
-        </template>
-      </el-table-column>
-    </el-table>
-    <el-empty v-else description="待提供数据" :image-size="80" />
-  </el-card>
+        <el-table-column
+          v-for="(col, index) in columns"
+          :key="col.prop"
+          :prop="col.prop"
+          :min-width="col.width || 120"
+          :align="index === 0 ? 'left' : 'center'"
+          :header-align="'center'"
+        >
+          <template #header>
+            <span style="white-space: normal; word-break: break-word; line-height: 1.4;">{{ col.label }}</span>
+          </template>
+          <template #default="{ row }">
+            <el-link
+              v-if="col.clickable"
+              type="primary"
+              :underline="false"
+              class="clickable-cell"
+              @click="handleCellClick(row, col.prop)"
+            >
+              {{ formatCellValue(row, col) }}
+            </el-link>
+            <span v-else>
+              {{ formatCellValue(row, col) }}
+            </span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-else description="待提供数据" :image-size="80" />
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
-.summary-table-card {
-  border: none;
+.summary-table-container {
   height: 100%;
   display: flex;
   flex-direction: column;
 
-  &__header {
+  .summary-table-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-bottom: 8px;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
   }
 
-  h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  :deep(.el-card__body) {
+  .summary-table-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: $spacing-md;
   }
 
   :deep(.el-table) {
@@ -180,4 +179,3 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
   cursor: pointer;
 }
 </style>
-

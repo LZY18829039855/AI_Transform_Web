@@ -12,7 +12,7 @@ export const DASHBOARD_CARD_META: Record<DashboardTabName, DashboardCardMeta> = 
     description: '聚焦组织与岗位AI成熟度的核心指标，洞察转型成效与优化方向。',
     accent: '#3a7afe',
     gradient: 'linear-gradient(180deg, rgba(58, 122, 254, 0.16), rgba(58, 122, 254, 0.04))',
-    badge: '总览主看板',
+    // badge: '总览主看板',
   },
   training: {
     description: '追踪训练任务执行态势，掌握进度、资源与关键节点。',
