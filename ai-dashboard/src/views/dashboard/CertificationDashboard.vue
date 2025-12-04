@@ -1206,17 +1206,17 @@ onActivated(() => {
               <p>任职、认证人数使用柱状图展示，同时叠加占比折线辅助判读效率</p>
             </div>
           </div>
+          <div class="charts-filter">
+            <el-form :inline="true" :model="filters" label-width="0">
+              <el-form-item>
+                <el-select v-model="filters.role" placeholder="角色视图" style="width: 160px">
+                  <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
+                </el-select>
+              </el-form-item>
+            </el-form>
+          </div>
         </div>
       </template>
-      <el-card shadow="hover" class="filter-card" style="margin-bottom: 16px;">
-        <el-form :inline="true" :model="filters" label-width="92">
-          <el-form-item label="角色视图">
-            <el-select v-model="filters.role" placeholder="全员" style="width: 160px">
-              <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-            </el-select>
-          </el-form-item>
-        </el-form>
-      </el-card>
       <el-row :gutter="16">
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
@@ -1554,6 +1554,13 @@ onActivated(() => {
     row-gap: $spacing-lg;
   }
 
+  .charts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
   .charts-title {
     display: flex;
     align-items: center;
@@ -1570,6 +1577,11 @@ onActivated(() => {
       margin: $spacing-xs 0 0;
       color: $text-secondary-color;
     }
+  }
+
+  .charts-filter {
+    display: flex;
+    align-items: center;
   }
 }
 
