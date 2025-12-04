@@ -1196,16 +1196,6 @@ onActivated(() => {
       </el-row>
     </el-card>
 
-    <el-card shadow="hover" class="filter-card" style="margin-bottom: 16px;">
-      <el-form :inline="true" :model="filters" label-width="92">
-        <el-form-item label="角色视图">
-          <el-select v-model="filters.role" placeholder="全员" style="width: 160px">
-            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
     <el-card shadow="hover" class="charts-section">
       <template #header>
         <div class="charts-header">
@@ -1218,6 +1208,15 @@ onActivated(() => {
           </div>
         </div>
       </template>
+      <el-card shadow="hover" class="filter-card" style="margin-bottom: 16px;">
+        <el-form :inline="true" :model="filters" label-width="92">
+          <el-form-item label="角色视图">
+            <el-select v-model="filters.role" placeholder="全员" style="width: 160px">
+              <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </el-card>
       <el-row :gutter="16">
         <el-col :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
