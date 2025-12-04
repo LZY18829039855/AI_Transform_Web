@@ -911,16 +911,6 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160" align="center" header-align="center">
-                  <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware">
-                      /
-                    </template>
-                    <template v-else>
-                      {{ formatNumber(row.subjectTwoPassed) }}
-                    </template>
-                  </template>
-                </el-table-column>
                 <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150" align="center" header-align="center">
                   <template #default="{ row }">
                     <template v-if="(row as any).isL2CalculatedNonSoftware">
@@ -928,6 +918,16 @@ onActivated(() => {
                     </template>
                     <template v-else>
                       {{ formatPercent(row.certificateRate) }}
+                    </template>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <template v-if="(row as any).isL2CalculatedNonSoftware">
+                      /
+                    </template>
+                    <template v-else>
+                      {{ formatNumber(row.subjectTwoPassed) }}
                     </template>
                   </template>
                 </el-table-column>
