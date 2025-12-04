@@ -1098,9 +1098,9 @@ onActivated(() => {
                 <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" width="180" align="left" header-align="center">
                   <template #default="{ row }">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
+                      <span v-if="row.isMaturityRow">{{ row.maturityLevel || '' }}</span>
                       <span v-else style="flex: 1;"></span>
-                      <span v-if="!row.isMaturityRow">{{ row.jobCategory }}</span>
+                      <span v-if="!row.isMaturityRow">{{ row.jobCategory || '' }}</span>
                       <span v-else style="flex: 1;"></span>
                     </div>
                   </template>
