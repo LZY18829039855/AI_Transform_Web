@@ -369,6 +369,8 @@ export interface CadreJobCategoryCertStatistics {
   certRate: number
   subject2PassCount: number
   subject2PassRate: number
+  certStandardCount?: number
+  certStandardRate?: number
 }
 
 export interface CadreMaturityCertStatistics {
@@ -378,6 +380,8 @@ export interface CadreMaturityCertStatistics {
   certRate: number
   subject2PassCount: number
   subject2PassRate: number
+  certStandardCount?: number
+  certStandardRate?: number
   jobCategoryStatistics?: CadreJobCategoryCertStatistics[]
 }
 

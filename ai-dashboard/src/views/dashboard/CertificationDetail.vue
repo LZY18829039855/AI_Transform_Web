@@ -576,11 +576,13 @@ const summaryMetrics = computed(() => {
   // 使用过滤后的数据计算统计指标
   const certificationRecords = filteredCertificationRecords.value
   const appointmentRecords = filteredAppointmentRecords.value
-  const qualifiedCount = certificationRecords.filter((item) => item.isQualified).length
+  // 修改：使用 isCertStandard 字段统计持证人数（is_cert_standard=1 代表持证）
+  const certStandardCount = certificationRecords.filter((item) => item.isCertStandard === true).length
   const appointmentQualified = appointmentRecords.filter((item) => item.isQualified).length
 
-  const certificationRate = certificationRecords.length
-    ? Math.round((qualifiedCount / certificationRecords.length) * 100)
+  // 持证率：持证人数 / 总人数
+  const certStandardRate = certificationRecords.length
+    ? Math.round((certStandardCount / certificationRecords.length) * 100)
     : 0
   const appointmentRate = appointmentRecords.length
     ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
@@ -595,9 +597,9 @@ const summaryMetrics = computed(() => {
     },
     { label: '认证记录', value: certificationRecords.length, unit: '条' },
     {
-      label: '认证达标率',
-      value: certificationRate === 0 ? '待提供数据' : certificationRate,
-      unit: certificationRate === 0 ? '' : '%',
+      label: '持证率',
+      value: certStandardRate === 0 ? '待提供数据' : certStandardRate,
+      unit: certStandardRate === 0 ? '' : '%',
     },
   ]
 })
