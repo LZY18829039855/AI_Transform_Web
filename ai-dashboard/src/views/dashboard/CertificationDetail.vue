@@ -847,7 +847,7 @@ onBeforeUnmount(() => {
               >
                 <template #content>
                   <div style="line-height: 1.8;">
-                    <div>干部AI任职能力要求：</div>
+                    <div>干部/专家AI任职能力要求：</div>
                     <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
                     <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
                   </div>
@@ -1080,7 +1080,27 @@ onBeforeUnmount(() => {
               </el-table-column>
             </el-table>
           </el-tab-pane>
-          <el-tab-pane label="AI 认证盘点" name="certification">
+          <el-tab-pane name="certification">
+            <template #label>
+              <span>AI 认证盘点</span>
+              <el-tooltip
+                placement="top"
+                effect="dark"
+                style="margin-left: 4px;"
+              >
+                <template #content>
+                  <div style="line-height: 1.8;">
+                    <div style="font-weight: 500; margin-bottom: 4px;">干部AI认证能力要求：</div>
+                    <div>软件类L2/L3干部要求在26年H1之前完成"AI算法技术"专业级认证；</div>
+                    <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
+                    <div>产品线管理团队成员按L2标准要求。</div>
+                  </div>
+                </template>
+                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                  <QuestionFilled />
+                </el-icon>
+              </el-tooltip>
+            </template>
             <el-table 
               :data="filteredCertificationRecords" 
               border 
