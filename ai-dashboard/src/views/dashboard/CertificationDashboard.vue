@@ -1106,7 +1106,7 @@ onActivated(() => {
                     <span class="pending-data">待提供数据</span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="certificationCompliance" label="按要求AI认证人数占比" min-width="190" align="center" header-align="center">
+                <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="190" align="center" header-align="center">
                   <template #default="{ row }">
                     <span class="pending-data">待提供数据</span>
                   </template>
