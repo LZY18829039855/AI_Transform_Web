@@ -526,7 +526,7 @@ export const fetchCadreData = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
-          complianceRate: null,
+          complianceRate: maturity.certStandardRate != null ? Number(maturity.certStandardRate) : null,
           isMaturityRow: true,
         })
 
