@@ -424,6 +424,55 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   })
 }
 
+// 处理专家任职数据表格的点击事件
+const handleExpertQualifiedCellClick = (row: Record<string, unknown>, column: string) => {
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取成熟度级别和职位类
+  let maturityLevel = (row.maturityLevel as string) || ''
+  const jobCategory = (row.jobCategory as string) || ''
+  
+  // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
+  if (!maturityLevel && jobCategory && expertData.value?.appointment) {
+    const currentIndex = expertData.value.appointment.findIndex(
+      (r) => r === row
+    )
+    // 向上查找最近的成熟度行
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevRow = expertData.value.appointment[i]
+      if (prevRow && prevRow.maturityLevel) {
+        maturityLevel = prevRow.maturityLevel as string
+        break
+      }
+    }
+  }
+  
+  // 如果是总计行，将成熟度置为L5（代表查询L2和L3的数据）
+  if (maturityLevel && (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total')) {
+    maturityLevel = 'L5'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    column,
+    maturity: maturityLevel || undefined,
+    jobCategory: jobCategory || undefined,
+    role: '2', // 强制设置为专家角色
+    deptCode: deptCode,
+    source: 'appointment', // 标识来自专家任职数据表格
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
 // 处理专家认证数据表格的点击事件
 const handleExpertCertCellClick = (row: Record<string, unknown>, column: string) => {
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
@@ -984,71 +1033,108 @@ onActivated(() => {
     <el-row :gutter="16" class="summary-table-grid">
       <!-- 1. 专家任职数据 -->
         <el-col :xs="24" :lg="24">
-          <el-skeleton :rows="4" animated v-if="loadingExpert" />
-          <CertificationSummaryTable
-            v-else-if="expertData"
-            title="专家AI任职数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointed',
-                label: 'AI任职人数',
-                width: 130,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointedByRequirement',
-                label: '按要求AI任职人数',
-                width: 180,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointmentRate',
-                label: 'AI任职率',
-                width: 130,
-                valueType: 'percent',
-              },
-              {
-                prop: 'certificationCompliance',
-                label: '按要求AI认证人数占比',
-                width: 190,
-                valueType: 'percent',
-              },
-            ]"
-            :data="expertData.appointment"
-            :on-cell-click="handleCellClick"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
+          <div class="summary-table-container">
+            <div class="summary-table-header">
+              <h3>
+                专家AI任职数据
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
+                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                      <div>数据科学与AI工程（ICT）</div>
+                      <div>AI算法及应用（ICT）</div>
+                      <div>AI软件工程与工具（ICT）</div>
+                      <div>AI系统测试（ICT）</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </h3>
+            </div>
+            <div class="summary-table-body">
+              <el-skeleton :rows="4" animated v-if="loadingExpert" />
+              <el-table
+                v-else-if="expertData"
+                :data="expertData.appointment"
+                border
+                stripe
+                size="small"
+                :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+                :row-class-name="getRowClassName"
               >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                    <div>数据科学与AI工程（ICT）</div>
-                    <div>AI算法及应用（ICT）</div>
-                    <div>AI软件工程与工具（ICT）</div>
-                    <div>AI系统测试（ICT）</div>
-                  </div>
+                <!-- 合并的成熟度/职位类列 -->
+                <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" width="180" align="left" header-align="center">
+                  <template #default="{ row }">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span v-if="row.isMaturityRow">{{ row.maturityLevel || '' }}</span>
+                      <span v-else style="flex: 1;"></span>
+                      <span v-if="!row.isMaturityRow">{{ row.jobCategory || '' }}</span>
+                      <span v-else style="flex: 1;"></span>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertQualifiedCellClick(row, 'baseline')"
+                    >
+                      {{ formatNumber(row.baseline) }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="appointed" label="AI任职人数" min-width="130" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertQualifiedCellClick(row, 'appointed')"
+                    >
+                      {{ formatNumber(row.appointed) }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertQualifiedCellClick(row, 'appointedByRequirement')"
+                    >
+                      {{ formatNumber(row.appointedByRequirement) }}
+                    </el-link>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="appointmentRate" label="AI任职率" min-width="130" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatPercent(row.appointmentRate) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="certificationCompliance" label="按要求AI认证人数占比" min-width="190" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatPercent(row.certificationCompliance) }}
+                  </template>
+                </el-table-column>
+                <template #empty>
+                  <el-empty description="待提供数据" :image-size="80" />
                 </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
-            </template>
-          </CertificationSummaryTable>
-          <el-empty v-else description="待提供数据" :image-size="80" />
+              </el-table>
+              <el-empty v-else description="待提供数据" :image-size="80" />
+            </div>
+          </div>
         </el-col>
         <!-- 2. 专家认证数据 -->
         <el-col :xs="24" :lg="24">
