@@ -258,17 +258,60 @@ export const fetchExpertData = async (
           isMaturityRow: true,
         })
 
-        // 添加职位类明细行
-        maturity.jobCategoryStatistics.forEach((jobCategory) => {
-          rows.push({
-            maturityLevel: '',
-            jobCategory: jobCategory.jobCategory,
-            baseline: jobCategory.baselineCount,
-            certified: jobCategory.certifiedCount,
-            certificationRate: Number(jobCategory.certRate),
-            isMaturityRow: false,
+        // 对于L2成熟度，需要特殊处理职位类
+        if (maturity.maturityLevel === 'L2') {
+          // 保留的职位类：测试类、软件类、系统类、研究类
+          const allowedCategories = ['测试类', '软件类', '系统类', '研究类']
+          
+          // 用于汇总其他类的数据
+          let otherBaseline = 0
+          let otherCertified = 0
+          
+          // 先处理保留的职位类
+          maturity.jobCategoryStatistics.forEach((jobCategory) => {
+            if (allowedCategories.includes(jobCategory.jobCategory)) {
+              rows.push({
+                maturityLevel: '',
+                jobCategory: jobCategory.jobCategory,
+                baseline: jobCategory.baselineCount,
+                certified: jobCategory.certifiedCount,
+                certificationRate: Number(jobCategory.certRate),
+                isMaturityRow: false,
+              })
+            } else {
+              // 累计其他类的数据
+              otherBaseline += jobCategory.baselineCount || 0
+              otherCertified += jobCategory.certifiedCount || 0
+            }
           })
-        })
+          
+          // 如果有其他类数据，添加"其他类"行
+          if (otherBaseline > 0 || otherCertified > 0) {
+            const otherCertRate = otherBaseline > 0 
+              ? (otherCertified / otherBaseline) * 100 
+              : 0
+            rows.push({
+              maturityLevel: '',
+              jobCategory: '其他类',
+              baseline: otherBaseline,
+              certified: otherCertified,
+              certificationRate: Number(otherCertRate.toFixed(2)),
+              isMaturityRow: false,
+            })
+          }
+        } else {
+          // 非L2成熟度，正常显示所有职位类
+          maturity.jobCategoryStatistics.forEach((jobCategory) => {
+            rows.push({
+              maturityLevel: '',
+              jobCategory: jobCategory.jobCategory,
+              baseline: jobCategory.baselineCount,
+              certified: jobCategory.certifiedCount,
+              certificationRate: Number(jobCategory.certRate),
+              isMaturityRow: false,
+            })
+          })
+        }
       } else {
         // 如果没有职位类明细，只添加成熟度行
         rows.push({
