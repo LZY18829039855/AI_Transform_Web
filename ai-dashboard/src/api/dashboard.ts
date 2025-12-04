@@ -353,7 +353,9 @@ export const fetchCadreData = async (
             subjectTwoRate: Number(jobCategory.subject2PassRate),
             complianceRate: null,
             isMaturityRow: false,
-          })
+            // 添加成熟度信息，方便模板判断
+            actualMaturityLevel: maturity.maturityLevel,
+          } as any)
         })
       } else {
         rows.push({
