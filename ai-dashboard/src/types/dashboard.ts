@@ -441,6 +441,8 @@ export interface ExpertJobCategoryQualifiedStatistics {
   baselineCount: number
   qualifiedCount: number
   qualifiedRate: number
+  qualifiedByRequirementCount?: number
+  qualifiedByRequirementRate?: number
 }
 
 export interface ExpertMaturityQualifiedStatistics {
@@ -448,6 +450,8 @@ export interface ExpertMaturityQualifiedStatistics {
   baselineCount: number
   qualifiedCount: number
   qualifiedRate: number
+  qualifiedByRequirementCount?: number
+  qualifiedByRequirementRate?: number
   jobCategoryStatistics?: ExpertJobCategoryQualifiedStatistics[]
 }
 

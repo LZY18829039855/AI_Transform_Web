@@ -381,9 +381,9 @@ export const fetchExpertData = async (
           jobCategory: '',
           baseline: maturity.baselineCount,
           appointed: maturity.qualifiedCount,
-          appointedByRequirement: 0, // 后端接口暂未返回此字段
+          appointedByRequirement: maturity.qualifiedByRequirementCount ?? 0,
           appointmentRate: Number(maturity.qualifiedRate),
-          certificationCompliance: 0, // 后端接口暂未返回此字段
+          certificationCompliance: Number(maturity.qualifiedByRequirementRate ?? 0),
           isMaturityRow: true,
         })
 
@@ -401,9 +401,9 @@ export const fetchExpertData = async (
                 jobCategory: jobCategory.jobCategory,
                 baseline: jobCategory.baselineCount,
                 appointed: jobCategory.qualifiedCount,
-                appointedByRequirement: 0, // 后端接口暂未返回此字段
+                appointedByRequirement: jobCategory.qualifiedByRequirementCount ?? 0,
                 appointmentRate: Number(jobCategory.qualifiedRate),
-                certificationCompliance: 0, // 后端接口暂未返回此字段
+                certificationCompliance: Number(jobCategory.qualifiedByRequirementRate ?? 0),
                 isMaturityRow: false,
               })
             } else {
@@ -418,14 +418,24 @@ export const fetchExpertData = async (
             const nonSoftwareRate = nonSoftwareBaseline > 0 
               ? (nonSoftwareQualified / nonSoftwareBaseline) * 100 
               : 0
+            // 计算非软件类的按要求任职人数和占比
+            let nonSoftwareQualifiedByRequirement = 0
+            maturity.jobCategoryStatistics.forEach((jobCategory) => {
+              if (jobCategory.jobCategory !== '软件类') {
+                nonSoftwareQualifiedByRequirement += jobCategory.qualifiedByRequirementCount ?? 0
+              }
+            })
+            const nonSoftwareQualifiedByRequirementRate = nonSoftwareBaseline > 0 
+              ? (nonSoftwareQualifiedByRequirement / nonSoftwareBaseline) * 100 
+              : 0
             rows.push({
               maturityLevel: '',
               jobCategory: '非软件类',
               baseline: nonSoftwareBaseline,
               appointed: nonSoftwareQualified,
-              appointedByRequirement: 0, // 后端接口暂未返回此字段
+              appointedByRequirement: nonSoftwareQualifiedByRequirement,
               appointmentRate: Number(nonSoftwareRate.toFixed(2)),
-              certificationCompliance: 0, // 后端接口暂未返回此字段
+              certificationCompliance: Number(nonSoftwareQualifiedByRequirementRate.toFixed(2)),
               isMaturityRow: false,
             })
           }
@@ -437,9 +447,9 @@ export const fetchExpertData = async (
               jobCategory: jobCategory.jobCategory,
               baseline: jobCategory.baselineCount,
               appointed: jobCategory.qualifiedCount,
-              appointedByRequirement: 0, // 后端接口暂未返回此字段
+              appointedByRequirement: jobCategory.qualifiedByRequirementCount ?? 0,
               appointmentRate: Number(jobCategory.qualifiedRate),
-              certificationCompliance: 0, // 后端接口暂未返回此字段
+              certificationCompliance: Number(jobCategory.qualifiedByRequirementRate ?? 0),
               isMaturityRow: false,
             })
           })
@@ -451,9 +461,9 @@ export const fetchExpertData = async (
           jobCategory: '',
           baseline: maturity.baselineCount,
           appointed: maturity.qualifiedCount,
-          appointedByRequirement: 0, // 后端接口暂未返回此字段
+          appointedByRequirement: maturity.qualifiedByRequirementCount ?? 0,
           appointmentRate: Number(maturity.qualifiedRate),
-          certificationCompliance: 0, // 后端接口暂未返回此字段
+          certificationCompliance: Number(maturity.qualifiedByRequirementRate ?? 0),
           isMaturityRow: true,
         })
       }
@@ -466,9 +476,9 @@ export const fetchExpertData = async (
         jobCategory: '',
         baseline: stats.totalStatistics.baselineCount,
         appointed: stats.totalStatistics.qualifiedCount,
-        appointedByRequirement: 0, // 后端接口暂未返回此字段
+        appointedByRequirement: stats.totalStatistics.qualifiedByRequirementCount ?? 0,
         appointmentRate: Number(stats.totalStatistics.qualifiedRate),
-        certificationCompliance: 0, // 后端接口暂未返回此字段
+        certificationCompliance: Number(stats.totalStatistics.qualifiedByRequirementRate ?? 0),
         isMaturityRow: true,
       })
     }
