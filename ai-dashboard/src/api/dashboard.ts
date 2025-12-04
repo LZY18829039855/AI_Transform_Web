@@ -372,9 +372,6 @@ export const fetchExpertData = async (
     }
 
     const rows: (ExpertAppointmentSummaryRow & { isMaturityRow?: boolean })[] = []
-    
-    // 获取总基线人数，用于计算按要求任职人数占比
-    const totalBaselineCount = stats.totalStatistics?.baselineCount ?? 0
 
     stats.maturityStatistics.forEach((maturity) => {
       if (maturity.jobCategoryStatistics && maturity.jobCategoryStatistics.length > 0) {
@@ -421,16 +418,15 @@ export const fetchExpertData = async (
             const nonSoftwareRate = nonSoftwareBaseline > 0 
               ? (nonSoftwareQualified / nonSoftwareBaseline) * 100 
               : 0
-            // 计算非软件类的按要求任职人数和占比（使用总基线人数）
+            // 计算非软件类的按要求任职人数和占比
             let nonSoftwareQualifiedByRequirement = 0
             maturity.jobCategoryStatistics.forEach((jobCategory) => {
               if (jobCategory.jobCategory !== '软件类') {
                 nonSoftwareQualifiedByRequirement += jobCategory.qualifiedByRequirementCount ?? 0
               }
             })
-            // 修改：使用总基线人数计算占比
-            const nonSoftwareQualifiedByRequirementRate = totalBaselineCount > 0 
-              ? (nonSoftwareQualifiedByRequirement / totalBaselineCount) * 100 
+            const nonSoftwareQualifiedByRequirementRate = nonSoftwareBaseline > 0 
+              ? (nonSoftwareQualifiedByRequirement / nonSoftwareBaseline) * 100 
               : 0
             rows.push({
               maturityLevel: '',
