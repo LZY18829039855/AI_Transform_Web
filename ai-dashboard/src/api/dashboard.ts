@@ -387,19 +387,63 @@ export const fetchExpertData = async (
           isMaturityRow: true,
         })
 
-        // 添加职位类明细行
-        maturity.jobCategoryStatistics.forEach((jobCategory) => {
-          rows.push({
-            maturityLevel: '',
-            jobCategory: jobCategory.jobCategory,
-            baseline: jobCategory.baselineCount,
-            appointed: jobCategory.qualifiedCount,
-            appointedByRequirement: 0, // 后端接口暂未返回此字段
-            appointmentRate: Number(jobCategory.qualifiedRate),
-            certificationCompliance: 0, // 后端接口暂未返回此字段
-            isMaturityRow: false,
+        // 对于L2成熟度，需要特殊处理职位类
+        if (maturity.maturityLevel === 'L2') {
+          // 用于汇总非软件类的数据
+          let nonSoftwareBaseline = 0
+          let nonSoftwareQualified = 0
+          
+          // 先处理软件类
+          maturity.jobCategoryStatistics.forEach((jobCategory) => {
+            if (jobCategory.jobCategory === '软件类') {
+              rows.push({
+                maturityLevel: '',
+                jobCategory: jobCategory.jobCategory,
+                baseline: jobCategory.baselineCount,
+                appointed: jobCategory.qualifiedCount,
+                appointedByRequirement: 0, // 后端接口暂未返回此字段
+                appointmentRate: Number(jobCategory.qualifiedRate),
+                certificationCompliance: 0, // 后端接口暂未返回此字段
+                isMaturityRow: false,
+              })
+            } else {
+              // 累计非软件类的数据
+              nonSoftwareBaseline += jobCategory.baselineCount || 0
+              nonSoftwareQualified += jobCategory.qualifiedCount || 0
+            }
           })
-        })
+          
+          // 如果有非软件类数据，添加"非软件类"行
+          if (nonSoftwareBaseline > 0 || nonSoftwareQualified > 0) {
+            const nonSoftwareRate = nonSoftwareBaseline > 0 
+              ? (nonSoftwareQualified / nonSoftwareBaseline) * 100 
+              : 0
+            rows.push({
+              maturityLevel: '',
+              jobCategory: '非软件类',
+              baseline: nonSoftwareBaseline,
+              appointed: nonSoftwareQualified,
+              appointedByRequirement: 0, // 后端接口暂未返回此字段
+              appointmentRate: Number(nonSoftwareRate.toFixed(2)),
+              certificationCompliance: 0, // 后端接口暂未返回此字段
+              isMaturityRow: false,
+            })
+          }
+        } else {
+          // 非L2成熟度，正常显示所有职位类
+          maturity.jobCategoryStatistics.forEach((jobCategory) => {
+            rows.push({
+              maturityLevel: '',
+              jobCategory: jobCategory.jobCategory,
+              baseline: jobCategory.baselineCount,
+              appointed: jobCategory.qualifiedCount,
+              appointedByRequirement: 0, // 后端接口暂未返回此字段
+              appointmentRate: Number(jobCategory.qualifiedRate),
+              certificationCompliance: 0, // 后端接口暂未返回此字段
+              isMaturityRow: false,
+            })
+          })
+        }
       } else {
         // 如果没有职位类明细，只添加成熟度行
         rows.push({
