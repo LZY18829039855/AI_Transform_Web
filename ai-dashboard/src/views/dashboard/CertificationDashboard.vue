@@ -1106,26 +1106,19 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
-                  <template #default="{ row }">
-                    <el-link
-                      type="primary"
-                      :underline="false"
-                      class="clickable-cell"
-                      @click="handleExpertQualifiedCellClick(row, 'appointedByRequirement')"
-                    >
-                      {{ formatNumber(row.appointedByRequirement) }}
-                    </el-link>
-                  </template>
-                </el-table-column>
                 <el-table-column prop="appointmentRate" label="AI任职率" min-width="130" align="center" header-align="center">
                   <template #default="{ row }">
                     {{ formatPercent(row.appointmentRate) }}
                   </template>
                 </el-table-column>
+                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <span class="pending-data">待提供数据</span>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="certificationCompliance" label="按要求AI认证人数占比" min-width="190" align="center" header-align="center">
                   <template #default="{ row }">
-                    {{ formatPercent(row.certificationCompliance) }}
+                    <span class="pending-data">待提供数据</span>
                   </template>
                 </el-table-column>
                 <template #empty>
