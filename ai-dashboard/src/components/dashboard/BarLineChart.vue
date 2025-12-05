@@ -79,6 +79,7 @@ const getOption = (): EChartsOption => {
       name: props.countLabel,
       type: 'bar',
       data: counts,
+      yAxisIndex: props.showRate ? 1 : 0, // 如果有占比，柱状图使用右侧坐标轴（index=1），否则使用左侧（index=0）
       barWidth: 28,
       itemStyle: {
         borderRadius: [8, 8, 0, 0],
@@ -95,7 +96,7 @@ const getOption = (): EChartsOption => {
       name: props.rateLabel,
       type: 'line',
       data: rates,
-      yAxisIndex: 1,
+      yAxisIndex: 0, // 折线图使用左侧坐标轴（index=0）
       smooth: true,
       symbol: 'circle',
       symbolSize: 10,
@@ -197,27 +198,41 @@ const getOption = (): EChartsOption => {
       },
     },
     yAxis: [
-      {
-        type: 'value',
-        name: props.countLabel,
-        axisLine: { show: false },
-        axisTick: { show: false },
-        splitLine: { lineStyle: { type: 'dashed', color: 'rgba(31, 45, 61, 0.12)' } },
-        axisLabel: { color: 'rgba(31, 45, 61, 0.65)' },
-      },
+      // 左侧坐标轴：占比
       props.showRate
         ? {
             type: 'value',
             name: props.rateLabel,
             min: 0,
             max: 100,
+            position: 'left',
             axisLine: { show: false },
             axisTick: { show: false },
-            splitLine: { show: false },
+            splitLine: { lineStyle: { type: 'dashed', color: 'rgba(31, 45, 61, 0.12)' } },
             axisLabel: {
               formatter: '{value}%',
               color: 'rgba(31, 45, 61, 0.65)',
             },
+          }
+        : {
+            type: 'value',
+            name: props.countLabel,
+            position: 'left',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { lineStyle: { type: 'dashed', color: 'rgba(31, 45, 61, 0.12)' } },
+            axisLabel: { color: 'rgba(31, 45, 61, 0.65)' },
+          },
+      // 右侧坐标轴：总人数
+      props.showRate
+        ? {
+            type: 'value',
+            name: props.countLabel,
+            position: 'right',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: { color: 'rgba(31, 45, 61, 0.65)' },
           }
         : undefined,
     ].filter(Boolean) as EChartsOption['yAxis'],
