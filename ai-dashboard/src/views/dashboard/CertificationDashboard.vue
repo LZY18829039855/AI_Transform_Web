@@ -801,12 +801,9 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
-                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
-                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                      <div>数据科学与AI工程（ICT）</div>
-                      <div>AI算法及应用（ICT）</div>
-                      <div>AI软件工程与工具（ICT）</div>
-                      <div>AI系统测试（ICT）</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
+                      <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
+                      <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -899,11 +896,10 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
-                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
-                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                      <div>AI算法技术</div>
-                      <div>AI决策推理</div>
-                      <div>AI图像语言语义</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">干部AI认证能力要求：</div>
+                      <div>软件类L2/L3干部要求在26年H1之前完成"AI算法技术"专业级认证；</div>
+                      <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
+                      <div>产品线管理团队成员按L2标准要求。</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -1060,12 +1056,9 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
-                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
-                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                      <div>数据科学与AI工程（ICT）</div>
-                      <div>AI算法及应用（ICT）</div>
-                      <div>AI软件工程与工具（ICT）</div>
-                      <div>AI系统测试（ICT）</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
+                      <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
+                      <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -1150,11 +1143,10 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">岗位AI成熟度等级定义：</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
-                      <div style="font-weight: 500; margin-bottom: 4px;">L1，即AI应用者，熟练使用AI技术和工具，并嵌入日常工作流，提升组织作业效能。</div>
-                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                      <div>AI算法技术</div>
-                      <div>AI决策推理</div>
-                      <div>AI图像语言语义</div>
+                      <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">专家AI认证能力要求：</div>
+                      <div>软件类L2/L3专家要求在26年H1之前完成"AI算法技术"专业级认证；</div>
+                      <div>其他L2/L3岗位专家要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
+                      <div>产品线管理团队成员按L2标准要求。</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
