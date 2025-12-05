@@ -526,6 +526,7 @@ export const fetchCadreData = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
+          certStandardCount: maturity.certStandardCount ?? 0,
           complianceRate: maturity.certStandardRate != null ? Number(maturity.certStandardRate) : null,
           isMaturityRow: true,
         })
@@ -540,6 +541,7 @@ export const fetchCadreData = async (
             subjectTwoPassed: jobCategory.subject2PassCount,
             certificateRate: Number(jobCategory.certRate),
             subjectTwoRate: Number(jobCategory.subject2PassRate),
+            certStandardCount: jobCategory.certStandardCount ?? 0,
             complianceRate: jobCategory.certStandardRate != null ? Number(jobCategory.certStandardRate) : null,
             isMaturityRow: false,
             // 添加成熟度信息，方便模板判断
@@ -555,6 +557,7 @@ export const fetchCadreData = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
+          certStandardCount: maturity.certStandardCount ?? 0,
           complianceRate: maturity.certStandardRate != null ? Number(maturity.certStandardRate) : null,
           isMaturityRow: true,
         })
@@ -570,6 +573,7 @@ export const fetchCadreData = async (
         subjectTwoPassed: stats.totalStatistics.subject2PassCount,
         certificateRate: Number(stats.totalStatistics.certRate),
         subjectTwoRate: Number(stats.totalStatistics.subject2PassRate),
+        certStandardCount: stats.totalStatistics.certStandardCount ?? 0,
         complianceRate: stats.totalStatistics.certStandardRate != null ? Number(stats.totalStatistics.certStandardRate) : null,
         isMaturityRow: true,
       })

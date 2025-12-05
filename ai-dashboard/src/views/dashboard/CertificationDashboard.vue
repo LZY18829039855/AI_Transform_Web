@@ -1521,22 +1521,22 @@ onActivated(() => {
     // 成熟度行（L2、L3）和总计行的样式
     :deep(.maturity-row) {
       font-weight: bold !important;
-      font-size: 13px !important; // 增大一号（从12px到13px）
+      font-size: 14px !important; // 增大两号（从12px到14px）
       
       td {
         font-weight: bold !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         
         .cell {
           font-weight: bold !important;
-          font-size: 13px !important;
+          font-size: 14px !important;
           
           // 确保链接和文本都应用样式
           .el-link,
           span,
           div {
             font-weight: bold !important;
-            font-size: 13px !important;
+            font-size: 14px !important;
           }
         }
       }
