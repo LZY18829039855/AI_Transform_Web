@@ -70,8 +70,10 @@ const {
   refreshDepartmentTree,
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
-// 判断当前角色视图是否为干部
-const isCadreRole = computed(() => filters.value.role === '1')
+// 判断当前角色视图是否为干部（用于列显示/隐藏）
+// 只有在查询后才应用角色视图的列显示/隐藏，避免修改角色视图时立即刷新表格
+const appliedRole = ref<CertificationRole>(normalizedRole)
+const isCadreRole = computed(() => appliedRole.value === '1')
 
 // 将EmployeeDetailVO转换为AppointmentAuditRecord
 const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): AppointmentAuditRecord => {
@@ -462,9 +464,14 @@ const fetchDetail = async () => {
       const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
       if (roleExists) {
         filters.value.role = normalizedRole
+        appliedRole.value = normalizedRole
       } else {
         filters.value.role = '0'
+        appliedRole.value = '0'
       }
+    } else if (wasUserQuery) {
+      // 用户点击查询后，应用选择的角色视图
+      appliedRole.value = filters.value.role
     }
   }
 }
@@ -476,6 +483,8 @@ const handleBack = () => {
 // 查询按钮点击事件（用于其他筛选条件）
 const handleQuery = () => {
   isUserQuery.value = true
+  // 应用当前选择的角色视图到列显示/隐藏
+  appliedRole.value = filters.value.role
   fetchDetail()
 }
 
@@ -707,6 +716,9 @@ onActivated(() => {
     filters.value.maturity = '全部'
   }
   
+  // 初始化时，应用的角色视图与路由参数中的角色一致
+  appliedRole.value = normalizedRole
+  
   fetchDetail()
 })
 
@@ -872,7 +884,7 @@ onBeforeUnmount(() => {
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column 
                 label="是否达标" 
-                min-width="120" 
+                width="90" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.isQualified === true && b.isQualified !== true) return -1
@@ -892,12 +904,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" width="90" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
-                min-width="140" 
+                width="105" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -905,7 +917,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="professionalCategory" 
                 label="专业任职资格类" 
-                min-width="180" 
+                width="135" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -921,7 +933,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="professionalSubCategory" 
                 label="专业任职资格子类" 
-                min-width="180" 
+                width="150" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -937,12 +949,13 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="qualificationLevel" 
                 label="资格级别" 
-                min-width="160" 
+                width="90" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
+                v-if="!isCadreRole"
                 prop="acquisitionMethod" 
                 label="获取方式" 
                 min-width="160" 
@@ -950,8 +963,8 @@ onBeforeUnmount(() => {
                 align="center"
                 header-align="center"
               />
-              <el-table-column prop="effectiveDate" label="生效日期" min-width="150" align="center" header-align="center" />
-              <el-table-column prop="expiryDate" label="失效日期" min-width="150" align="center" header-align="center" />
+              <el-table-column prop="effectiveDate" label="生效日期" width="120" align="center" header-align="center" />
+              <el-table-column prop="expiryDate" label="失效日期" width="120" align="center" header-align="center" />
               <el-table-column 
                 v-if="!isCadreRole"
                 prop="positionSubCategory" 
@@ -969,7 +982,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
-                min-width="140" 
+                width="120" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1029,7 +1042,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="cadreType" 
                 label="干部类型" 
-                min-width="140" 
+                width="90" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1077,7 +1090,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="positionMaturity" 
                 label="岗位AI成熟度" 
-                min-width="150" 
+                width="120" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1130,7 +1143,7 @@ onBeforeUnmount(() => {
             >
               <el-table-column 
                 label="是否达标" 
-                min-width="120" 
+                width="90" 
                 sortable 
                 prop="isCertStandard"
                 :sort-method="(a, b) => {
@@ -1153,12 +1166,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" width="90" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
-                min-width="140" 
+                width="105" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1166,7 +1179,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
-                min-width="160" 
+                width="375" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1217,7 +1230,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
-                min-width="140" 
+                width="120" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1277,7 +1290,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="cadreType" 
                 label="干部类型" 
-                min-width="140" 
+                width="90" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1325,7 +1338,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="positionMaturity" 
                 label="岗位AI成熟度" 
-                min-width="150" 
+                width="120" 
                 sortable 
                 align="center"
                 header-align="center"
