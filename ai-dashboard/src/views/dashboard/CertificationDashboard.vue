@@ -655,6 +655,28 @@ const getRowClassName = ({ row, rowIndex }: { row: any; rowIndex: number }) => {
   return classes.join(' ')
 }
 
+const getRowStyle = ({ row }: { row: any }) => {
+  // 判断是否是成熟度行（L2、L3）或总计行
+  if (row.isMaturityRow || (row.maturityLevel && ['L2', 'L3', '总计', '全部', 'Total', 'total'].includes(row.maturityLevel))) {
+    return {
+      fontWeight: 'bold',
+      fontSize: '14px',
+    }
+  }
+  return {}
+}
+
+const getCellStyle = ({ row }: { row: any }) => {
+  // 判断是否是成熟度行（L2、L3）或总计行
+  if (row.isMaturityRow || (row.maturityLevel && ['L2', 'L3', '总计', '全部', 'Total', 'total'].includes(row.maturityLevel))) {
+    return {
+      fontWeight: 'bold',
+      fontSize: '14px',
+    }
+  }
+  return {}
+}
+
 const getCellClassName = ({ row, column }: { row: any; column: any }) => {
   if (column.property === 'complianceRate') {
     if (row.complianceRate == null || row.complianceRate === undefined || isNaN(row.complianceRate)) {
@@ -803,6 +825,8 @@ onActivated(() => {
                 size="small"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
                 :row-class-name="getRowClassName"
+                :row-style="getRowStyle"
+                :cell-style="getCellStyle"
                 :cell-class-name="getCellClassName"
               >
                 <!-- 合并的成熟度/职位类列 -->
@@ -898,6 +922,8 @@ onActivated(() => {
             size="small"
             :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
             :row-class-name="getRowClassName"
+            :row-style="getRowStyle"
+            :cell-style="getCellStyle"
             :cell-class-name="getCellClassName"
           >
                 <!-- 合并的成熟度/职位类列 -->
@@ -1058,6 +1084,8 @@ onActivated(() => {
                 size="small"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
                 :row-class-name="getRowClassName"
+                :row-style="getRowStyle"
+                :cell-style="getCellStyle"
               >
                 <!-- 合并的成熟度/职位类列 -->
                 <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" width="180" align="left" header-align="center">
@@ -1145,6 +1173,8 @@ onActivated(() => {
                 size="small"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
                 :row-class-name="getRowClassName"
+                :row-style="getRowStyle"
+                :cell-style="getCellStyle"
               >
                 <!-- 合并的成熟度/职位类列 -->
                 <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" width="180" align="left" header-align="center">
@@ -1519,24 +1549,59 @@ onActivated(() => {
     }
 
     // 成熟度行（L2、L3）和总计行的样式
-    :deep(.maturity-row) {
-      font-weight: bold !important;
-      font-size: 14px !important; // 增大两号（从12px到14px）
-      
-      td {
+    // 使用更具体的选择器确保覆盖 Element Plus 的默认样式
+    :deep(.el-table) {
+      .maturity-row {
         font-weight: bold !important;
-        font-size: 14px !important;
+        font-size: 14px !important; // 增大两号（从12px到14px）
         
-        .cell {
+        td {
           font-weight: bold !important;
           font-size: 14px !important;
           
-          // 确保链接和文本都应用样式
-          .el-link,
-          span,
-          div {
+          .cell {
             font-weight: bold !important;
             font-size: 14px !important;
+            line-height: 1.5 !important;
+            
+            // 确保链接和文本都应用样式
+            .el-link,
+            .el-link__inner,
+            span,
+            div,
+            * {
+              font-weight: bold !important;
+              font-size: 14px !important;
+            }
+          }
+        }
+      }
+      
+      // 针对 small 尺寸的表格
+      &.el-table--small {
+        .maturity-row {
+          font-weight: bold !important;
+          font-size: 14px !important;
+          
+          td {
+            font-weight: bold !important;
+            font-size: 14px !important;
+            padding: 8px 0 !important;
+            
+            .cell {
+              font-weight: bold !important;
+              font-size: 14px !important;
+              line-height: 1.5 !important;
+              
+              .el-link,
+              .el-link__inner,
+              span,
+              div,
+              * {
+                font-weight: bold !important;
+                font-size: 14px !important;
+              }
+            }
           }
         }
       }
