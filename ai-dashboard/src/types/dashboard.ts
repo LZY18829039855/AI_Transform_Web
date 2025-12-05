@@ -242,6 +242,7 @@ export interface CadreCertificationSummaryRow {
   subjectTwoPassed: number
   certificateRate: number
   subjectTwoRate: number
+  certStandardCount?: number
   complianceRate: number
 }
 

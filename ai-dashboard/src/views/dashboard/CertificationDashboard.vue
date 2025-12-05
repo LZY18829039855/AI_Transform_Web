@@ -637,26 +637,33 @@ const formatPercent = (value: number) => {
   return `${(value * 100).toFixed(1)}%`
 }
 
-const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
+const getRowClassName = ({ row, rowIndex }: { row: any; rowIndex: number }) => {
+  const classes: string[] = []
+  
+  // 判断是否是偶数行
   if (rowIndex % 2 === 0) {
-    return 'row-even'
+    classes.push('row-even')
+  } else {
+    classes.push('row-odd')
   }
-  return 'row-odd'
+  
+  // 判断是否是成熟度行（L2、L3）或总计行
+  if (row.isMaturityRow || (row.maturityLevel && ['L2', 'L3', '总计', '全部', 'Total', 'total'].includes(row.maturityLevel))) {
+    classes.push('maturity-row')
+  }
+  
+  return classes.join(' ')
 }
 
 const getCellClassName = ({ row, column }: { row: any; column: any }) => {
   if (column.property === 'complianceRate') {
-    if (!row.isL2CalculatedNonSoftware) {
-      if (row.complianceRate == null || row.complianceRate === undefined || isNaN(row.complianceRate)) {
-        return 'cell-placeholder-bg'
-      }
+    if (row.complianceRate == null || row.complianceRate === undefined || isNaN(row.complianceRate)) {
+      return 'cell-placeholder-bg'
     }
   }
   if (column.property === 'certificationCompliance') {
-    if (!row.isL2CalculatedNonSoftware) {
-      if (row.certificationCompliance == null || row.certificationCompliance === undefined || isNaN(row.certificationCompliance)) {
-        return 'cell-placeholder-bg'
-      }
+    if (row.certificationCompliance == null || row.certificationCompliance === undefined || isNaN(row.certificationCompliance)) {
+      return 'cell-placeholder-bg'
     }
   }
   return ''
@@ -812,7 +819,6 @@ onActivated(() => {
                 <el-table-column prop="baseline" label="基线人数" min-width="80" align="center" header-align="center">
                   <template #default="{ row }">
                     <el-link
-                      v-if="!(row as any).isL2CalculatedNonSoftware"
                       type="primary"
                       :underline="false"
                       class="clickable-cell"
@@ -820,16 +826,11 @@ onActivated(() => {
                     >
                       {{ formatNumber(row.baseline) }}
                     </el-link>
-                    <span v-else>{{ formatNumber(row.baseline) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="appointed" label="AI任职人数" min-width="100" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware">
-                      /
-                    </template>
                     <el-link
-                      v-else
                       type="primary"
                       :underline="false"
                       class="clickable-cell"
@@ -839,34 +840,19 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130" align="center" header-align="center">
-                  <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware">
-                      /
-                    </template>
-                    <template v-else>
-                      {{ formatNumber(row.appointedByRequirement) }}
-                    </template>
-                  </template>
-                </el-table-column>
                 <el-table-column prop="appointmentRate" label="AI任职率" min-width="90" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware">
-                      /
-                    </template>
-                    <template v-else>
-                      {{ formatPercent(row.appointmentRate) }}
-                    </template>
+                    {{ formatPercent(row.appointmentRate) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber(row.appointedByRequirement) }}
                   </template>
                 </el-table-column>
                 <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="140" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware">
-                      /
-                    </template>
-                    <template v-else>
-                      {{ formatPercent(row.certificationCompliance) }}
-                    </template>
+                    {{ formatPercent(row.certificationCompliance) }}
                   </template>
                 </el-table-column>
               </el-table>
@@ -985,6 +971,11 @@ onActivated(() => {
                     </template>
                   </template>
                 </el-table-column>
+                <el-table-column prop="certStandardCount" label="按要求持证人数" min-width="140" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber((row as any).certStandardCount) }}
+                  </template>
+                </el-table-column>
                 <el-table-column prop="complianceRate" min-width="130" align="center" header-align="center">
                   <template #header>
                     <span>按要求持证率</span>
@@ -1006,10 +997,7 @@ onActivated(() => {
                     </el-tooltip>
                   </template>
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware">
-                      /
-                    </template>
-                    <span v-else-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
+                    <span v-if="row.complianceRate != null && row.complianceRate !== undefined && !isNaN(row.complianceRate)">
                       {{ formatPercent(row.complianceRate) }}
                     </span>
                     <span v-else class="pending-data">待提供数据</span>
@@ -1528,6 +1516,30 @@ onActivated(() => {
 
     :deep(.row-odd) {
       background: #fff;
+    }
+
+    // 成熟度行（L2、L3）和总计行的样式
+    :deep(.maturity-row) {
+      font-weight: bold !important;
+      font-size: 13px !important; // 增大一号（从12px到13px）
+      
+      td {
+        font-weight: bold !important;
+        font-size: 13px !important;
+        
+        .cell {
+          font-weight: bold !important;
+          font-size: 13px !important;
+          
+          // 确保链接和文本都应用样式
+          .el-link,
+          span,
+          div {
+            font-weight: bold !important;
+            font-size: 13px !important;
+          }
+        }
+      }
     }
 
     .clickable-cell {
