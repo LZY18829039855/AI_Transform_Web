@@ -592,14 +592,14 @@ const summaryMetrics = computed(() => {
     { label: '任职记录', value: appointmentRecords.length, unit: '条' },
     {
       label: '任职达标率',
-      value: appointmentRate === 0 ? '待提供数据' : appointmentRate,
-      unit: appointmentRate === 0 ? '' : '%',
+      value: appointmentRate,
+      unit: '%',
     },
     { label: '认证记录', value: certificationRecords.length, unit: '条' },
     {
       label: '持证率',
-      value: certStandardRate === 0 ? '待提供数据' : certStandardRate,
-      unit: certStandardRate === 0 ? '' : '%',
+      value: certStandardRate,
+      unit: '%',
     },
   ]
 })
