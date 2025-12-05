@@ -17,12 +17,12 @@ npm install
 npm run dev
 ```
 
-默认端口为 `3800`，启动后可访问：
+默认端口为 `8080`（与前端 Vite 代理配置匹配），启动后可访问：
 
-- `http://localhost:3800/health` 检查服务
-- `http://localhost:3800/ai_transform_webapi/department-info/children?deptId=0` 获取三级部门
+- `http://localhost:8080/health` 检查服务
+- `http://localhost:8080/ai_transform_webapi/department-info/children?deptId=0` 获取三级部门
 
-如需提供给前端使用，请将 `VITE_API_BASE_URL` 指向 `http://localhost:3800`（或对应端口）。
+前端通过 Vite 代理自动将 `/ai_transform_webapi` 转发到 `http://localhost:8080`，无需额外配置。
 
 ## 目录结构
 

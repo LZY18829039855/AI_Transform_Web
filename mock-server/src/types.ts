@@ -122,3 +122,18 @@ export interface EmployeeDetailVO {
 export interface EmployeeDrillDownResponseVO {
   employeeDetails: EmployeeDetailVO[]
 }
+
+export interface StaffChartPoint {
+  label: string
+  count: number
+  rate: number
+}
+
+export interface OverallCertificationTrendsResponse {
+  departmentAppointment: StaffChartPoint[]
+  organizationAppointment: StaffChartPoint[]
+  jobCategoryAppointment: StaffChartPoint[]
+  departmentCertification: StaffChartPoint[]
+  organizationCertification: StaffChartPoint[]
+  jobCategoryCertification: StaffChartPoint[]
+}

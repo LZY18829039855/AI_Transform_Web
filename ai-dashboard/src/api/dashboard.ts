@@ -1136,13 +1136,37 @@ export const fetchOverallCertificationTrends = async (): Promise<{
   organizationCertification: StaffChartPoint[]
   jobCategoryCertification: StaffChartPoint[]
 }> => {
-  return {
-    departmentAppointment: [],
-    organizationAppointment: [],
-    jobCategoryAppointment: [],
-    departmentCertification: [],
-    organizationCertification: [],
-    jobCategoryCertification: [],
+  try {
+    const response = await get<Result<{
+      departmentAppointment: StaffChartPoint[]
+      organizationAppointment: StaffChartPoint[]
+      jobCategoryAppointment: StaffChartPoint[]
+      departmentCertification: StaffChartPoint[]
+      organizationCertification: StaffChartPoint[]
+      jobCategoryCertification: StaffChartPoint[]
+    }>>('/expert-cert-statistics/overall-certification-trends')
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取全员趋势数据失败：', response.message)
+    return {
+      departmentAppointment: [],
+      organizationAppointment: [],
+      jobCategoryAppointment: [],
+      departmentCertification: [],
+      organizationCertification: [],
+      jobCategoryCertification: [],
+    }
+  } catch (error) {
+    console.error('获取全员趋势数据异常：', error)
+    return {
+      departmentAppointment: [],
+      organizationAppointment: [],
+      jobCategoryAppointment: [],
+      departmentCertification: [],
+      organizationCertification: [],
+      jobCategoryCertification: [],
+    }
   }
 }
 

@@ -20,7 +20,7 @@ app.use((req, res) => {
   })
 })
 
-const PORT = Number(process.env.MOCK_SERVER_PORT) || 3800
+const PORT = Number(process.env.MOCK_SERVER_PORT) || 8080
 
 app.listen(PORT, () => {
   console.log(`[mock-server] listening on http://localhost:${PORT}`)

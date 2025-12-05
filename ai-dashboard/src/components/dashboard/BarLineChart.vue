@@ -61,6 +61,14 @@ const getOption = (): EChartsOption => {
   const rates = props.points.map((item) => item.rate)
   const longestLabelLength = categories.reduce((max, label) => Math.max(max, label.length), 0)
   
+  // 判断图表类型：根据 countLabel 判断是任职表还是认证表
+  const isAppointmentChart = props.countLabel?.includes('任职') || false
+  const isCertificationChart = props.countLabel?.includes('认证') || false
+  
+  // 根据图表类型设置坐标轴名称
+  const leftAxisName = isCertificationChart ? '认证人数占比' : isAppointmentChart ? '任职人数占比' : '人数占比'
+  const rightAxisName = isCertificationChart ? '认证人数' : isAppointmentChart ? '任职人数' : props.countLabel || '人数'
+  
   // 判断是否是职位类任职数据或职位类认证数据图表
   const isJobCategoryChart = props.title === '职位类任职数据' || props.title === '职位类认证数据'
   const maxCharsPerLine = 4
@@ -120,13 +128,13 @@ const getOption = (): EChartsOption => {
     grid: {
       left: '6%',
       right: props.showRate ? '10%' : '4%',
-      top: 40,
+      top: props.showRate ? 50 : 40, // 当有占比时，增加顶部空间，为坐标轴名称和图例留出位置
       bottom: gridBottom,
       containLabel: false,
     },
     legend: {
-      right: 20,
-      top: 10,
+      right: props.showRate ? 10 : 20, // 当有占比时，图例靠近右坐标轴
+      top: props.showRate ? -5 : 10, // 当有占比时，图例位置在右坐标轴标题上方，避免重叠
       itemHeight: 12,
       itemWidth: 18,
       icon: 'roundRect',
@@ -198,14 +206,20 @@ const getOption = (): EChartsOption => {
       },
     },
     yAxis: [
-      // 左侧坐标轴：占比
+      // 左侧坐标轴：人数占比（根据图表类型动态设置）
       props.showRate
         ? {
             type: 'value',
-            name: props.rateLabel,
+            name: leftAxisName,
             min: 0,
             max: 100,
             position: 'left',
+            nameLocation: 'end', // 名称显示在坐标轴上方
+            nameGap: 8, // 增大间距，使标题上移
+            nameRotate: 0, // 文字横向排列
+            nameTextStyle: {
+              padding: [-3, 0, 0, -5], // 顶部负padding，使标题上移；左侧负padding，使标题左移
+            },
             axisLine: { show: false },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: 'rgba(31, 45, 61, 0.12)' } },
@@ -218,17 +232,25 @@ const getOption = (): EChartsOption => {
             type: 'value',
             name: props.countLabel,
             position: 'left',
+            nameLocation: 'end', // 名称显示在坐标轴上方
+            nameRotate: 0, // 文字横向排列
             axisLine: { show: false },
             axisTick: { show: false },
             splitLine: { lineStyle: { type: 'dashed', color: 'rgba(31, 45, 61, 0.12)' } },
             axisLabel: { color: 'rgba(31, 45, 61, 0.65)' },
           },
-      // 右侧坐标轴：总人数
+      // 右侧坐标轴：总人数（根据图表类型动态设置）
       props.showRate
         ? {
             type: 'value',
-            name: props.countLabel,
+            name: rightAxisName,
             position: 'right',
+            nameLocation: 'end', // 名称显示在坐标轴上方
+            nameGap: 12, // 增大间距，使标题右移
+            nameRotate: 0, // 文字横向排列
+            nameTextStyle: {
+              padding: [0, 0, 0, 5], // 右侧正padding，使标题进一步右移
+            },
             axisLine: { show: false },
             axisTick: { show: false },
             splitLine: { show: false },

@@ -4,6 +4,7 @@ import { getCompetenceCategoryCertStatistics } from '../data/competenceCategoryC
 import { getCadreMaturityJobCategoryCertStatistics } from '../data/cadreMaturityJobCategoryCertStatistics'
 import { getCadreMaturityJobCategoryQualifiedStatistics } from '../data/cadreMaturityJobCategoryQualifiedStatistics'
 import { getCadreQualifiedDetails } from '../data/cadreQualifiedDetails'
+import { getOverallCertificationTrends } from '../data/overallCertificationTrends'
 import { successResponse, errorResponse } from '../utils/response'
 
 const router = Router()
@@ -75,6 +76,11 @@ router.get('/cadre-qualified-details', (req, res) => {
     console.error('[mock] 获取干部任职详情失败:', error)
     return res.status(500).json(errorResponse('系统异常，请稍后重试', 500))
   }
+})
+
+router.get('/overall-certification-trends', (req, res) => {
+  const data = getOverallCertificationTrends()
+  return res.json(successResponse(data, 'mock overall certification trends'))
 })
 
 export default router
