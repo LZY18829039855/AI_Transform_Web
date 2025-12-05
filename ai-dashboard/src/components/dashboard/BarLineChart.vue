@@ -128,13 +128,13 @@ const getOption = (): EChartsOption => {
     grid: {
       left: '6%',
       right: props.showRate ? '10%' : '4%',
-      top: props.showRate ? 50 : 40, // 当有占比时，增加顶部空间，为坐标轴名称和图例留出位置
+      top: props.showRate ? 60 : 40, // 当有占比时，增加顶部空间，为坐标轴名称和图例留出位置
       bottom: gridBottom,
       containLabel: false,
     },
     legend: {
       right: props.showRate ? 10 : 20, // 当有占比时，图例靠近右坐标轴
-      top: props.showRate ? -5 : 10, // 当有占比时，图例位置在右坐标轴标题上方，避免重叠
+      top: props.showRate ? 5 : 10, // 当有占比时，图例位置在右坐标轴标题上方，避免重叠和被遮挡
       itemHeight: 12,
       itemWidth: 18,
       icon: 'roundRect',
@@ -215,10 +215,10 @@ const getOption = (): EChartsOption => {
             max: 100,
             position: 'left',
             nameLocation: 'end', // 名称显示在坐标轴上方
-            nameGap: 8, // 增大间距，使标题上移
+            nameGap: 12, // 增大间距，使标题上移
             nameRotate: 0, // 文字横向排列
             nameTextStyle: {
-              padding: [-3, 0, 0, -5], // 顶部负padding，使标题上移；左侧负padding，使标题左移
+              padding: [-5, 0, 0, -5], // 顶部负padding，使标题上移；左侧负padding，使标题左移
             },
             axisLine: { show: false },
             axisTick: { show: false },
@@ -246,10 +246,10 @@ const getOption = (): EChartsOption => {
             name: rightAxisName,
             position: 'right',
             nameLocation: 'end', // 名称显示在坐标轴上方
-            nameGap: 12, // 增大间距，使标题右移
+            nameGap: 16, // 增大间距，使标题上移和右移
             nameRotate: 0, // 文字横向排列
             nameTextStyle: {
-              padding: [0, 0, 0, 5], // 右侧正padding，使标题进一步右移
+              padding: [-5, 0, 0, 5], // 顶部负padding，使标题上移；右侧正padding，使标题右移
             },
             axisLine: { show: false },
             axisTick: { show: false },
