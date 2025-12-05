@@ -907,6 +907,14 @@ onBeforeUnmount(() => {
               <el-table-column prop="name" label="姓名" width="90" fixed="left" align="center" header-align="center" />
               <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
               <el-table-column 
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                width="120" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
                 width="105" 
@@ -1088,14 +1096,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                width="120" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
                 v-if="!isCadreRole"
                 prop="requiredCertificate" 
                 label="要求持证类型" 
@@ -1179,7 +1179,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
-                width="375" 
+                width="300" 
                 sortable 
                 align="center"
                 header-align="center"
