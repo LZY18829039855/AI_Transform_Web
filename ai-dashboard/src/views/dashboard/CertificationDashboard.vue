@@ -489,8 +489,8 @@ const handleExpertCertCellClick = (row: Record<string, unknown>, column: string)
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
       const prevRow = expertData.value.certification[i]
-      if (prevRow && prevRow.maturityLevel) {
-        maturityLevel = prevRow.maturityLevel as string
+      if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
+        maturityLevel = (prevRow.maturityLevel as string) || ''
         break
       }
     }
@@ -506,7 +506,7 @@ const handleExpertCertCellClick = (row: Record<string, unknown>, column: string)
     column,
     maturity: maturityLevel || undefined,
     jobCategory: jobCategory || undefined,
-    role: '2', // 强制设置为专家角色
+    role: '2', // 强制设置为专家角色，后端会根据此参数设置personType=2
     deptCode: deptCode,
     source: 'certification', // 标识来自专家认证数据表格
   }
