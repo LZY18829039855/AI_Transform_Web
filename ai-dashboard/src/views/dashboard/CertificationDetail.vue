@@ -311,7 +311,7 @@ const fetchDetail = async () => {
       const isExpertCertQuery = 
         normalizedRole === '2' && 
         route.query.column && 
-        ['aiCertificateHolders', 'certification', 'baseline'].includes(route.query.column as string)
+        ['aiCertificateHolders', 'certification', 'certified', 'baseline'].includes(route.query.column as string)
 
       if (isExpertCertQuery) {
         // 调用专家认证详情接口

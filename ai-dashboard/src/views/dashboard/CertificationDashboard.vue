@@ -1169,6 +1169,7 @@ onActivated(() => {
                 :row-class-name="getRowClassName"
                 :row-style="getRowStyle"
                 :cell-style="getCellStyle"
+                :cell-class-name="getCellClassName"
               >
                 <!-- 合并的成熟度/职位类列 -->
                 <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" width="180" align="left" header-align="center">
@@ -1183,16 +1184,26 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span style="color: #909399;">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertCertCellClick(row, 'baseline')"
+                    >
                       {{ formatNumber(row.baseline) }}
-                    </span>
+                    </el-link>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certified" label="已完成AI认证人数" min-width="170" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span style="color: #909399;">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleExpertCertCellClick(row, 'certified')"
+                    >
                       {{ formatNumber(row.certified) }}
-                    </span>
+                    </el-link>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certificationRate" label="AI认证人数占比" min-width="150" align="center" header-align="center">
