@@ -84,7 +84,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     departmentLevel3: employee.thirdLevelDept || '',
     departmentLevel4: employee.fourthLevelDept || '',
     departmentLevel5: employee.fifthLevelDept || '',
-    departmentLevel6: '', // 六级部门不展示
+    departmentLevel6: employee.sixthLevelDept || '',
     minDepartment: employee.miniDeptName || '',
     professionalCategory: employee.competenceFamilyCn || '',
     expertCategory: employee.competenceCategoryCn || '',
@@ -121,11 +121,14 @@ const getDeptCodeFromPath = (path?: string[]): string => {
 const fetchDetail = async () => {
   loading.value = true
   try {
+    // 确定使用的角色：如果用户点击查询按钮，使用filters.value.role；否则使用normalizedRole（从路由参数获取）
+    const currentRole = isUserQuery.value ? filters.value.role : normalizedRole
+    
     // 检查是否是干部数据查询（任职或认证）
     const isCadreQuery = 
-      normalizedRole === '1' && 
-      route.query.column && 
-      ['appointed', 'appointedByRequirement', 'baseline', 'aiCertificateHolders', 'certification'].includes(route.query.column as string)
+      currentRole === '1' && 
+      (isUserQuery.value || route.query.column) && 
+      (isUserQuery.value || ['appointed', 'appointedByRequirement', 'baseline', 'aiCertificateHolders', 'certification'].includes(route.query.column as string))
 
     if (isCadreQuery) {
       // 干部角色：同时加载任职和认证数据
@@ -183,13 +186,14 @@ const fetchDetail = async () => {
       }
 
       // 并行加载任职和认证数据（对于干部角色，无论点击哪个列，都同时加载两种数据）
+      const personType = currentRole === '1' ? 1 : (currentRole === '2' ? 2 : 1) // personType: 1-干部，2-专家
       const [qualifiedResponse, certResponse] = await Promise.all([
         // 加载任职数据，queryType默认为2
         fetchCadreQualifiedDetails(
           deptCode,
           maturityParam,
           jobCategory,
-          1, // personType: 1-干部
+          personType,
           queryType
         ),
         // 加载认证数据，queryType默认为2
@@ -197,7 +201,7 @@ const fetchDetail = async () => {
           deptCode,
           maturityParam,
           jobCategory,
-          1, // personType: 1-干部
+          personType,
           queryType
         ),
       ])
@@ -288,11 +292,11 @@ const fetchDetail = async () => {
         } else {
           // 如果没有source参数，根据其他列判断
           const isCadreQualifiedOnlyQuery = 
-            normalizedRole === '1' && 
+            currentRole === '1' && 
             route.query.column && 
             ['appointed', 'appointedByRequirement'].includes(route.query.column as string)
           const isCadreCertOnlyQuery = 
-            normalizedRole === '1' && 
+            currentRole === '1' && 
             route.query.column && 
             ['aiCertificateHolders', 'certification'].includes(route.query.column as string)
           
@@ -306,75 +310,69 @@ const fetchDetail = async () => {
           }
         }
       }
-    } else {
-      // 检查是否是专家认证数据查询
-      const isExpertCertQuery = 
-        normalizedRole === '2' && 
-        route.query.column && 
-        ['aiCertificateHolders', 'certification', 'certified', 'baseline'].includes(route.query.column as string)
-
-      if (isExpertCertQuery) {
-        // 调用专家认证详情接口
-        // 使用筛选条件中的值（部门、职位类、成熟度）
-        const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
-        const jobCategory = filters.value.jobCategory || undefined
-        
-        // 处理成熟度参数：
-        // 1. 如果用户点击查询按钮（isUserQuery为true），使用筛选条件中的值
-        // 2. 如果是首次加载（从看板跳转），优先检查路由参数中是否有L5
-        let maturityParam: string | undefined = undefined
-        const maturityFromRoute = route.query.maturity as string | undefined
-        const aiMaturity = filters.value.maturity
-        
-        if (isUserQuery.value) {
-          // 用户点击查询按钮，使用筛选条件中的值
-          if (aiMaturity === '全部' || !aiMaturity) {
-            maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
-          } else {
-            const maturityStr = aiMaturity as string
-            if (maturityStr === 'L5') {
-              maturityParam = 'L5' // L5代表查询L2和L3的数据
-            } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
-              maturityParam = 'L5' // 总计行转换为L5
-            } else {
-              maturityParam = maturityStr
-            }
-          }
+    } else if (currentRole === '2') {
+      // 专家角色：加载认证数据（专家只有认证数据，没有任职数据）
+      // 使用筛选条件中的值（部门、职位类、成熟度）
+      const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
+      const jobCategory = filters.value.jobCategory || undefined
+      
+      // 处理成熟度参数：
+      // 1. 如果用户点击查询按钮（isUserQuery为true），使用筛选条件中的值
+      // 2. 如果是首次加载（从看板跳转），优先检查路由参数中是否有L5
+      let maturityParam: string | undefined = undefined
+      const maturityFromRoute = route.query.maturity as string | undefined
+      const aiMaturity = filters.value.maturity
+      
+      if (isUserQuery.value) {
+        // 用户点击查询按钮，使用筛选条件中的值
+        if (aiMaturity === '全部' || !aiMaturity) {
+          maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
         } else {
-          // 首次加载（从看板跳转），优先检查路由参数
-          if (maturityFromRoute === 'L5') {
+          const maturityStr = aiMaturity as string
+          if (maturityStr === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
-          } else if (aiMaturity === '全部' || !aiMaturity) {
-            maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+          } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
           } else {
-            const maturityStr = aiMaturity as string
-            if (maturityStr === 'L5') {
-              maturityParam = 'L5' // L5代表查询L2和L3的数据
-            } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
-              maturityParam = 'L5' // 总计行转换为L5
-            } else {
-              maturityParam = maturityStr
-            }
+            maturityParam = maturityStr
           }
         }
-        
-        // 确定queryType：
-        // 1. 如果是从看板跳转过来的（有route.query.column），根据column决定：baseline=2，其他=1
-        // 2. 如果是在详情页面点击查询按钮（没有route.query.column），默认为2
-        const column = route.query.column as string | undefined
-        let queryType = 2 // 默认值：在详情页面点击查询按钮时使用
-        if (column) {
-          // 从看板跳转过来，根据点击的列决定queryType
-          queryType = column === 'baseline' ? 2 : 1
+      } else {
+        // 首次加载（从看板跳转），优先检查路由参数
+        if (maturityFromRoute === 'L5') {
+          maturityParam = 'L5' // L5代表查询L2和L3的数据
+        } else if (aiMaturity === '全部' || !aiMaturity) {
+          maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+        } else {
+          const maturityStr = aiMaturity as string
+          if (maturityStr === 'L5') {
+            maturityParam = 'L5' // L5代表查询L2和L3的数据
+          } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
+          } else {
+            maturityParam = maturityStr
+          }
         }
-        
-        const response = await fetchPersonCertDetails(
-          deptCode,
-          maturityParam,
-          jobCategory,
-          2, // personType: 2-专家
-          queryType
-        )
+      }
+      
+      // 确定queryType：
+      // 1. 如果是从看板跳转过来的（有route.query.column），根据column决定：baseline=2，其他=1
+      // 2. 如果是在详情页面点击查询按钮（没有route.query.column），默认为2
+      const column = route.query.column as string | undefined
+      let queryType = 2 // 默认值：在详情页面点击查询按钮时使用
+      if (column) {
+        // 从看板跳转过来，根据点击的列决定queryType
+        queryType = column === 'baseline' ? 2 : 1
+      }
+      
+      // 调用专家认证详情接口
+      const response = await fetchPersonCertDetails(
+        deptCode,
+        maturityParam,
+        jobCategory,
+        2, // personType: 2-专家
+        queryType
+      )
 
         if (response && response.employeeDetails) {
           // 转换为CertificationAuditRecord格式
@@ -453,11 +451,14 @@ const fetchDetail = async () => {
     }
   } finally {
     loading.value = false
+    // 保存用户查询标志，用于判断是否需要重置角色值
+    const wasUserQuery = isUserQuery.value
     // 查询完成后，重置用户查询标志（下次如果是首次加载，会使用路由参数）
     isUserQuery.value = false
     
-    // 数据加载完成后，根据路由参数设置正确的角色值
-    if (roleOptions.value.length > 0) {
+    // 数据加载完成后，只有在首次加载（非用户查询）时才根据路由参数设置角色值
+    // 如果用户点击了查询按钮，保持用户选择的角色值不变
+    if (!wasUserQuery && roleOptions.value.length > 0) {
       const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
       if (roleExists) {
         filters.value.role = normalizedRole
@@ -1003,6 +1004,14 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
+                prop="departmentLevel6" 
+                label="六级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
                 prop="minDepartment" 
                 label="最小部门" 
                 min-width="160" 
@@ -1238,6 +1247,14 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel5" 
                 label="五级部门" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                prop="departmentLevel6" 
+                label="六级部门" 
                 min-width="140" 
                 sortable 
                 align="center"
