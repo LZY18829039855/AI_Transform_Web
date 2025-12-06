@@ -70,10 +70,6 @@ const {
   refreshDepartmentTree,
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
-// 判断当前角色视图是否为干部（用于列显示/隐藏）
-// 只有在查询后才应用角色视图的列显示/隐藏，避免修改角色视图时立即刷新表格
-const appliedRole = ref<CertificationRole>(normalizedRole)
-const isCadreRole = computed(() => appliedRole.value === '1')
 
 // 将EmployeeDetailVO转换为AppointmentAuditRecord
 const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): AppointmentAuditRecord => {
@@ -125,14 +121,11 @@ const getDeptCodeFromPath = (path?: string[]): string => {
 const fetchDetail = async () => {
   loading.value = true
   try {
-    // 确定使用的角色：如果用户点击查询按钮，使用filters中的角色；否则使用路由参数中的角色
-    const currentRole = isUserQuery.value ? filters.value.role : normalizedRole
-    
     // 检查是否是干部数据查询（任职或认证）
-    // 如果用户点击查询按钮，即使没有route.query.column，也根据选择的角色判断
     const isCadreQuery = 
-      currentRole === '1' && 
-      (route.query.column && ['appointed', 'appointedByRequirement', 'baseline', 'aiCertificateHolders', 'certification'].includes(route.query.column as string) || isUserQuery.value)
+      normalizedRole === '1' && 
+      route.query.column && 
+      ['appointed', 'appointedByRequirement', 'baseline', 'aiCertificateHolders', 'certification'].includes(route.query.column as string)
 
     if (isCadreQuery) {
       // 干部角色：同时加载任职和认证数据
@@ -149,7 +142,9 @@ const fetchDetail = async () => {
       
       if (isUserQuery.value) {
         // 用户点击查询按钮，使用筛选条件中的值
-        if (aiMaturity && aiMaturity !== '全部') {
+        if (aiMaturity === '全部' || !aiMaturity) {
+          maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+        } else {
           const maturityStr = aiMaturity as string
           if (maturityStr === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
@@ -163,7 +158,9 @@ const fetchDetail = async () => {
         // 首次加载（从看板跳转），优先检查路由参数
         if (maturityFromRoute === 'L5') {
           maturityParam = 'L5' // L5代表查询L2和L3的数据
-        } else if (aiMaturity && aiMaturity !== '全部') {
+        } else if (aiMaturity === '全部' || !aiMaturity) {
+          maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+        } else {
           const maturityStr = aiMaturity as string
           if (maturityStr === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
@@ -291,11 +288,11 @@ const fetchDetail = async () => {
         } else {
           // 如果没有source参数，根据其他列判断
           const isCadreQualifiedOnlyQuery = 
-            currentRole === '1' && 
+            normalizedRole === '1' && 
             route.query.column && 
             ['appointed', 'appointedByRequirement'].includes(route.query.column as string)
           const isCadreCertOnlyQuery = 
-            currentRole === '1' && 
+            normalizedRole === '1' && 
             route.query.column && 
             ['aiCertificateHolders', 'certification'].includes(route.query.column as string)
           
@@ -311,10 +308,10 @@ const fetchDetail = async () => {
       }
     } else {
       // 检查是否是专家认证数据查询
-      // 如果用户点击查询按钮，即使没有route.query.column，也根据选择的角色判断
       const isExpertCertQuery = 
-        currentRole === '2' && 
-        (route.query.column && ['aiCertificateHolders', 'certification', 'baseline'].includes(route.query.column as string) || isUserQuery.value)
+        normalizedRole === '2' && 
+        route.query.column && 
+        ['aiCertificateHolders', 'certification', 'baseline'].includes(route.query.column as string)
 
       if (isExpertCertQuery) {
         // 调用专家认证详情接口
@@ -331,7 +328,9 @@ const fetchDetail = async () => {
         
         if (isUserQuery.value) {
           // 用户点击查询按钮，使用筛选条件中的值
-          if (aiMaturity && aiMaturity !== '全部') {
+          if (aiMaturity === '全部' || !aiMaturity) {
+            maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+          } else {
             const maturityStr = aiMaturity as string
             if (maturityStr === 'L5') {
               maturityParam = 'L5' // L5代表查询L2和L3的数据
@@ -345,7 +344,9 @@ const fetchDetail = async () => {
           // 首次加载（从看板跳转），优先检查路由参数
           if (maturityFromRoute === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
-          } else if (aiMaturity && aiMaturity !== '全部') {
+          } else if (aiMaturity === '全部' || !aiMaturity) {
+            maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+          } else {
             const maturityStr = aiMaturity as string
             if (maturityStr === 'L5') {
               maturityParam = 'L5' // L5代表查询L2和L3的数据
@@ -366,9 +367,6 @@ const fetchDetail = async () => {
           // 从看板跳转过来，根据点击的列决定queryType
           queryType = column === 'baseline' ? 2 : 1
         }
-        
-        // 如果用户点击查询按钮且没有column参数，默认查询任职人数（queryType=2）
-        // 但专家只有认证数据，所以这里保持queryType=2即可
         
         const response = await fetchPersonCertDetails(
           deptCode,
@@ -455,23 +453,16 @@ const fetchDetail = async () => {
   } finally {
     loading.value = false
     // 查询完成后，重置用户查询标志（下次如果是首次加载，会使用路由参数）
-    const wasUserQuery = isUserQuery.value
     isUserQuery.value = false
     
     // 数据加载完成后，根据路由参数设置正确的角色值
-    // 但如果用户主动点击查询按钮，保持用户选择的角色值，不重置
-    if (!wasUserQuery && roleOptions.value.length > 0) {
+    if (roleOptions.value.length > 0) {
       const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
       if (roleExists) {
         filters.value.role = normalizedRole
-        appliedRole.value = normalizedRole
       } else {
         filters.value.role = '0'
-        appliedRole.value = '0'
       }
-    } else if (wasUserQuery) {
-      // 用户点击查询后，应用选择的角色视图
-      appliedRole.value = filters.value.role
     }
   }
 }
@@ -483,8 +474,6 @@ const handleBack = () => {
 // 查询按钮点击事件（用于其他筛选条件）
 const handleQuery = () => {
   isUserQuery.value = true
-  // 应用当前选择的角色视图到列显示/隐藏
-  appliedRole.value = filters.value.role
   fetchDetail()
 }
 
@@ -595,13 +584,11 @@ const summaryMetrics = computed(() => {
   // 使用过滤后的数据计算统计指标
   const certificationRecords = filteredCertificationRecords.value
   const appointmentRecords = filteredAppointmentRecords.value
-  // 修改：使用 isCertStandard 字段统计持证人数（is_cert_standard=1 代表持证）
-  const certStandardCount = certificationRecords.filter((item) => item.isCertStandard === true).length
+  const qualifiedCount = certificationRecords.filter((item) => item.isQualified).length
   const appointmentQualified = appointmentRecords.filter((item) => item.isQualified).length
 
-  // 持证率：持证人数 / 总人数
-  const certStandardRate = certificationRecords.length
-    ? Math.round((certStandardCount / certificationRecords.length) * 100)
+  const certificationRate = certificationRecords.length
+    ? Math.round((qualifiedCount / certificationRecords.length) * 100)
     : 0
   const appointmentRate = appointmentRecords.length
     ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
@@ -611,14 +598,14 @@ const summaryMetrics = computed(() => {
     { label: '任职记录', value: appointmentRecords.length, unit: '条' },
     {
       label: '任职达标率',
-      value: appointmentRate,
-      unit: '%',
+      value: appointmentRate === 0 ? '待提供数据' : appointmentRate,
+      unit: appointmentRate === 0 ? '' : '%',
     },
     { label: '认证记录', value: certificationRecords.length, unit: '条' },
     {
-      label: '持证率',
-      value: certStandardRate,
-      unit: '%',
+      label: '认证达标率',
+      value: certificationRate === 0 ? '待提供数据' : certificationRate,
+      unit: certificationRate === 0 ? '' : '%',
     },
   ]
 })
@@ -715,9 +702,6 @@ onActivated(() => {
   } else {
     filters.value.maturity = '全部'
   }
-  
-  // 初始化时，应用的角色视图与路由参数中的角色一致
-  appliedRole.value = normalizedRole
   
   fetchDetail()
 })
@@ -884,7 +868,7 @@ onBeforeUnmount(() => {
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column 
                 label="是否达标" 
-                width="90" 
+                min-width="120" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.isQualified === true && b.isQualified !== true) return -1
@@ -904,20 +888,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" width="90" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
-              <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                width="120" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
+              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
-                width="105" 
+                min-width="140" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -925,7 +901,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="professionalCategory" 
                 label="专业任职资格类" 
-                width="135" 
+                min-width="180" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -941,7 +917,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="professionalSubCategory" 
                 label="专业任职资格子类" 
-                width="150" 
+                min-width="180" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -957,13 +933,12 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="qualificationLevel" 
                 label="资格级别" 
-                width="90" 
+                min-width="160" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
-                v-if="!isCadreRole"
                 prop="acquisitionMethod" 
                 label="获取方式" 
                 min-width="160" 
@@ -971,10 +946,9 @@ onBeforeUnmount(() => {
                 align="center"
                 header-align="center"
               />
-              <el-table-column prop="effectiveDate" label="生效日期" width="120" align="center" header-align="center" />
-              <el-table-column prop="expiryDate" label="失效日期" width="120" align="center" header-align="center" />
+              <el-table-column prop="effectiveDate" label="生效日期" min-width="150" align="center" header-align="center" />
+              <el-table-column prop="expiryDate" label="失效日期" min-width="150" align="center" header-align="center" />
               <el-table-column 
-                v-if="!isCadreRole"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -990,7 +964,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
-                width="120" 
+                min-width="140" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1036,7 +1010,6 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="!isCadreRole"
                 label="是否干部" 
                 min-width="110" 
                 sortable 
@@ -1050,13 +1023,12 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="cadreType" 
                 label="干部类型" 
-                width="90" 
+                min-width="140" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
-                v-if="!isCadreRole"
                 label="是否专家" 
                 min-width="110" 
                 sortable 
@@ -1069,7 +1041,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
@@ -1082,7 +1053,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
                 prop="organizationMaturity" 
                 label="组织AI成熟度" 
                 min-width="150" 
@@ -1096,7 +1066,14 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                min-width="150" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
@@ -1143,7 +1120,7 @@ onBeforeUnmount(() => {
             >
               <el-table-column 
                 label="是否达标" 
-                width="90" 
+                min-width="120" 
                 sortable 
                 prop="isCertStandard"
                 :sort-method="(a, b) => {
@@ -1166,20 +1143,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" width="90" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
-              <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                width="120" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
+              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
-                width="105" 
+                min-width="140" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1187,13 +1156,12 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
-                width="300" 
+                min-width="160" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
-                v-if="!isCadreRole"
                 prop="certificateEffectiveDate" 
                 label="证书生效日期" 
                 min-width="160" 
@@ -1222,7 +1190,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1238,7 +1205,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
-                width="120" 
+                min-width="140" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1284,7 +1251,6 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="!isCadreRole"
                 label="是否干部" 
                 min-width="110" 
                 sortable 
@@ -1298,13 +1264,12 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="cadreType" 
                 label="干部类型" 
-                width="90" 
+                min-width="140" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
-                v-if="!isCadreRole"
                 label="是否专家" 
                 min-width="110" 
                 sortable 
@@ -1317,7 +1282,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
@@ -1330,7 +1294,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
                 prop="organizationMaturity" 
                 label="组织AI成熟度" 
                 min-width="150" 
@@ -1344,7 +1307,14 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="!isCadreRole"
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                min-width="150" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
