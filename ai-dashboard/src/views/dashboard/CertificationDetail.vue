@@ -84,7 +84,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     departmentLevel3: employee.thirdLevelDept || '',
     departmentLevel4: employee.fourthLevelDept || '',
     departmentLevel5: employee.fifthLevelDept || '',
-    departmentLevel6: employee.sixthLevelDept || '',
+    departmentLevel6: '', // 六级部门不展示
     minDepartment: employee.miniDeptName || '',
     professionalCategory: employee.competenceFamilyCn || '',
     expertCategory: employee.competenceCategoryCn || '',
@@ -374,73 +374,64 @@ const fetchDetail = async () => {
         queryType
       )
 
-        if (response && response.employeeDetails) {
-          // 转换为CertificationAuditRecord格式
-          const certificationRecords: CertificationAuditRecord[] = response.employeeDetails.map(
-            (emp) => ({
-              id: emp.employeeNumber || '',
-              name: emp.name || '',
-              employeeId: emp.employeeNumber || '',
-              positionCategory: emp.competenceCategory || '',
-              positionSubCategory: emp.competenceSubcategory || '',
-              departmentLevel1: emp.firstLevelDept || '',
-              departmentLevel2: emp.secondLevelDept || '',
-              departmentLevel3: emp.thirdLevelDept || '',
-              departmentLevel4: emp.fourthLevelDept || '',
-              departmentLevel5: emp.fifthLevelDept || '',
-              departmentLevel6: emp.sixthLevelDept || '',
-              minDepartment: emp.miniDeptName || '',
-              certificateName: emp.certTitle || '',
-              certificateEffectiveDate: (emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '') as string,
-              subjectTwoPassed: emp.isPassedSubject2 === 1,
-              isCadre: emp.isCadre === 1,
-              cadreType: emp.cadreType || undefined,
-              isExpert: undefined, // 暂无数据
-              isFrontlineManager: undefined, // 暂无数据
-              organizationMaturity: undefined, // 暂无数据
-              positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
-              requiredCertificate: '',
-              isQualified: undefined, // 暂无数据
-              isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
-            })
-          )
-
-          // 构建detailData对象
-          detailData.value = {
-            summary: null,
-            certificationRecords: certificationRecords,
-            appointmentRecords: [],
-            filters: {
-              departmentTree: departmentOptions.value,
-              jobFamilies: [],
-              jobCategories: [],
-              jobSubCategories: [],
-              roles: [
-                { label: '全员', value: '0' },
-                { label: '干部', value: '1' },
-                { label: '专家', value: '2' },
-                { label: '基层主管', value: '3' },
-              ],
-              maturityOptions: [
-                { label: '全部', value: '全部' },
-                { label: 'L2', value: 'L2' },
-                { label: 'L3', value: 'L3' },
-              ],
-            },
-          }
-          // 默认显示认证标签页
-          activeTab.value = 'certification'
-        } else {
-          // 如果没有数据，使用默认的空数据结构
-          detailData.value = await fetchCertificationDetailData(props.id, {
-            ...filters.value,
-            departmentPath: filters.value.departmentPath?.length
-              ? [...(filters.value.departmentPath ?? [])]
-              : undefined,
+      if (response && response.employeeDetails) {
+        // 转换为CertificationAuditRecord格式
+        const certificationRecords: CertificationAuditRecord[] = response.employeeDetails.map(
+          (emp) => ({
+            id: emp.employeeNumber || '',
+            name: emp.name || '',
+            employeeId: emp.employeeNumber || '',
+            positionCategory: emp.competenceCategory || '',
+            positionSubCategory: emp.competenceSubcategory || '',
+            departmentLevel1: emp.firstLevelDept || '',
+            departmentLevel2: emp.secondLevelDept || '',
+            departmentLevel3: emp.thirdLevelDept || '',
+            departmentLevel4: emp.fourthLevelDept || '',
+            departmentLevel5: emp.fifthLevelDept || '',
+            departmentLevel6: emp.sixthLevelDept || '',
+            minDepartment: emp.miniDeptName || '',
+            certificateName: emp.certTitle || '',
+            certificateEffectiveDate: (emp.certStartTime ? new Date(emp.certStartTime).toISOString().split('T')[0] : '') as string,
+            subjectTwoPassed: emp.isPassedSubject2 === 1,
+            isCadre: emp.isCadre === 1,
+            cadreType: emp.cadreType || undefined,
+            isExpert: undefined, // 暂无数据
+            isFrontlineManager: undefined, // 暂无数据
+            organizationMaturity: undefined, // 暂无数据
+            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+            requiredCertificate: '',
+            isQualified: undefined, // 暂无数据
+            isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
           })
+        )
+
+        // 构建detailData对象
+        detailData.value = {
+          summary: null,
+          certificationRecords: certificationRecords,
+          appointmentRecords: [],
+          filters: {
+            departmentTree: departmentOptions.value,
+            jobFamilies: [],
+            jobCategories: [],
+            jobSubCategories: [],
+            roles: [
+              { label: '全员', value: '0' },
+              { label: '干部', value: '1' },
+              { label: '专家', value: '2' },
+              { label: '基层主管', value: '3' },
+            ],
+            maturityOptions: [
+              { label: '全部', value: '全部' },
+              { label: 'L2', value: 'L2' },
+              { label: 'L3', value: 'L3' },
+            ],
+          },
         }
+        // 默认显示认证标签页
+        activeTab.value = 'certification'
       } else {
-        // 使用原有的接口
+        // 如果没有数据，使用默认的空数据结构
         detailData.value = await fetchCertificationDetailData(props.id, {
           ...filters.value,
           departmentPath: filters.value.departmentPath?.length
@@ -448,6 +439,14 @@ const fetchDetail = async () => {
             : undefined,
         })
       }
+    } else {
+      // 使用原有的接口（其他角色或默认情况）
+      detailData.value = await fetchCertificationDetailData(props.id, {
+        ...filters.value,
+        departmentPath: filters.value.departmentPath?.length
+          ? [...(filters.value.departmentPath ?? [])]
+          : undefined,
+      })
     }
   } finally {
     loading.value = false
@@ -1004,14 +1003,6 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                prop="departmentLevel6" 
-                label="六级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
                 prop="minDepartment" 
                 label="最小部门" 
                 min-width="160" 
@@ -1247,14 +1238,6 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel5" 
                 label="五级部门" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
-                prop="departmentLevel6" 
-                label="六级部门" 
                 min-width="140" 
                 sortable 
                 align="center"
