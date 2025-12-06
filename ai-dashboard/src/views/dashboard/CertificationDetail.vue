@@ -869,7 +869,7 @@ onBeforeUnmount(() => {
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column 
                 label="是否达标" 
-                min-width="120" 
+                width="84" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.isQualified === true && b.isQualified !== true) return -1
@@ -889,12 +889,20 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" width="84" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" width="108" align="center" header-align="center" />
+              <el-table-column 
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                width="112" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
-                min-width="140" 
+                width="98" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -902,7 +910,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="professionalCategory" 
                 label="专业任职资格类" 
-                min-width="180" 
+                width="126" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -918,7 +926,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="professionalSubCategory" 
                 label="专业任职资格子类" 
-                min-width="180" 
+                width="140" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -934,12 +942,13 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="qualificationLevel" 
                 label="资格级别" 
-                min-width="160" 
+                width="84" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="acquisitionMethod" 
                 label="获取方式" 
                 min-width="160" 
@@ -947,8 +956,8 @@ onBeforeUnmount(() => {
                 align="center"
                 header-align="center"
               />
-              <el-table-column prop="effectiveDate" label="生效日期" min-width="150" align="center" header-align="center" />
-              <el-table-column prop="expiryDate" label="失效日期" min-width="150" align="center" header-align="center" />
+              <el-table-column prop="effectiveDate" label="生效日期" width="112" align="center" header-align="center" />
+              <el-table-column prop="expiryDate" label="失效日期" width="112" align="center" header-align="center" />
               <el-table-column 
                 prop="positionSubCategory" 
                 label="职位子类" 
@@ -965,7 +974,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
-                min-width="140" 
+                width="112" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1011,6 +1020,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 label="是否干部" 
                 min-width="110" 
                 sortable 
@@ -1024,12 +1034,13 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="cadreType" 
                 label="干部类型" 
-                min-width="140" 
+                width="84" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 label="是否专家" 
                 min-width="110" 
                 sortable 
@@ -1042,6 +1053,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
@@ -1054,6 +1066,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="organizationMaturity" 
                 label="组织AI成熟度" 
                 min-width="150" 
@@ -1067,14 +1080,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                min-width="150" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
@@ -1121,7 +1127,7 @@ onBeforeUnmount(() => {
             >
               <el-table-column 
                 label="是否达标" 
-                min-width="120" 
+                width="84" 
                 sortable 
                 prop="isCertStandard"
                 :sort-method="(a, b) => {
@@ -1144,12 +1150,20 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" min-width="120" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" min-width="140" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" width="84" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" width="108" align="center" header-align="center" />
+              <el-table-column 
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                width="112" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
-                min-width="140" 
+                width="98" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1157,7 +1171,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
-                min-width="160" 
+                width="308" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1206,7 +1220,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
-                min-width="140" 
+                width="112" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1252,6 +1266,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 label="是否干部" 
                 min-width="110" 
                 sortable 
@@ -1265,12 +1280,13 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="cadreType" 
                 label="干部类型" 
-                min-width="140" 
+                width="84" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 label="是否专家" 
                 min-width="110" 
                 sortable 
@@ -1283,6 +1299,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
@@ -1295,6 +1312,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="organizationMaturity" 
                 label="组织AI成熟度" 
                 min-width="150" 
@@ -1308,14 +1326,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                min-width="150" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
