@@ -1122,14 +1122,9 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
                   <template #default="{ row }">
-                    <el-link
-                      type="primary"
-                      :underline="false"
-                      class="clickable-cell"
-                      @click.stop="handleExpertQualifiedCellClick(row, 'appointedByRequirement')"
-                    >
+                    <span style="color: #909399;">
                       {{ formatNumber(row.appointedByRequirement) }}
-                    </el-link>
+                    </span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="190" align="center" header-align="center">
