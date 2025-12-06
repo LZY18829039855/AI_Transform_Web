@@ -639,28 +639,35 @@ const summaryMetrics = computed(() => {
   // 使用过滤后的数据计算统计指标
   const certificationRecords = filteredCertificationRecords.value
   const appointmentRecords = filteredAppointmentRecords.value
-  const qualifiedCount = certificationRecords.filter((item) => item.isQualified).length
-  const appointmentQualified = appointmentRecords.filter((item) => item.isQualified).length
-
-  const certificationRate = certificationRecords.length
-    ? Math.round((qualifiedCount / certificationRecords.length) * 100)
-    : 0
+  
+  // 任职达标率：统计 isQualified 为 true 的记录
+  const appointmentQualified = appointmentRecords.filter((item) => item.isQualified === true).length
+  // 检查是否有任职达标数据（至少有一条记录的 isQualified 不是 undefined）
+  const hasAppointmentData = appointmentRecords.some((item) => item.isQualified !== undefined)
   const appointmentRate = appointmentRecords.length
     ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
+    : 0
+  
+  // 认证达标率：统计 isCertStandard 为 true 的记录
+  const certStandardCount = certificationRecords.filter((item) => item.isCertStandard === true).length
+  // 检查是否有认证达标数据（至少有一条记录的 isCertStandard 不是 undefined）
+  const hasCertData = certificationRecords.some((item) => item.isCertStandard !== undefined)
+  const certificationRate = certificationRecords.length
+    ? Math.round((certStandardCount / certificationRecords.length) * 100)
     : 0
 
   return [
     { label: '任职记录', value: appointmentRecords.length, unit: '条' },
     {
       label: '任职达标率',
-      value: appointmentRate === 0 ? '待提供数据' : appointmentRate,
-      unit: appointmentRate === 0 ? '' : '%',
+      value: !hasAppointmentData && appointmentRecords.length > 0 ? '待提供数据' : appointmentRate,
+      unit: !hasAppointmentData && appointmentRecords.length > 0 ? '' : '%',
     },
     { label: '认证记录', value: certificationRecords.length, unit: '条' },
     {
       label: '认证达标率',
-      value: certificationRate === 0 ? '待提供数据' : certificationRate,
-      unit: certificationRate === 0 ? '' : '%',
+      value: !hasCertData && certificationRecords.length > 0 ? '待提供数据' : certificationRate,
+      unit: !hasCertData && certificationRecords.length > 0 ? '' : '%',
     },
   ]
 })
