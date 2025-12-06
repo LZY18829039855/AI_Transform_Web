@@ -137,3 +137,51 @@ export interface OverallCertificationTrendsResponse {
   organizationCertification: StaffChartPoint[]
   jobCategoryCertification: StaffChartPoint[]
 }
+
+export interface ExpertJobCategoryCertStatistics {
+  jobCategory: string
+  baselineCount: number
+  certifiedCount: number
+  certRate: number
+}
+
+export interface ExpertMaturityCertStatistics {
+  maturityLevel: string
+  baselineCount: number
+  certifiedCount: number
+  certRate: number
+  jobCategoryStatistics?: ExpertJobCategoryCertStatistics[]
+}
+
+export interface ExpertAiCertStatisticsResponse {
+  deptCode: string
+  deptName: string
+  maturityStatistics: ExpertMaturityCertStatistics[]
+  totalStatistics: ExpertMaturityCertStatistics
+}
+
+export interface ExpertJobCategoryQualifiedStatistics {
+  jobCategory: string
+  baselineCount: number
+  qualifiedCount: number
+  qualifiedRate: number
+  qualifiedByRequirementCount?: number
+  qualifiedByRequirementRate?: number
+}
+
+export interface ExpertMaturityQualifiedStatistics {
+  maturityLevel: string
+  baselineCount: number
+  qualifiedCount: number
+  qualifiedRate: number
+  qualifiedByRequirementCount?: number
+  qualifiedByRequirementRate?: number
+  jobCategoryStatistics?: ExpertJobCategoryQualifiedStatistics[]
+}
+
+export interface ExpertAiQualifiedStatisticsResponse {
+  deptCode: string
+  deptName: string
+  maturityStatistics: ExpertMaturityQualifiedStatistics[]
+  totalStatistics: ExpertMaturityQualifiedStatistics
+}

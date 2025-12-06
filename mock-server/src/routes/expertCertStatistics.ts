@@ -5,6 +5,8 @@ import { getCadreMaturityJobCategoryCertStatistics } from '../data/cadreMaturity
 import { getCadreMaturityJobCategoryQualifiedStatistics } from '../data/cadreMaturityJobCategoryQualifiedStatistics'
 import { getCadreQualifiedDetails } from '../data/cadreQualifiedDetails'
 import { getOverallCertificationTrends } from '../data/overallCertificationTrends'
+import { getExpertAiCertStatistics } from '../data/expertAiCertStatistics'
+import { getExpertAiQualifiedStatistics } from '../data/expertAiQualifiedStatistics'
 import { successResponse, errorResponse } from '../utils/response'
 
 const router = Router()
@@ -81,6 +83,28 @@ router.get('/cadre-qualified-details', (req, res) => {
 router.get('/overall-certification-trends', (req, res) => {
   const data = getOverallCertificationTrends()
   return res.json(successResponse(data, 'mock overall certification trends'))
+})
+
+router.get('/expert-ai-cert-statistics', (req, res) => {
+  try {
+    const deptCode = typeof req.query.deptCode === 'string' ? req.query.deptCode : '0'
+    const data = getExpertAiCertStatistics(deptCode)
+    return res.json(successResponse(data, '查询成功'))
+  } catch (error) {
+    console.error('[mock] 获取专家AI认证数据失败:', error)
+    return res.status(500).json(errorResponse('系统异常，请稍后重试', 500))
+  }
+})
+
+router.get('/expert-ai-qualified-statistics', (req, res) => {
+  try {
+    const deptCode = typeof req.query.deptCode === 'string' ? req.query.deptCode : '0'
+    const data = getExpertAiQualifiedStatistics(deptCode)
+    return res.json(successResponse(data, '查询成功'))
+  } catch (error) {
+    console.error('[mock] 获取专家AI任职数据失败:', error)
+    return res.status(500).json(errorResponse('系统异常，请稍后重试', 500))
+  }
 })
 
 export default router
