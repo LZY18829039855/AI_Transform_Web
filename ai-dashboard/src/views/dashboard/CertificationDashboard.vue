@@ -1188,7 +1188,7 @@ onActivated(() => {
                       type="primary"
                       :underline="false"
                       class="clickable-cell"
-                      @click="handleExpertCertCellClick(row, 'baseline')"
+                      @click.stop="handleExpertCertCellClick(row, 'baseline')"
                     >
                       {{ formatNumber(row.baseline) }}
                     </el-link>
@@ -1200,7 +1200,7 @@ onActivated(() => {
                       type="primary"
                       :underline="false"
                       class="clickable-cell"
-                      @click="handleExpertCertCellClick(row, 'certified')"
+                      @click.stop="handleExpertCertCellClick(row, 'certified')"
                     >
                       {{ formatNumber(row.certified) }}
                     </el-link>
