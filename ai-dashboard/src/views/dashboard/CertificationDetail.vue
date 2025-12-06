@@ -869,7 +869,7 @@ onBeforeUnmount(() => {
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column 
                 label="是否达标" 
-                width="84" 
+                :width="filters.role === '1' || filters.role === '2' ? '98' : '84'" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.isQualified === true && b.isQualified !== true) return -1
@@ -889,12 +889,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" width="84" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" width="108" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" :width="filters.role === '1' || filters.role === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" :width="filters.role === '1' || filters.role === '2' ? '94' : '108'" align="center" header-align="center" />
               <el-table-column 
                 prop="positionMaturity" 
                 label="岗位AI成熟度" 
-                width="112" 
+                :width="filters.role === '1' || filters.role === '2' ? '126' : '112'" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -902,6 +902,15 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
+                width="98" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                v-if="filters.role === '1'"
+                prop="cadreType" 
+                label="干部类型" 
                 width="98" 
                 sortable 
                 align="center"
@@ -959,6 +968,7 @@ onBeforeUnmount(() => {
               <el-table-column prop="effectiveDate" label="生效日期" width="112" align="center" header-align="center" />
               <el-table-column prop="expiryDate" label="失效日期" width="112" align="center" header-align="center" />
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1032,6 +1042,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="cadreType" 
                 label="干部类型" 
                 width="84" 
@@ -1127,7 +1138,7 @@ onBeforeUnmount(() => {
             >
               <el-table-column 
                 label="是否达标" 
-                width="84" 
+                :width="filters.role === '1' || filters.role === '2' ? '98' : '84'" 
                 sortable 
                 prop="isCertStandard"
                 :sort-method="(a, b) => {
@@ -1150,12 +1161,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" width="84" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" width="108" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" :width="filters.role === '1' || filters.role === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" :width="filters.role === '1' || filters.role === '2' ? '94' : '108'" align="center" header-align="center" />
               <el-table-column 
                 prop="positionMaturity" 
                 label="岗位AI成熟度" 
-                width="112" 
+                :width="filters.role === '1' || filters.role === '2' ? '126' : '112'" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1169,14 +1180,24 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                prop="certificateName" 
-                label="证书名称" 
-                width="308" 
+                v-if="filters.role === '1'"
+                prop="cadreType" 
+                label="干部类型" 
+                width="98" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
+                prop="certificateName" 
+                label="证书名称" 
+                :width="filters.role === '1' || filters.role === '2' ? '280' : '308'" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
+              <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="certificateEffectiveDate" 
                 label="证书生效日期" 
                 min-width="160" 
@@ -1186,7 +1207,7 @@ onBeforeUnmount(() => {
               />
               <el-table-column 
                 label="是否通过科目二" 
-                min-width="150" 
+                :width="filters.role === '1' || filters.role === '2' ? '136' : '150'" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.subjectTwoPassed === true && b.subjectTwoPassed !== true) return -1
@@ -1205,6 +1226,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1278,6 +1300,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
+                v-if="filters.role !== '1' && filters.role !== '2'"
                 prop="cadreType" 
                 label="干部类型" 
                 width="84" 
