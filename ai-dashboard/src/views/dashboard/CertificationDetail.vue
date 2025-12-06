@@ -403,6 +403,7 @@ const fetchDetail = async () => {
               positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
               requiredCertificate: '',
               isQualified: undefined, // 暂无数据
+              isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
             })
           )
 
