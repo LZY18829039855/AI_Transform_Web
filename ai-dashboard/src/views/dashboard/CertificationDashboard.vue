@@ -440,8 +440,8 @@ const handleExpertQualifiedCellClick = (row: Record<string, unknown>, column: st
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
       const prevRow = expertData.value.appointment[i]
-      if (prevRow && prevRow.maturityLevel) {
-        maturityLevel = prevRow.maturityLevel as string
+      if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
+        maturityLevel = (prevRow.maturityLevel as string) || ''
         break
       }
     }
@@ -1093,16 +1093,26 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span style="color: #909399;">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click.stop="handleExpertQualifiedCellClick(row, 'baseline')"
+                    >
                       {{ formatNumber(row.baseline) }}
-                    </span>
+                    </el-link>
                   </template>
                 </el-table-column>
                 <el-table-column prop="appointed" label="AI任职人数" min-width="130" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span style="color: #909399;">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click.stop="handleExpertQualifiedCellClick(row, 'appointed')"
+                    >
                       {{ formatNumber(row.appointed) }}
-                    </span>
+                    </el-link>
                   </template>
                 </el-table-column>
                 <el-table-column prop="appointmentRate" label="AI任职率" min-width="130" align="center" header-align="center">
@@ -1112,9 +1122,14 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
                   <template #default="{ row }">
-                    <span style="color: #909399;">
+                    <el-link
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click.stop="handleExpertQualifiedCellClick(row, 'appointedByRequirement')"
+                    >
                       {{ formatNumber(row.appointedByRequirement) }}
-                    </span>
+                    </el-link>
                   </template>
                 </el-table-column>
                 <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="190" align="center" header-align="center">
