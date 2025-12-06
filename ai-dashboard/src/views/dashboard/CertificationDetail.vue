@@ -311,7 +311,7 @@ const fetchDetail = async () => {
         }
       }
     } else if (currentRole === '2') {
-      // 专家角色：加载认证数据（专家只有认证数据，没有任职数据）
+      // 专家角色：同时加载任职和认证数据
       // 使用筛选条件中的值（部门、职位类、成熟度）
       const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
       const jobCategory = filters.value.jobCategory || undefined
@@ -364,19 +364,40 @@ const fetchDetail = async () => {
         // 从看板跳转过来，根据点击的列决定queryType
         queryType = column === 'baseline' ? 2 : 1
       }
-      
-      // 调用专家认证详情接口
-      const response = await fetchPersonCertDetails(
-        deptCode,
-        maturityParam,
-        jobCategory,
-        2, // personType: 2-专家
-        queryType
-      )
 
-      if (response && response.employeeDetails) {
-        // 转换为CertificationAuditRecord格式
-        const certificationRecords: CertificationAuditRecord[] = response.employeeDetails.map(
+      // 并行加载任职和认证数据（对于专家角色，无论点击哪个列，都同时加载两种数据）
+      const personType = 2 // personType: 2-专家
+      const [qualifiedResponse, certResponse] = await Promise.all([
+        // 加载任职数据，queryType默认为2
+        fetchCadreQualifiedDetails(
+          deptCode,
+          maturityParam,
+          jobCategory,
+          personType,
+          queryType
+        ),
+        // 加载认证数据，queryType默认为2
+        fetchPersonCertDetails(
+          deptCode,
+          maturityParam,
+          jobCategory,
+          personType,
+          queryType
+        ),
+      ])
+
+      // 转换任职数据
+      let appointmentRecords: AppointmentAuditRecord[] = []
+      if (qualifiedResponse && qualifiedResponse.employeeDetails) {
+        appointmentRecords = qualifiedResponse.employeeDetails.map(
+          convertEmployeeDetailToAppointmentRecord
+        )
+      }
+
+      // 转换认证数据
+      let certificationRecords: CertificationAuditRecord[] = []
+      if (certResponse && certResponse.employeeDetails) {
+        certificationRecords = certResponse.employeeDetails.map(
           (emp) => ({
             id: emp.employeeNumber || '',
             name: emp.name || '',
@@ -404,40 +425,73 @@ const fetchDetail = async () => {
             isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
           })
         )
+      }
 
-        // 构建detailData对象
-        detailData.value = {
-          summary: null,
-          certificationRecords: certificationRecords,
-          appointmentRecords: [],
-          filters: {
-            departmentTree: departmentOptions.value,
-            jobFamilies: [],
-            jobCategories: [],
-            jobSubCategories: [],
-            roles: [
-              { label: '全员', value: '0' },
-              { label: '干部', value: '1' },
-              { label: '专家', value: '2' },
-              { label: '基层主管', value: '3' },
-            ],
-            maturityOptions: [
-              { label: '全部', value: '全部' },
-              { label: 'L2', value: 'L2' },
-              { label: 'L3', value: 'L3' },
-            ],
-          },
+      // 构建detailData对象，同时包含任职和认证数据
+      detailData.value = {
+        summary: null,
+        certificationRecords: certificationRecords,
+        appointmentRecords: appointmentRecords,
+        filters: {
+          departmentTree: departmentOptions.value,
+          jobFamilies: [],
+          jobCategories: [],
+          jobSubCategories: [],
+          roles: [
+            { label: '全员', value: '0' },
+            { label: '干部', value: '1' },
+            { label: '专家', value: '2' },
+            { label: '基层主管', value: '3' },
+          ],
+          maturityOptions: [
+            { label: '全部', value: '全部' },
+            { label: 'L2', value: 'L2' },
+            { label: 'L3', value: 'L3' },
+          ],
+        },
+      }
+
+      // 根据点击的列和来源决定默认显示的标签页
+      // 优先判断具体的列，再判断baseline和source参数
+      const source = route.query.source as string | undefined
+      
+      if (column === 'appointed' || column === 'appointedByRequirement') {
+        // 明确是任职相关列，默认显示任职tab
+        activeTab.value = 'appointment'
+      } else if (column === 'certified' || column === 'certification') {
+        // 明确是认证相关列，默认显示认证tab
+        activeTab.value = 'certification'
+      } else if (column === 'baseline') {
+        // baseline在两个表格中都存在，根据source参数判断
+        if (source === 'appointment') {
+          // 从专家任职数据表格点击的baseline，显示任职tab
+          activeTab.value = 'appointment'
+        } else if (source === 'certification') {
+          // 从专家认证数据表格点击的baseline，显示认证tab
+          activeTab.value = 'certification'
+        } else {
+          // 如果没有source参数，根据其他列判断
+          const isExpertQualifiedOnlyQuery = 
+            currentRole === '2' && 
+            route.query.column && 
+            ['appointed', 'appointedByRequirement'].includes(route.query.column as string)
+          const isExpertCertOnlyQuery = 
+            currentRole === '2' && 
+            route.query.column && 
+            ['certified', 'certification'].includes(route.query.column as string)
+          
+          if (isExpertQualifiedOnlyQuery) {
+            activeTab.value = 'appointment'
+          } else if (isExpertCertOnlyQuery) {
+            activeTab.value = 'certification'
+          } else {
+            // 默认显示认证tab
+            activeTab.value = 'certification'
+          }
         }
+      } else {
         // 默认显示认证标签页
         activeTab.value = 'certification'
-      } else {
-        // 如果没有数据，使用默认的空数据结构
-        detailData.value = await fetchCertificationDetailData(props.id, {
-          ...filters.value,
-          departmentPath: filters.value.departmentPath?.length
-            ? [...(filters.value.departmentPath ?? [])]
-            : undefined,
-        })
       }
     } else {
       // 使用原有的接口（其他角色或默认情况）
