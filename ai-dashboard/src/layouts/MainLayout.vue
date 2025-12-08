@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Bell, Setting, User } from '@element-plus/icons-vue'
+import { Bell, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardNavCards from '@/components/common/DashboardNavCards.vue'
 import { useAppStore } from '@/stores/modules/app'
+import { getUserAvatarUrl } from '@/utils/cookie'
 
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 
 const isDashboard = computed(() => route.path.startsWith('/dashboard'))
-// 顶部用户信息显示开关，用户接口未就绪时关闭
-const showUserInfo = false
+// 获取用户头像URL
+const userAvatarUrl = computed(() => getUserAvatarUrl())
 
 const handleGoHome = () => {
   router.push({ name: 'Home' })
-}
-
-const handleSetting = () => {
-  // 预留设置入口
-  ElMessage.info('设置功能开发中')
 }
 
 const handleLogout = () => {
@@ -48,16 +44,14 @@ const handleLogout = () => {
           <el-tooltip content="通知中心" placement="bottom">
             <el-button circle text :icon="Bell" />
           </el-tooltip>
-          <el-tooltip content="系统设置" placement="bottom">
-            <el-button circle text :icon="Setting" @click="handleSetting" />
-          </el-tooltip>
-          <el-dropdown v-if="showUserInfo">
-            <span class="user-entry">
-              <el-avatar :icon="User" :size="36" class="user-avatar" />
-              <div class="user-info">
-                <strong>{{ appStore.user.name }}</strong>
-                <small>{{ appStore.user.role }}</small>
-              </div>
+          <el-dropdown>
+            <span class="user-avatar-wrapper">
+              <el-avatar
+                :size="36"
+                :src="userAvatarUrl"
+                :icon="User"
+                class="user-avatar"
+              />
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -139,29 +133,24 @@ const handleLogout = () => {
   gap: $spacing-md;
 }
 
-.user-entry {
+.user-avatar-wrapper {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
   cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
 
   .user-avatar {
     background: linear-gradient(135deg, rgba(58, 122, 254, 0.15), rgba(155, 92, 255, 0.15));
     color: $primary-color;
-  }
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
 
-  .user-info {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-
-    strong {
-      font-size: 14px;
-      color: $text-main-color;
-    }
-
-    small {
-      color: $text-secondary-color;
+    &:hover {
+      border-color: $primary-color;
     }
   }
 }
