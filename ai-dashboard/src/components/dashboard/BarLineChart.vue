@@ -33,6 +33,10 @@ const props = withDefaults(defineProps<Props>(), {
   legendTotals: () => ({}),
 })
 
+const emit = defineEmits<{
+  (e: 'barClick', data: { label: string; deptCode?: string; count: number; rate: number }): void
+}>()
+
 type ChartInstance = ReturnType<typeof echarts.init>
 
 const chartRef = ref<HTMLDivElement | null>(null)
@@ -271,6 +275,24 @@ const renderChart = () => {
 
   instance.setOption(getOption(), true)
   instance.resize()
+  
+  // 添加点击事件监听
+  instance.off('click') // 先移除之前的监听，避免重复绑定
+  instance.on('click', (params: any) => {
+    // 只处理柱状图的点击事件
+    if (params.seriesName === props.countLabel && params.data !== undefined) {
+      const dataIndex = params.dataIndex
+      const point = props.points[dataIndex]
+      if (point) {
+        emit('barClick', {
+          label: point.label,
+          deptCode: point.deptCode,
+          count: point.count,
+          rate: point.rate,
+        })
+      }
+    }
+  })
 }
 
 watch(

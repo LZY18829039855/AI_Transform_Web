@@ -144,6 +144,7 @@ const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
       label: item.deptName?.trim().length ? item.deptName : item.deptCode,
       count: resolveQualifiedCount(item),
       rate: resolveQualifiedRate(item),
+      deptCode: item.deptCode,
     }))
     .filter((item) => item.rate > 0)
     .sort((a, b) => {
@@ -161,6 +162,7 @@ const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
       label: item.deptName?.trim().length ? item.deptName : item.deptCode,
       count: resolveCertificationCount(item),
       rate: resolveCertificationRate(item),
+      deptCode: item.deptCode,
     }))
     .filter((item) => item.rate > 0)
     .sort((a, b) => {
@@ -638,6 +640,39 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
   // 如果部门路径存在，添加到查询参数中
   if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
     queryParams.departmentPath = filters.value.departmentPath.join(',')
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理部门任职柱状图点击事件
+const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: string; count: number; rate: number }) => {
+  if (!data.deptCode) {
+    return
+  }
+  
+  // 获取当前的人员类型（personType）
+  // personType: 1-干部，2-专家，0-全员（默认为1）
+  const role = filters.value.role ?? '0'
+  let personType = '1' // 默认值
+  if (role === '1') {
+    personType = '1' // 干部
+  } else if (role === '2') {
+    personType = '2' // 专家
+  } else {
+    // 全员或其他情况，默认为1（干部）
+    personType = '1'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    deptCode: data.deptCode,
+    personType: personType,
+    queryType: '1', // 默认为1
+    // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
   router.push({
@@ -1372,6 +1407,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="departmentLegendTotals"
               :height="320"
+              @bar-click="handleDepartmentAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip

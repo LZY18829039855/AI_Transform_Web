@@ -330,6 +330,7 @@ export interface StaffChartPoint {
   label: string
   count: number
   rate: number
+  deptCode?: string // 部门编码，用于点击跳转
 }
 
 export interface DepartmentCertStatistic {

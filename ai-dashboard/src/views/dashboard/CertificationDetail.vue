@@ -125,6 +125,102 @@ const getDeptCodeFromPath = (path?: string[]): string => {
 const fetchDetail = async () => {
   loading.value = true
   try {
+    // 检查是否是从部门柱状图点击跳转过来的（有deptCode、personType、queryType参数）
+    const deptCodeFromRoute = route.query.deptCode as string | undefined
+    const personTypeFromRoute = route.query.personType as string | undefined
+    const queryTypeFromRoute = route.query.queryType as string | undefined
+    
+    // 如果是从部门柱状图点击跳转过来的，直接使用这些参数
+    if (deptCodeFromRoute && personTypeFromRoute && queryTypeFromRoute) {
+      const deptCode = deptCodeFromRoute
+      const personType = Number(personTypeFromRoute)
+      const queryType = Number(queryTypeFromRoute)
+      const maturityParam: string | undefined = undefined // 岗位成熟度传空
+      const jobCategory: string | undefined = undefined // 职位类传空
+      
+      // 并行加载任职和认证数据
+      const [qualifiedResponse, certResponse] = await Promise.all([
+        fetchCadreQualifiedDetails(
+          deptCode,
+          maturityParam,
+          jobCategory,
+          personType,
+          queryType
+        ),
+        fetchPersonCertDetails(
+          deptCode,
+          maturityParam,
+          jobCategory,
+          personType,
+          queryType
+        ),
+      ])
+      
+      // 转换任职数据
+      let appointmentRecords: AppointmentAuditRecord[] = []
+      if (qualifiedResponse && qualifiedResponse.employeeDetails) {
+        appointmentRecords = qualifiedResponse.employeeDetails.map(
+          convertEmployeeDetailToAppointmentRecord
+        )
+      }
+      
+      // 转换认证数据
+      let certificationRecords: CertificationAuditRecord[] = []
+      if (certResponse && certResponse.employeeDetails) {
+        certificationRecords = certResponse.employeeDetails.map(
+          (emp) => ({
+            id: emp.employeeNumber || '',
+            name: emp.name || '',
+            employeeId: emp.employeeNumber || '',
+            positionCategory: emp.competenceCategory || '',
+            positionSubCategory: '',
+            departmentLevel1: emp.firstLevelDept || '',
+            departmentLevel2: emp.secondLevelDept || '',
+            departmentLevel3: emp.thirdLevelDept || '',
+            departmentLevel4: emp.fourthLevelDept || '',
+            departmentLevel5: emp.fifthLevelDept || '',
+            departmentLevel6: '',
+            minDepartment: emp.miniDeptName || '',
+            professionalCategory: emp.competenceFamilyCn || '',
+            expertCategory: emp.competenceCategoryCn || '',
+            professionalSubCategory: emp.competenceSubcategoryCn || '',
+            certificationDirection: emp.directionCnName || '',
+            certificationLevel: emp.competenceRatingCn || '',
+            acquisitionMethod: emp.competenceGradeCn || '',
+            effectiveDate: emp.competenceFrom ? new Date(emp.competenceFrom).toLocaleDateString('zh-CN') : '',
+            expiryDate: emp.competenceTo ? new Date(emp.competenceTo).toLocaleDateString('zh-CN') : '',
+            isCadre: emp.isCadre === 1,
+            cadreType: emp.cadreType || '',
+            isExpert: undefined,
+            isFrontlineManager: undefined,
+            organizationMaturity: undefined,
+            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
+            requiredCertificate: undefined,
+            isQualified: emp.isQualificationsStandard !== undefined ? emp.isQualificationsStandard === 1 : undefined,
+          })
+        )
+      }
+      
+      // 设置详情数据
+      detailData.value = {
+        appointmentRecords,
+        certificationRecords,
+        filters: detailData.value?.filters ?? { roles: [] },
+      }
+      
+      // 根据personType设置角色
+      if (personType === 1) {
+        // 干部
+        activeTab.value = 'appointment'
+      } else if (personType === 2) {
+        // 专家
+        activeTab.value = 'certification'
+      }
+      
+      loading.value = false
+      return
+    }
+    
     // 确定使用的角色：如果用户点击查询按钮，使用filters.value.role；否则使用normalizedRole（从路由参数获取）
     const currentRole = isUserQuery.value ? filters.value.role : normalizedRole
     
