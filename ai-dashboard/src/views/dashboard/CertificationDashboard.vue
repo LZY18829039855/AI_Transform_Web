@@ -658,9 +658,9 @@ const formatPercent = (value: number) => {
     return '-'
   }
   if (value > 1) {
-    return `${value.toFixed(1)}%`
+    return `${value.toFixed(2)}%`
   }
-  return `${(value * 100).toFixed(1)}%`
+  return `${(value * 100).toFixed(2)}%`
 }
 
 // 计算表格总计行数据
