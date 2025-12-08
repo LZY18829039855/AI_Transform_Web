@@ -1523,7 +1523,6 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="departmentLegendTotals"
               :height="320"
-              @bar-click="handleDepartmentAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1556,7 +1555,6 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="departmentCertificationLegendTotals"
               :height="320"
-              @bar-click="handleDepartmentAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1629,16 +1627,7 @@ onActivated(() => {
               <el-table-column prop="label" label="部门" min-width="180" align="center" header-align="center" />
               <el-table-column prop="appointmentCount" :label="departmentCountLabel" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  <el-link
-                    v-if="row.label !== '总计' && row.deptCode"
-                    type="primary"
-                    :underline="false"
-                    class="clickable-cell"
-                    @click="handleDepartmentTableCellClick(row, 'appointment')"
-                  >
-                    {{ formatNumber(row.appointmentCount) }}
-                  </el-link>
-                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
+                  {{ formatNumber(row.appointmentCount) }}
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
@@ -1648,16 +1637,7 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="certificationCount" label="认证总人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  <el-link
-                    v-if="row.label !== '总计' && row.deptCode"
-                    type="primary"
-                    :underline="false"
-                    class="clickable-cell"
-                    @click="handleDepartmentTableCellClick(row, 'certification')"
-                  >
-                    {{ formatNumber(row.certificationCount) }}
-                  </el-link>
-                  <span v-else>{{ formatNumber(row.certificationCount) }}</span>
+                  {{ formatNumber(row.certificationCount) }}
                 </template>
               </el-table-column>
               <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
@@ -1681,7 +1661,6 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="jobCategoryAppointmentLegendTotals"
               :height="320"
-              @bar-click="handleJobCategoryAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1714,7 +1693,6 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="jobCategoryCertificationLegendTotals"
               :height="320"
-              @bar-click="handleJobCategoryAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1787,16 +1765,7 @@ onActivated(() => {
               <el-table-column prop="label" label="职位类" min-width="180" align="center" header-align="center" />
               <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  <el-link
-                    v-if="row.label !== '总计'"
-                    type="primary"
-                    :underline="false"
-                    class="clickable-cell"
-                    @click="handleJobCategoryTableCellClick(row)"
-                  >
-                    {{ formatNumber(row.appointmentCount) }}
-                  </el-link>
-                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
+                  {{ formatNumber(row.appointmentCount) }}
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
