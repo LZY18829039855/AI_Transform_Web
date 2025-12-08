@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import type { AppointmentAuditRecord, CertificationAuditRecord } from '@/types/dashboard'
 
 /**
@@ -24,7 +24,9 @@ export const exportCertificationDataToExcel = (
   fileName: string = '任职认证数据',
   role: string = '0',
 ) => {
-  const isCadreOrExpert = role === '1' || role === '2'
+  const isCadre = role === '1'
+  const isExpert = role === '2'
+  const isCadreOrExpert = isCadre || isExpert
   // 创建工作簿
   const workbook = XLSX.utils.book_new()
 
@@ -52,9 +54,10 @@ export const exportCertificationDataToExcel = (
     }
     
     // 根据角色添加不同的列
-    if (isCadreOrExpert) {
+    // 专家数据不包含干部类型
+    if (isCadre) {
       baseData['干部类型'] = record.cadreType || ''
-    } else {
+    } else if (!isCadreOrExpert) {
       baseData['获取方式'] = record.acquisitionMethod || ''
       baseData['职位子类'] = record.positionSubCategory || ''
       baseData['是否干部'] = formatBoolean(record.isCadre)
@@ -86,9 +89,10 @@ export const exportCertificationDataToExcel = (
     }
     
     // 根据角色添加不同的列
-    if (isCadreOrExpert) {
+    // 专家数据不包含干部类型
+    if (isCadre) {
       baseData['干部类型'] = record.cadreType || ''
-    } else {
+    } else if (!isCadreOrExpert) {
       baseData['证书生效日期'] = record.certificateEffectiveDate || ''
       baseData['职位子类'] = record.positionSubCategory || ''
       baseData['是否干部'] = formatBoolean(record.isCadre)
@@ -105,43 +109,97 @@ export const exportCertificationDataToExcel = (
   const appointmentSheet = XLSX.utils.json_to_sheet(appointmentData)
   const certificationSheet = XLSX.utils.json_to_sheet(certificationData)
 
+  // 设置表头样式（加粗、居中）和数据样式（居中）
+  const setSheetStyle = (sheet: XLSX.WorkSheet, data: Record<string, string>[]) => {
+    if (data.length === 0) {
+      return
+    }
+
+    // 获取表头范围
+    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1')
+    
+    // 设置表头样式（第一行）
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
+      if (!sheet[cellAddress]) {
+        continue
+      }
+      
+      // 创建带样式的单元格对象
+      const cell = sheet[cellAddress]
+      sheet[cellAddress] = {
+        ...cell,
+        s: {
+          font: { bold: true },
+          alignment: { horizontal: 'center', vertical: 'center' },
+        },
+      }
+    }
+    
+    // 设置数据行样式（居中）
+    for (let row = range.s.r + 1; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
+        if (!sheet[cellAddress]) {
+          continue
+        }
+        
+        const cell = sheet[cellAddress]
+        sheet[cellAddress] = {
+          ...cell,
+          s: {
+            alignment: { horizontal: 'center', vertical: 'center' },
+          },
+        }
+      }
+    }
+  }
+
   // 设置列宽（根据角色动态调整）
   if (appointmentData.length > 0) {
     const firstRow = appointmentData[0]
-    const appointmentCols = Object.keys(firstRow).map((key) => {
-      // 根据列名设置合适的宽度
-      if (key.includes('部门') || key.includes('资格') || key.includes('方向')) {
-        return { wch: 18 }
-      } else if (key.includes('名称') || key.includes('类别')) {
-        return { wch: 25 }
-      } else if (key.includes('日期')) {
-        return { wch: 12 }
-      } else if (key.includes('是否') || key.includes('达标')) {
-        return { wch: 10 }
-      } else {
-        return { wch: 15 }
-      }
-    })
-    appointmentSheet['!cols'] = appointmentCols
+    if (firstRow) {
+      const appointmentCols = Object.keys(firstRow).map((key) => {
+        // 根据列名设置合适的宽度
+        if (key.includes('部门') || key.includes('资格') || key.includes('方向')) {
+          return { wch: 18 }
+        } else if (key.includes('名称') || key.includes('类别')) {
+          return { wch: 25 }
+        } else if (key.includes('日期')) {
+          return { wch: 12 }
+        } else if (key.includes('是否') || key.includes('达标')) {
+          return { wch: 10 }
+        } else {
+          return { wch: 15 }
+        }
+      })
+      appointmentSheet['!cols'] = appointmentCols
+      // 设置样式
+      setSheetStyle(appointmentSheet, appointmentData)
+    }
   }
 
   if (certificationData.length > 0) {
     const firstRow = certificationData[0]
-    const certificationCols = Object.keys(firstRow).map((key) => {
-      // 根据列名设置合适的宽度
-      if (key.includes('部门') || key.includes('资格') || key.includes('方向')) {
-        return { wch: 18 }
-      } else if (key.includes('名称') || key.includes('类别')) {
-        return { wch: 25 }
-      } else if (key.includes('日期')) {
-        return { wch: 12 }
-      } else if (key.includes('是否') || key.includes('达标')) {
-        return { wch: 10 }
-      } else {
-        return { wch: 15 }
-      }
-    })
-    certificationSheet['!cols'] = certificationCols
+    if (firstRow) {
+      const certificationCols = Object.keys(firstRow).map((key) => {
+        // 根据列名设置合适的宽度
+        if (key.includes('部门') || key.includes('资格') || key.includes('方向')) {
+          return { wch: 18 }
+        } else if (key.includes('名称') || key.includes('类别')) {
+          return { wch: 25 }
+        } else if (key.includes('日期')) {
+          return { wch: 12 }
+        } else if (key.includes('是否') || key.includes('达标')) {
+          return { wch: 10 }
+        } else {
+          return { wch: 15 }
+        }
+      })
+      certificationSheet['!cols'] = certificationCols
+      // 设置样式
+      setSheetStyle(certificationSheet, certificationData)
+    }
   }
 
   // 将工作表添加到工作簿
