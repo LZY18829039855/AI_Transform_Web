@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref } from 'vue'
-import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowLeft, QuestionFilled, Download } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
+import { exportCertificationDataToExcel } from '@/utils/excelExport'
 import type {
   AppointmentAuditRecord,
   CertificationAuditRecord,
@@ -577,6 +579,36 @@ const resetFilters = () => {
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
+// 导出数据
+const handleExport = () => {
+  if (!detailData.value) {
+    return
+  }
+  
+  // 使用过滤后的数据
+  const appointmentRecords = filteredAppointmentRecords.value
+  const certificationRecords = filteredCertificationRecords.value
+  
+  if (appointmentRecords.length === 0 && certificationRecords.length === 0) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
+  
+  // 生成文件名
+  const deptPath = filters.value.departmentPath?.join('_') || '全部部门'
+  const roleLabel = roleOptions.value.find((r) => r.value === actualRole.value)?.label || '全员'
+  const maturity = filters.value.maturity || '全部'
+  const fileName = `任职认证数据_${roleLabel}_${maturity}_${deptPath}`
+  
+  try {
+    exportCertificationDataToExcel(appointmentRecords, certificationRecords, fileName, actualRole.value)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请稍后重试')
+  }
+}
+
 // 处理tab切换，防止页面滚动到顶部
 const handleTabClick = async () => {
   // 保存当前滚动位置
@@ -936,6 +968,14 @@ onBeforeUnmount(() => {
       </el-card>
 
       <el-card shadow="hover" class="detail-card">
+        <template #header>
+          <div class="card-header">
+            <span class="card-title">任职认证盘点</span>
+            <el-button type="primary" :icon="Download" @click="handleExport" :disabled="!detailData || (filteredAppointmentRecords.length === 0 && filteredCertificationRecords.length === 0)">
+              导出数据
+            </el-button>
+          </div>
+        </template>
         <el-tabs v-model="activeTab" stretch class="detail-tabs" @tab-click="handleTabClick">
           <el-tab-pane name="appointment">
             <template #label>
@@ -1558,6 +1598,18 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
   margin-bottom: $spacing-lg;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-main-color;
+  }
 
   :deep(.el-card__body) {
     padding-bottom: $spacing-lg;
