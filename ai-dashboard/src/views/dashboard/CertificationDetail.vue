@@ -29,6 +29,8 @@ const routeRole = route.query.role as string | undefined
 const normalizedRole: CertificationRole = ROLE_VALUES.includes(routeRole as CertificationRole)
   ? (routeRole as CertificationRole)
   : '0'
+// 实际用于控制表格样式的角色（只在点击查询按钮后更新）
+const actualRole = ref<CertificationRole>(normalizedRole)
 // 从路由参数中解析部门路径
 const parseDepartmentPathFromQuery = (): string[] => {
   const departmentPathStr = route.query.departmentPath as string | undefined
@@ -502,6 +504,24 @@ const fetchDetail = async () => {
           : undefined,
       })
     }
+  } catch (error) {
+    console.error('加载详情数据失败:', error)
+    // 确保即使出错也设置 detailData，避免页面空白
+    if (!detailData.value) {
+      detailData.value = {
+        summary: null,
+        certificationRecords: [],
+        appointmentRecords: [],
+        filters: {
+          departmentTree: departmentOptions.value,
+          jobFamilies: [],
+          jobCategories: [],
+          jobSubCategories: [],
+          roles: [],
+          maturityOptions: [],
+        },
+      }
+    }
   } finally {
     loading.value = false
     // 保存用户查询标志，用于判断是否需要重置角色值
@@ -511,12 +531,20 @@ const fetchDetail = async () => {
     
     // 数据加载完成后，只有在首次加载（非用户查询）时才根据路由参数设置角色值
     // 如果用户点击了查询按钮，保持用户选择的角色值不变
-    if (!wasUserQuery && roleOptions.value.length > 0) {
-      const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
-      if (roleExists) {
-        filters.value.role = normalizedRole
+    if (!wasUserQuery) {
+      if (roleOptions.value.length > 0) {
+        const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
+        if (roleExists) {
+          filters.value.role = normalizedRole
+          // 首次加载时，同步更新实际角色
+          actualRole.value = normalizedRole
+        } else {
+          filters.value.role = '0'
+          actualRole.value = '0'
+        }
       } else {
-        filters.value.role = '0'
+        // 如果 roleOptions 还没有数据，至少确保 actualRole 有正确的初始值
+        actualRole.value = normalizedRole
       }
     }
   }
@@ -528,6 +556,8 @@ const handleBack = () => {
 
 // 查询按钮点击事件（用于其他筛选条件）
 const handleQuery = () => {
+  // 更新实际角色，用于控制表格样式
+  actualRole.value = filters.value.role
   isUserQuery.value = true
   fetchDetail()
 }
@@ -930,7 +960,7 @@ onBeforeUnmount(() => {
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column 
                 label="是否达标" 
-                :width="filters.role === '1' || filters.role === '2' ? '98' : '84'" 
+                :width="actualRole === '1' || actualRole === '2' ? '98' : '84'" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.isQualified === true && b.isQualified !== true) return -1
@@ -950,12 +980,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" :width="filters.role === '1' || filters.role === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" :width="filters.role === '1' || filters.role === '2' ? '94' : '108'" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" :width="actualRole === '1' || actualRole === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" :width="actualRole === '1' || actualRole === '2' ? '94' : '108'" align="center" header-align="center" />
               <el-table-column 
                 prop="positionMaturity" 
                 label="岗位AI成熟度" 
-                :width="filters.role === '1' || filters.role === '2' ? '126' : '112'" 
+                :width="actualRole === '1' || actualRole === '2' ? '126' : '112'" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -969,7 +999,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role === '1'"
+                v-if="actualRole === '1'"
                 prop="cadreType" 
                 label="干部类型" 
                 width="98" 
@@ -1018,7 +1048,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="acquisitionMethod" 
                 label="获取方式" 
                 min-width="160" 
@@ -1029,7 +1059,7 @@ onBeforeUnmount(() => {
               <el-table-column prop="effectiveDate" label="生效日期" width="112" align="center" header-align="center" />
               <el-table-column prop="expiryDate" label="失效日期" width="112" align="center" header-align="center" />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1091,7 +1121,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否干部" 
                 min-width="110" 
                 sortable 
@@ -1103,7 +1133,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="cadreType" 
                 label="干部类型" 
                 width="84" 
@@ -1112,7 +1142,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否专家" 
                 min-width="110" 
                 sortable 
@@ -1125,7 +1155,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
@@ -1138,7 +1168,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="organizationMaturity" 
                 label="组织AI成熟度" 
                 min-width="150" 
@@ -1152,7 +1182,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
@@ -1199,7 +1229,7 @@ onBeforeUnmount(() => {
             >
               <el-table-column 
                 label="是否达标" 
-                :width="filters.role === '1' || filters.role === '2' ? '98' : '84'" 
+                :width="actualRole === '1' || actualRole === '2' ? '98' : '84'" 
                 sortable 
                 prop="isCertStandard"
                 :sort-method="(a, b) => {
@@ -1222,12 +1252,12 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="name" label="姓名" :width="filters.role === '1' || filters.role === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
-              <el-table-column prop="employeeId" label="工号" :width="filters.role === '1' || filters.role === '2' ? '94' : '108'" align="center" header-align="center" />
+              <el-table-column prop="name" label="姓名" :width="actualRole === '1' || actualRole === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
+              <el-table-column prop="employeeId" label="工号" :width="actualRole === '1' || actualRole === '2' ? '94' : '108'" align="center" header-align="center" />
               <el-table-column 
                 prop="positionMaturity" 
                 label="岗位AI成熟度" 
-                :width="filters.role === '1' || filters.role === '2' ? '126' : '112'" 
+                :width="actualRole === '1' || actualRole === '2' ? '126' : '112'" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1241,7 +1271,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role === '1'"
+                v-if="actualRole === '1'"
                 prop="cadreType" 
                 label="干部类型" 
                 width="98" 
@@ -1252,13 +1282,13 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
-                :width="filters.role === '1' || filters.role === '2' ? '280' : '308'" 
+                :width="actualRole === '1' || actualRole === '2' ? '280' : '308'" 
                 sortable 
                 align="center"
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="certificateEffectiveDate" 
                 label="证书生效日期" 
                 min-width="160" 
@@ -1268,7 +1298,7 @@ onBeforeUnmount(() => {
               />
               <el-table-column 
                 label="是否通过科目二" 
-                :width="filters.role === '1' || filters.role === '2' ? '136' : '150'" 
+                :width="actualRole === '1' || actualRole === '2' ? '136' : '150'" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.subjectTwoPassed === true && b.subjectTwoPassed !== true) return -1
@@ -1287,7 +1317,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1349,7 +1379,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否干部" 
                 min-width="110" 
                 sortable 
@@ -1361,7 +1391,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="cadreType" 
                 label="干部类型" 
                 width="84" 
@@ -1370,7 +1400,7 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否专家" 
                 min-width="110" 
                 sortable 
@@ -1383,7 +1413,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否基层主管" 
                 min-width="140" 
                 sortable 
@@ -1396,7 +1426,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="organizationMaturity" 
                 label="组织AI成熟度" 
                 min-width="150" 
@@ -1410,7 +1440,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="filters.role !== '1' && filters.role !== '2'"
+                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="requiredCertificate" 
                 label="要求持证类型" 
                 min-width="160" 
