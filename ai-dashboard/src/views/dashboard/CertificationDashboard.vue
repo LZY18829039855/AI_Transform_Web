@@ -664,21 +664,22 @@ const formatPercent = (value: number) => {
 }
 
 // 计算表格总计行数据
-const calculateTableTotal = (points: StaffChartPoint[]) => {
+// totalRate: 可选的正确总计占比（从totalStatistics获取）
+const calculateTableTotal = (points: StaffChartPoint[], totalRate?: number) => {
   if (!points || points.length === 0) {
-    return { label: '总计', count: 0, rate: 0 }
+    return { label: '总计', count: 0, rate: totalRate ?? 0 }
   }
   const totalCount = points.reduce((sum, point) => sum + (point.count || 0), 0)
-  // 占比的总计：由于每个点的占比是相对于各自基准的，这里计算加权平均占比
-  // 或者如果所有占比之和应该等于100%，则直接求和
-  // 根据业务逻辑，这里使用所有占比的平均值
-  const totalRate = points.length > 0 
-    ? points.reduce((sum, point) => sum + (point.rate || 0), 0) / points.length 
-    : 0
+  // 如果提供了正确的总计占比，使用它；否则使用平均值作为后备
+  const finalRate = totalRate !== undefined ? totalRate : (
+    points.length > 0 
+      ? points.reduce((sum, point) => sum + (point.rate || 0), 0) / points.length 
+      : 0
+  )
   return {
     label: '总计',
     count: totalCount,
-    rate: totalRate,
+    rate: finalRate,
   }
 }
 
@@ -725,10 +726,12 @@ const mergeAppointmentAndCertification = (
 // 计算合并表格的总计行
 const calculateMergedTableTotal = (
   appointmentPoints: StaffChartPoint[],
-  certificationPoints: StaffChartPoint[]
+  certificationPoints: StaffChartPoint[],
+  appointmentTotalRate?: number,
+  certificationTotalRate?: number
 ): MergedTableRow => {
-  const appointmentTotal = calculateTableTotal(appointmentPoints)
-  const certificationTotal = calculateTableTotal(certificationPoints)
+  const appointmentTotal = calculateTableTotal(appointmentPoints, appointmentTotalRate)
+  const certificationTotal = calculateTableTotal(certificationPoints, certificationTotalRate)
   return {
     label: '总计',
     appointmentCount: appointmentTotal.count,
@@ -1457,7 +1460,12 @@ onActivated(() => {
             </template>
             <el-table
               v-if="mergedDepartmentTableData.length > 0"
-              :data="[...mergedDepartmentTableData, calculateMergedTableTotal(departmentChartPoints, departmentCertificationChartPoints)]"
+              :data="[...mergedDepartmentTableData, calculateMergedTableTotal(
+                departmentChartPoints,
+                departmentCertificationChartPoints,
+                hasDepartmentStats ? resolveQualifiedRate(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined,
+                hasDepartmentStats ? resolveCertificationRate(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined
+              )]"
               border
               stripe
               size="small"
@@ -1590,7 +1598,12 @@ onActivated(() => {
             </template>
             <el-table
               v-if="mergedJobCategoryTableData.length > 0"
-              :data="[...mergedJobCategoryTableData, calculateMergedTableTotal(jobCategoryAppointmentPoints, jobCategoryCertificationPoints)]"
+              :data="[...mergedJobCategoryTableData, calculateMergedTableTotal(
+                jobCategoryAppointmentPoints,
+                jobCategoryCertificationPoints,
+                hasJobCategoryStats ? resolveJobCategoryQualifiedRate(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined,
+                hasJobCategoryStats ? resolveJobCategoryCertificationRate(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined
+              )]"
               border
               stripe
               size="small"
