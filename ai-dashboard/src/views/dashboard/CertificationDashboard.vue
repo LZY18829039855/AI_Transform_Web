@@ -43,6 +43,19 @@ const loadingDepartmentStats = ref(false)
 const loadingJobCategoryStats = ref(false)
 const loadingFilters = ref(false)
 
+// 图表/表格切换状态 - 统一管理所有图表
+const allChartsViewMode = ref<'chart' | 'table'>('chart')
+
+// 切换所有图表显示模式
+const toggleAllChartsView = () => {
+  allChartsViewMode.value = allChartsViewMode.value === 'chart' ? 'table' : 'chart'
+}
+
+// 获取切换按钮文本
+const getToggleButtonText = () => {
+  return allChartsViewMode.value === 'chart' ? '切换为表格' : '切换为图例'
+}
+
 // 各个数据块的数据
 const expertData = ref<{
   certification: (ExpertCertificationSummaryRow & { isMaturityRow?: boolean })[]
@@ -288,6 +301,19 @@ const organizationCertificationPoints = computed<StaffChartPoint[]>(() => {
       // 占比一致时，按人数从高到低排序
       return b.count - a.count
     })
+})
+
+// 合并后的表格数据（用于表格视图）
+const mergedDepartmentTableData = computed<MergedTableRow[]>(() => {
+  return mergeAppointmentAndCertification(departmentChartPoints.value, departmentCertificationChartPoints.value)
+})
+
+const mergedJobCategoryTableData = computed<MergedTableRow[]>(() => {
+  return mergeAppointmentAndCertification(jobCategoryAppointmentPoints.value, jobCategoryCertificationPoints.value)
+})
+
+const mergedOrganizationTableData = computed<MergedTableRow[]>(() => {
+  return mergeAppointmentAndCertification(organizationAppointmentPoints.value, organizationCertificationPoints.value)
 })
 
 // 渐进式加载各个数据块
@@ -635,6 +661,81 @@ const formatPercent = (value: number) => {
     return `${value.toFixed(1)}%`
   }
   return `${(value * 100).toFixed(1)}%`
+}
+
+// 计算表格总计行数据
+const calculateTableTotal = (points: StaffChartPoint[]) => {
+  if (!points || points.length === 0) {
+    return { label: '总计', count: 0, rate: 0 }
+  }
+  const totalCount = points.reduce((sum, point) => sum + (point.count || 0), 0)
+  // 占比的总计：由于每个点的占比是相对于各自基准的，这里计算加权平均占比
+  // 或者如果所有占比之和应该等于100%，则直接求和
+  // 根据业务逻辑，这里使用所有占比的平均值
+  const totalRate = points.length > 0 
+    ? points.reduce((sum, point) => sum + (point.rate || 0), 0) / points.length 
+    : 0
+  return {
+    label: '总计',
+    count: totalCount,
+    rate: totalRate,
+  }
+}
+
+// 合并任职和认证数据为表格数据
+interface MergedTableRow {
+  label: string
+  appointmentCount: number
+  appointmentRate: number
+  certificationCount: number
+  certificationRate: number
+}
+
+const mergeAppointmentAndCertification = (
+  appointmentPoints: StaffChartPoint[],
+  certificationPoints: StaffChartPoint[]
+): MergedTableRow[] => {
+  // 获取所有唯一的标签
+  const allLabels = new Set<string>()
+  appointmentPoints.forEach((point) => allLabels.add(point.label))
+  certificationPoints.forEach((point) => allLabels.add(point.label))
+
+  // 创建映射以便快速查找
+  const appointmentMap = new Map<string, StaffChartPoint>()
+  appointmentPoints.forEach((point) => appointmentMap.set(point.label, point))
+  const certificationMap = new Map<string, StaffChartPoint>()
+  certificationPoints.forEach((point) => certificationMap.set(point.label, point))
+
+  // 合并数据
+  const mergedData: MergedTableRow[] = Array.from(allLabels).map((label) => {
+    const appointment = appointmentMap.get(label)
+    const certification = certificationMap.get(label)
+    return {
+      label,
+      appointmentCount: appointment?.count ?? 0,
+      appointmentRate: appointment?.rate ?? 0,
+      certificationCount: certification?.count ?? 0,
+      certificationRate: certification?.rate ?? 0,
+    }
+  })
+
+  return mergedData
+}
+
+// 计算合并表格的总计行
+const calculateMergedTableTotal = (
+  appointmentPoints: StaffChartPoint[],
+  certificationPoints: StaffChartPoint[]
+): MergedTableRow => {
+  const appointmentTotal = calculateTableTotal(appointmentPoints)
+  const certificationTotal = calculateTableTotal(certificationPoints)
+  return {
+    label: '总计',
+    appointmentCount: appointmentTotal.count,
+    appointmentRate: appointmentTotal.rate,
+    certificationCount: certificationTotal.count,
+    certificationRate: certificationTotal.rate,
+  }
 }
 
 const getRowClassName = ({ row, rowIndex }: { row: any; rowIndex: number }) => {
@@ -1246,197 +1347,412 @@ onActivated(() => {
                   <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
                 </el-select>
               </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="toggleAllChartsView">
+                  {{ getToggleButtonText() }}
+                </el-button>
+              </el-form-item>
             </el-form>
           </div>
         </div>
       </template>
       <el-row :gutter="16">
-        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+        <!-- 部门数据：图表视图显示两个图表，表格视图显示一个合并表格 -->
+        <template v-if="allChartsViewMode === 'chart'">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
+            <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
+            <BarLineChart
+              v-else-if="dashboardData"
+              title="部门任职数据"
+              :points="departmentChartPoints"
+              :count-label="departmentCountLabel"
+              rate-label="占比"
+              :legend-totals="departmentLegendTotals"
+              :height="320"
+            >
+              <template #title-suffix>
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                      <div>数据科学与AI工程（ICT）</div>
+                      <div>AI算法及应用（ICT）</div>
+                      <div>AI软件工程与工具（ICT）</div>
+                      <div>AI系统测试（ICT）</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
+            </BarLineChart>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
+            <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
+            <BarLineChart
+              v-else-if="dashboardData"
+              title="部门认证数据"
+              :points="departmentCertificationChartPoints"
+              count-label="认证总人数"
+              rate-label="占比"
+              :legend-totals="departmentCertificationLegendTotals"
+              :height="320"
+            >
+              <template #title-suffix>
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                      <div>AI算法技术</div>
+                      <div>AI决策推理</div>
+                      <div>AI图像语言语义</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
+            </BarLineChart>
+          </el-col>
+        </template>
+        <!-- 表格视图：合并的部门任职/认证数据表格 -->
+        <el-col v-else-if="dashboardData && allChartsViewMode === 'table'" :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
-          <BarLineChart
-            v-else-if="dashboardData"
-            title="部门任职数据"
-            :points="departmentChartPoints"
-            :count-label="departmentCountLabel"
-            rate-label="占比"
-            :legend-totals="departmentLegendTotals"
-            :height="320"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                    <div>数据科学与AI工程（ICT）</div>
-                    <div>AI算法及应用（ICT）</div>
-                    <div>AI软件工程与工具（ICT）</div>
-                    <div>AI系统测试（ICT）</div>
-                  </div>
-                </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
+          <el-card v-else shadow="hover" class="chart-card">
+            <template #header>
+              <div class="card-header">
+                <h3>
+                  部门任职/认证数据
+                  <el-tooltip
+                    placement="top"
+                    effect="dark"
+                  >
+                    <template #content>
+                      <div style="line-height: 1.8;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                        <div>数据科学与AI工程（ICT）</div>
+                        <div>AI算法及应用（ICT）</div>
+                        <div>AI软件工程与工具（ICT）</div>
+                        <div>AI系统测试（ICT）</div>
+                        <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                        <div>AI算法技术</div>
+                        <div>AI决策推理</div>
+                        <div>AI图像语言语义</div>
+                      </div>
+                    </template>
+                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </h3>
+              </div>
             </template>
-          </BarLineChart>
-        </el-col>
-        <el-col :xs="24" :sm="24" :md="24" :lg="24">
-          <el-skeleton :rows="3" animated v-if="loadingDepartmentStats || loadingAllStaffTrends" />
-          <BarLineChart
-            v-else-if="dashboardData"
-            title="部门认证数据"
-            :points="departmentCertificationChartPoints"
-            count-label="认证总人数"
-            rate-label="占比"
-            :legend-totals="departmentCertificationLegendTotals"
-            :height="320"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                    <div>AI算法技术</div>
-                    <div>AI决策推理</div>
-                    <div>AI图像语言语义</div>
-                  </div>
+            <el-table
+              v-if="mergedDepartmentTableData.length > 0"
+              :data="[...mergedDepartmentTableData, calculateMergedTableTotal(departmentChartPoints, departmentCertificationChartPoints)]"
+              border
+              stripe
+              size="small"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+              :row-class-name="({ rowIndex }) => rowIndex === mergedDepartmentTableData.length ? 'summary-row' : ''"
+              style="width: 100%"
+            >
+              <el-table-column prop="label" label="部门" min-width="180" align="center" header-align="center" />
+              <el-table-column prop="appointmentCount" :label="departmentCountLabel" min-width="140" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatNumber(row.appointmentCount) }}
                 </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
-            </template>
-          </BarLineChart>
+              </el-table-column>
+              <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatPercent(row.appointmentRate) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationCount" label="认证总人数" min-width="140" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatNumber(row.certificationCount) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatPercent(row.certificationRate) }}
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-else description="待提供数据" :image-size="80" />
+          </el-card>
         </el-col>
-        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+        <!-- 职位类数据：图表视图显示两个图表，表格视图显示一个合并表格 -->
+        <template v-if="allChartsViewMode === 'chart'">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
+            <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
+            <BarLineChart
+              v-else-if="dashboardData"
+              title="职位类任职数据"
+              :points="jobCategoryAppointmentPoints"
+              count-label="任职人数"
+              rate-label="占比"
+              :legend-totals="jobCategoryAppointmentLegendTotals"
+              :height="320"
+            >
+              <template #title-suffix>
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                      <div>数据科学与AI工程（ICT）</div>
+                      <div>AI算法及应用（ICT）</div>
+                      <div>AI软件工程与工具（ICT）</div>
+                      <div>AI系统测试（ICT）</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
+            </BarLineChart>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
+            <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
+            <BarLineChart
+              v-else-if="dashboardData"
+              title="职位类认证数据"
+              :points="jobCategoryCertificationPoints"
+              count-label="认证人数"
+              rate-label="占比"
+              :legend-totals="jobCategoryCertificationLegendTotals"
+              :height="320"
+            >
+              <template #title-suffix>
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                      <div>AI算法技术</div>
+                      <div>AI决策推理</div>
+                      <div>AI图像语言语义</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
+            </BarLineChart>
+          </el-col>
+        </template>
+        <!-- 表格视图：合并的职位类任职/认证数据表格 -->
+        <el-col v-else-if="dashboardData && allChartsViewMode === 'table'" :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
-          <BarLineChart
-            v-else-if="dashboardData"
-            title="职位类任职数据"
-            :points="jobCategoryAppointmentPoints"
-            count-label="任职人数"
-            rate-label="占比"
-            :legend-totals="jobCategoryAppointmentLegendTotals"
-            :height="320"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                    <div>数据科学与AI工程（ICT）</div>
-                    <div>AI算法及应用（ICT）</div>
-                    <div>AI软件工程与工具（ICT）</div>
-                    <div>AI系统测试（ICT）</div>
-                  </div>
-                </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
+          <el-card v-else shadow="hover" class="chart-card">
+            <template #header>
+              <div class="card-header">
+                <h3>
+                  职位类任职/认证数据
+                  <el-tooltip
+                    placement="top"
+                    effect="dark"
+                  >
+                    <template #content>
+                      <div style="line-height: 1.8;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                        <div>数据科学与AI工程（ICT）</div>
+                        <div>AI算法及应用（ICT）</div>
+                        <div>AI软件工程与工具（ICT）</div>
+                        <div>AI系统测试（ICT）</div>
+                        <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                        <div>AI算法技术</div>
+                        <div>AI决策推理</div>
+                        <div>AI图像语言语义</div>
+                      </div>
+                    </template>
+                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </h3>
+              </div>
             </template>
-          </BarLineChart>
-        </el-col>
-        <el-col :xs="24" :sm="24" :md="24" :lg="24">
-          <el-skeleton :rows="3" animated v-if="loadingJobCategoryStats || loadingAllStaffTrends" />
-          <BarLineChart
-            v-else-if="dashboardData"
-            title="职位类认证数据"
-            :points="jobCategoryCertificationPoints"
-            count-label="认证人数"
-            rate-label="占比"
-            :legend-totals="jobCategoryCertificationLegendTotals"
-            :height="320"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                    <div>AI算法技术</div>
-                    <div>AI决策推理</div>
-                    <div>AI图像语言语义</div>
-                  </div>
+            <el-table
+              v-if="mergedJobCategoryTableData.length > 0"
+              :data="[...mergedJobCategoryTableData, calculateMergedTableTotal(jobCategoryAppointmentPoints, jobCategoryCertificationPoints)]"
+              border
+              stripe
+              size="small"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+              :row-class-name="({ rowIndex }) => rowIndex === mergedJobCategoryTableData.length ? 'summary-row' : ''"
+              style="width: 100%"
+            >
+              <el-table-column prop="label" label="职位类" min-width="180" align="center" header-align="center" />
+              <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatNumber(row.appointmentCount) }}
                 </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
-            </template>
-          </BarLineChart>
+              </el-table-column>
+              <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatPercent(row.appointmentRate) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationCount" label="认证人数" min-width="140" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatNumber(row.certificationCount) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatPercent(row.certificationRate) }}
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-else description="待提供数据" :image-size="80" />
+          </el-card>
         </el-col>
-        <el-col :xs="24" :sm="24" :md="24" :lg="24">
+        <!-- 组织AI成熟度数据：图表视图显示两个图表，表格视图显示一个合并表格 -->
+        <template v-if="allChartsViewMode === 'chart'">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
+            <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
+            <BarLineChart
+              v-else-if="dashboardData"
+              title="组织AI成熟度任职数据"
+              :points="organizationAppointmentPoints"
+              count-label="任职人数"
+              rate-label="占比"
+              :height="320"
+            >
+              <template #title-suffix>
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                      <div>数据科学与AI工程（ICT）</div>
+                      <div>AI算法及应用（ICT）</div>
+                      <div>AI软件工程与工具（ICT）</div>
+                      <div>AI系统测试（ICT）</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
+            </BarLineChart>
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
+            <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
+            <BarLineChart
+              v-else-if="dashboardData"
+              title="组织AI成熟度认证数据"
+              :points="organizationCertificationPoints"
+              count-label="认证人数"
+              rate-label="占比"
+              :height="320"
+            >
+              <template #title-suffix>
+                <el-tooltip
+                  placement="top"
+                  effect="dark"
+                >
+                  <template #content>
+                    <div style="line-height: 1.8;">
+                      <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                      <div>AI算法技术</div>
+                      <div>AI决策推理</div>
+                      <div>AI图像语言语义</div>
+                    </div>
+                  </template>
+                  <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                    <QuestionFilled />
+                  </el-icon>
+                </el-tooltip>
+              </template>
+            </BarLineChart>
+          </el-col>
+        </template>
+        <!-- 表格视图：合并的组织AI成熟度任职/认证数据表格 -->
+        <el-col v-else-if="dashboardData && allChartsViewMode === 'table'" :xs="24" :sm="24" :md="24" :lg="24">
           <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
-          <BarLineChart
-            v-else-if="dashboardData"
-            title="组织AI成熟度任职数据"
-            :points="organizationAppointmentPoints"
-            count-label="任职人数"
-            rate-label="占比"
-            :height="320"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                    <div>数据科学与AI工程（ICT）</div>
-                    <div>AI算法及应用（ICT）</div>
-                    <div>AI软件工程与工具（ICT）</div>
-                    <div>AI系统测试（ICT）</div>
-                  </div>
-                </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
+          <el-card v-else shadow="hover" class="chart-card">
+            <template #header>
+              <div class="card-header">
+                <h3>
+                  组织AI成熟度任职/认证数据
+                  <el-tooltip
+                    placement="top"
+                    effect="dark"
+                  >
+                    <template #content>
+                      <div style="line-height: 1.8;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
+                        <div>数据科学与AI工程（ICT）</div>
+                        <div>AI算法及应用（ICT）</div>
+                        <div>AI软件工程与工具（ICT）</div>
+                        <div>AI系统测试（ICT）</div>
+                        <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
+                        <div>AI算法技术</div>
+                        <div>AI决策推理</div>
+                        <div>AI图像语言语义</div>
+                      </div>
+                    </template>
+                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </h3>
+              </div>
             </template>
-          </BarLineChart>
-        </el-col>
-        <el-col :xs="24" :sm="24" :md="24" :lg="24">
-          <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
-          <BarLineChart
-            v-else-if="dashboardData"
-            title="组织AI成熟度认证数据"
-            :points="organizationCertificationPoints"
-            count-label="认证人数"
-            rate-label="占比"
-            :height="320"
-          >
-            <template #title-suffix>
-              <el-tooltip
-                placement="top"
-                effect="dark"
-              >
-                <template #content>
-                  <div style="line-height: 1.8;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                    <div>AI算法技术</div>
-                    <div>AI决策推理</div>
-                    <div>AI图像语言语义</div>
-                  </div>
+            <el-table
+              v-if="mergedOrganizationTableData.length > 0"
+              :data="[...mergedOrganizationTableData, calculateMergedTableTotal(organizationAppointmentPoints, organizationCertificationPoints)]"
+              border
+              stripe
+              size="small"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+              :row-class-name="({ rowIndex }) => rowIndex === mergedOrganizationTableData.length ? 'summary-row' : ''"
+              style="width: 100%"
+            >
+              <el-table-column prop="label" label="组织AI成熟度" min-width="180" align="center" header-align="center" />
+              <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatNumber(row.appointmentCount) }}
                 </template>
-                <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                  <QuestionFilled />
-                </el-icon>
-              </el-tooltip>
-            </template>
-          </BarLineChart>
+              </el-table-column>
+              <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatPercent(row.appointmentRate) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationCount" label="认证人数" min-width="140" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatNumber(row.certificationCount) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
+                <template #default="{ row }">
+                  {{ formatPercent(row.certificationRate) }}
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-else description="待提供数据" :image-size="80" />
+          </el-card>
         </el-col>
       </el-row>
     </el-card>
@@ -1679,6 +1995,48 @@ onActivated(() => {
     :deep(.el-form-item__label) {
       font-weight: 600;
       font-size: 16px;
+    }
+  }
+
+  .chart-card {
+    border: none;
+    border-radius: $radius-lg;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: $shadow-card;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: $text-main-color;
+      }
+    }
+
+    :deep(.el-table) {
+      --el-table-border-color: rgba(47, 59, 82, 0.08);
+      --el-table-row-hover-bg-color: rgba(58, 122, 254, 0.08);
+      width: 100%;
+
+      // 总计行样式
+      .summary-row {
+        background-color: rgba(58, 122, 254, 0.1) !important;
+        font-weight: bold !important;
+        
+        td {
+          background-color: rgba(58, 122, 254, 0.1) !important;
+          font-weight: bold !important;
+          
+          .cell {
+            font-weight: bold !important;
+            font-size: 14px !important;
+          }
+        }
+      }
     }
   }
 }
