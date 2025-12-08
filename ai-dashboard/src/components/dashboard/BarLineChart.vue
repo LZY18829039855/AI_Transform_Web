@@ -86,23 +86,9 @@ const getOption = (): EChartsOption => {
   const estimatedLabelHeight = estimatedLines * lineHeight
   const gridBottom = Math.max(30, Math.ceil(estimatedLabelHeight + axisLabelMargin + 16))
 
-  const series: EChartsOption['series'] = [
-    {
-      name: props.countLabel,
-      type: 'bar',
-      data: counts,
-      yAxisIndex: props.showRate ? 1 : 0, // 如果有占比，柱状图使用右侧坐标轴（index=1），否则使用左侧（index=0）
-      barWidth: 28,
-      itemStyle: {
-        borderRadius: [8, 8, 0, 0],
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(58, 122, 254, 0.85)' },
-          { offset: 1, color: 'rgba(58, 122, 254, 0.35)' },
-        ]),
-      },
-    },
-  ]
-
+  // 先添加折线图（如果有），确保它在底层
+  const series: EChartsOption['series'] = []
+  
   if (props.showRate) {
     series.push({
       name: props.rateLabel,
@@ -112,6 +98,8 @@ const getOption = (): EChartsOption => {
       smooth: true,
       symbol: 'circle',
       symbolSize: 10,
+      z: 1, // 设置较低的z值，确保在底层
+      silent: false, // 允许点击，但会在事件处理中判断
       lineStyle: {
         width: 3,
         color: '#34c38f',
@@ -121,12 +109,34 @@ const getOption = (): EChartsOption => {
         shadowBlur: 8,
         shadowColor: 'rgba(52, 195, 143, 0.35)',
       },
-      areaStyle: {
-        opacity: 0.08,
-        color: '#34c38f',
-      },
+      // 移除areaStyle，避免遮挡柱状图的点击区域
+      // areaStyle: {
+      //   opacity: 0.08,
+      //   color: '#34c38f',
+      // },
     })
   }
+  
+  // 后添加柱状图，确保它在折线图上层，可以接收点击事件
+  series.push({
+    name: props.countLabel,
+    type: 'bar',
+    data: counts,
+    yAxisIndex: props.showRate ? 1 : 0, // 如果有占比，柱状图使用右侧坐标轴（index=1），否则使用左侧（index=0）
+    barWidth: 28,
+    z: 2, // 设置较高的z值，确保在上层，优先接收点击事件
+    // 确保柱状图可以点击
+    emphasis: {
+      focus: 'series',
+    },
+    itemStyle: {
+      borderRadius: [8, 8, 0, 0],
+      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: 'rgba(58, 122, 254, 0.85)' },
+        { offset: 1, color: 'rgba(58, 122, 254, 0.35)' },
+      ]),
+    },
+  })
 
   return {
     grid: {
@@ -278,17 +288,96 @@ const renderChart = () => {
   
   // 添加点击事件监听
   instance.off('click') // 先移除之前的监听，避免重复绑定
+  
+  // 监听所有点击事件
   instance.on('click', (params: any) => {
-    // 只处理柱状图的点击事件
-    if (params.seriesName === props.countLabel && params.data !== undefined) {
+    // 调试信息
+    console.log('BarLineChart click event:', {
+      componentType: params.componentType,
+      componentSubType: params.componentSubType,
+      seriesType: params.seriesType,
+      seriesName: params.seriesName,
+      seriesIndex: params.seriesIndex,
+      dataIndex: params.dataIndex,
+      data: params.data,
+      countLabel: props.countLabel,
+    })
+    
+    // 处理点击事件：无论是点击柱状图还是折线图，都根据 dataIndex 来触发下钻
+    // 因为柱状图和折线图对应的是同一个数据点
+    if (params.componentType === 'series' && params.dataIndex !== undefined && params.dataIndex >= 0) {
       const dataIndex = params.dataIndex
-      const point = props.points[dataIndex]
-      if (point) {
-        emit('barClick', {
-          label: point.label,
-          deptCode: point.deptCode,
-          count: point.count,
-          rate: point.rate,
+      if (dataIndex < props.points.length) {
+        const point = props.points[dataIndex]
+        if (point) {
+          // 判断是否是柱状图的点击，或者折线图的点击（都触发下钻）
+          const isBarClick = params.seriesType === 'bar' || params.seriesName === props.countLabel
+          const isLineClick = params.seriesType === 'line' && params.seriesName === props.rateLabel
+          
+          // 如果是柱状图点击，优先触发下钻
+          // 如果是折线图点击，也触发下钻（因为对应同一个数据点）
+          if (isBarClick || isLineClick) {
+            console.log('Emitting barClick event:', {
+              label: point.label,
+              deptCode: point.deptCode,
+              count: point.count,
+              rate: point.rate,
+              clickedSeries: params.seriesType,
+              seriesName: params.seriesName,
+            })
+            emit('barClick', {
+              label: point.label,
+              deptCode: point.deptCode,
+              count: point.count,
+              rate: point.rate,
+            })
+          } else {
+            console.log('Click event ignored - not a bar or line series', {
+              seriesType: params.seriesType,
+              seriesName: params.seriesName,
+              countLabel: props.countLabel,
+              rateLabel: props.rateLabel,
+            })
+          }
+        } else {
+          console.warn('Point not found at index:', dataIndex)
+        }
+      } else {
+        console.warn('Invalid dataIndex:', dataIndex, 'points length:', props.points.length)
+      }
+    } else {
+      // 如果点击的不是系列，尝试使用坐标转换来判断
+      if (params.event && params.event.offsetX !== undefined && params.event.offsetY !== undefined) {
+        try {
+          const pointInPixel = [params.event.offsetX, params.event.offsetY]
+          const pointInGrid = instance.convertFromPixel('grid', pointInPixel)
+          if (pointInGrid && pointInGrid[0] !== undefined) {
+            const dataIndex = Math.round(pointInGrid[0])
+            if (dataIndex >= 0 && dataIndex < props.points.length) {
+              const point = props.points[dataIndex]
+              if (point) {
+                console.log('Fallback: Emitting barClick event by coordinate:', {
+                  label: point.label,
+                  deptCode: point.deptCode,
+                  count: point.count,
+                  rate: point.rate,
+                })
+                emit('barClick', {
+                  label: point.label,
+                  deptCode: point.deptCode,
+                  count: point.count,
+                  rate: point.rate,
+                })
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to convert pixel to grid:', error)
+        }
+      } else {
+        console.log('Click event ignored - not a series component or invalid dataIndex', {
+          componentType: params.componentType,
+          dataIndex: params.dataIndex,
         })
       }
     }

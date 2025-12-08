@@ -650,7 +650,10 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
 
 // 处理部门任职柱状图点击事件
 const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: string; count: number; rate: number }) => {
+  console.log('handleDepartmentAppointmentBarClick called:', data)
+  
   if (!data.deptCode) {
+    console.warn('Department bar click: deptCode is missing', data)
     return
   }
   
@@ -673,6 +676,115 @@ const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: s
     personType: personType,
     queryType: '1', // 默认为1
     // 岗位成熟度与职位类数据传空，不传递这些参数
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理部门表格点击事件（任职人数或认证人数）
+const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointment' | 'certification') => {
+  // 如果是总计行，不处理点击
+  if (row.label === '总计') {
+    return
+  }
+  
+  if (!row.deptCode) {
+    return
+  }
+  
+  // 获取当前的人员类型（personType）
+  // personType: 1-干部，2-专家，0-全员（默认为1）
+  const role = filters.value.role ?? '0'
+  let personType = '1' // 默认值
+  if (role === '1') {
+    personType = '1' // 干部
+  } else if (role === '2') {
+    personType = '2' // 专家
+  } else {
+    // 全员或其他情况，默认为1（干部）
+    personType = '1'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    deptCode: row.deptCode,
+    personType: personType,
+    queryType: '1', // 默认为1
+    // 岗位成熟度与职位类数据传空，不传递这些参数
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理职位类任职柱状图点击事件
+const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: string; count: number; rate: number }) => {
+  // 获取当前筛选的部门ID
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取当前的人员类型（personType）
+  // personType: 1-干部，2-专家，0-全员（默认为1）
+  const role = filters.value.role ?? '0'
+  let personType = '1' // 默认值
+  if (role === '1') {
+    personType = '1' // 干部
+  } else if (role === '2') {
+    personType = '2' // 专家
+  } else {
+    // 全员或其他情况，默认为1（干部）
+    personType = '1'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    deptCode: deptCode,
+    personType: personType,
+    queryType: '1', // 默认为1
+    jobCategory: data.label, // 职位类信息
+    // 岗位成熟度传空，不传递此参数
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理职位类表格点击事件（任职人数）
+const handleJobCategoryTableCellClick = (row: MergedTableRow) => {
+  // 如果是总计行，不处理点击
+  if (row.label === '总计') {
+    return
+  }
+  
+  // 获取当前筛选的部门ID
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取当前的人员类型（personType）
+  // personType: 1-干部，2-专家，0-全员（默认为1）
+  const role = filters.value.role ?? '0'
+  let personType = '1' // 默认值
+  if (role === '1') {
+    personType = '1' // 干部
+  } else if (role === '2') {
+    personType = '2' // 专家
+  } else {
+    // 全员或其他情况，默认为1（干部）
+    personType = '1'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    deptCode: deptCode,
+    personType: personType,
+    queryType: '1', // 默认为1
+    jobCategory: row.label, // 职位类信息
+    // 岗位成熟度传空，不传递此参数
   }
   
   router.push({
@@ -725,6 +837,7 @@ interface MergedTableRow {
   appointmentRate: number
   certificationCount: number
   certificationRate: number
+  deptCode?: string // 部门编码，用于点击跳转
 }
 
 const mergeAppointmentAndCertification = (
@@ -746,12 +859,15 @@ const mergeAppointmentAndCertification = (
   const mergedData: MergedTableRow[] = Array.from(allLabels).map((label) => {
     const appointment = appointmentMap.get(label)
     const certification = certificationMap.get(label)
+    // 优先使用任职数据的 deptCode，如果没有则使用认证数据的 deptCode
+    const deptCode = appointment?.deptCode || certification?.deptCode
     return {
       label,
       appointmentCount: appointment?.count ?? 0,
       appointmentRate: appointment?.rate ?? 0,
       certificationCount: certification?.count ?? 0,
       certificationRate: certification?.rate ?? 0,
+      deptCode,
     }
   })
 
@@ -1440,6 +1556,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="departmentCertificationLegendTotals"
               :height="320"
+              @bar-click="handleDepartmentAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1512,7 +1629,16 @@ onActivated(() => {
               <el-table-column prop="label" label="部门" min-width="180" align="center" header-align="center" />
               <el-table-column prop="appointmentCount" :label="departmentCountLabel" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.appointmentCount) }}
+                  <el-link
+                    v-if="row.label !== '总计' && row.deptCode"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleDepartmentTableCellClick(row, 'appointment')"
+                  >
+                    {{ formatNumber(row.appointmentCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
@@ -1522,7 +1648,16 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="certificationCount" label="认证总人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.certificationCount) }}
+                  <el-link
+                    v-if="row.label !== '总计' && row.deptCode"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleDepartmentTableCellClick(row, 'certification')"
+                  >
+                    {{ formatNumber(row.certificationCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
@@ -1546,6 +1681,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="jobCategoryAppointmentLegendTotals"
               :height="320"
+              @bar-click="handleJobCategoryAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1578,6 +1714,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="jobCategoryCertificationLegendTotals"
               :height="320"
+              @bar-click="handleJobCategoryAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1650,7 +1787,16 @@ onActivated(() => {
               <el-table-column prop="label" label="职位类" min-width="180" align="center" header-align="center" />
               <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.appointmentCount) }}
+                  <el-link
+                    v-if="row.label !== '总计'"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleJobCategoryTableCellClick(row)"
+                  >
+                    {{ formatNumber(row.appointmentCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
