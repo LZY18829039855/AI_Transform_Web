@@ -1095,6 +1095,7 @@ onBeforeUnmount(() => {
             </template>
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
               <el-table-column 
+                v-if="actualRole !== '0'"
                 label="是否达标" 
                 :width="actualRole === '1' || actualRole === '2' ? '98' : '84'" 
                 sortable 
@@ -1134,6 +1135,20 @@ onBeforeUnmount(() => {
                 align="center"
                 header-align="center"
               />
+              <el-table-column 
+                v-if="actualRole !== '1'"
+                prop="positionSubCategory" 
+                label="职位子类" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
+                </template>
+              </el-table-column>
               <el-table-column 
                 v-if="actualRole === '1'"
                 prop="cadreType" 
@@ -1194,19 +1209,6 @@ onBeforeUnmount(() => {
               />
               <el-table-column prop="effectiveDate" label="生效日期" width="112" align="center" header-align="center" />
               <el-table-column prop="expiryDate" label="失效日期" width="112" align="center" header-align="center" />
-              <el-table-column 
-                prop="positionSubCategory" 
-                label="职位子类" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
-                </template>
-              </el-table-column>
               <el-table-column 
                 prop="departmentLevel1" 
                 label="一级部门" 
@@ -1363,6 +1365,7 @@ onBeforeUnmount(() => {
               :default-sort="{ prop: 'isCertStandard', order: 'ascending' }"
             >
               <el-table-column 
+                v-if="actualRole !== '0'"
                 label="是否达标" 
                 :width="actualRole === '1' || actualRole === '2' ? '98' : '84'" 
                 sortable 
@@ -1406,6 +1409,20 @@ onBeforeUnmount(() => {
                 header-align="center"
               />
               <el-table-column 
+                v-if="actualRole !== '1'"
+                prop="positionSubCategory" 
+                label="职位子类" 
+                min-width="140" 
+                sortable 
+                align="center"
+                header-align="center"
+              >
+                <template #default="{ row }">
+                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
+                  <span v-else style="color: #909399;">待提供数据</span>
+                </template>
+              </el-table-column>
+              <el-table-column 
                 v-if="actualRole === '1'"
                 prop="cadreType" 
                 label="干部类型" 
@@ -1421,16 +1438,12 @@ onBeforeUnmount(() => {
                 sortable 
                 align="center"
                 header-align="center"
-              />
-              <el-table-column 
-                v-if="actualRole !== '1' && actualRole !== '2'"
-                prop="certificateEffectiveDate" 
-                label="证书生效日期" 
-                min-width="160" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
+              >
+                <template #default="{ row }">
+                  <span v-if="row.certificateName">{{ row.certificateName }}</span>
+                  <span v-else style="color: #909399;">-</span>
+                </template>
+              </el-table-column>
               <el-table-column 
                 label="是否通过科目二" 
                 :width="actualRole === '1' || actualRole === '2' ? '136' : '150'" 
@@ -1449,19 +1462,6 @@ onBeforeUnmount(() => {
                   <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
                     {{ formatBoolean(row.subjectTwoPassed) }}
                   </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column 
-                prop="positionSubCategory" 
-                label="职位子类" 
-                min-width="140" 
-                sortable 
-                align="center"
-                header-align="center"
-              >
-                <template #default="{ row }">
-                  <span v-if="row.positionSubCategory">{{ row.positionSubCategory }}</span>
-                  <span v-else style="color: #909399;">待提供数据</span>
                 </template>
               </el-table-column>
               <el-table-column 
