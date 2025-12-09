@@ -189,7 +189,7 @@ const fetchDetail = async () => {
             isExpert: emp.isExpert !== undefined ? emp.isExpert === 1 : undefined,
             isFrontlineManager: undefined,
             organizationMaturity: undefined,
-            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+            positionMaturity: emp.aiMaturity || '',
             requiredCertificate: '',
             isQualified: undefined,
             isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
@@ -335,7 +335,7 @@ const fetchDetail = async () => {
             isExpert: emp.isExpert !== undefined ? emp.isExpert === 1 : undefined,
             isFrontlineManager: undefined, // 暂无数据
             organizationMaturity: undefined, // 暂无数据
-            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+            positionMaturity: emp.aiMaturity || '',
             requiredCertificate: '',
             isQualified: undefined, // 暂无数据
             isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
@@ -515,7 +515,7 @@ const fetchDetail = async () => {
             isExpert: emp.isExpert !== undefined ? emp.isExpert === 1 : undefined,
             isFrontlineManager: undefined, // 暂无数据
             organizationMaturity: undefined, // 暂无数据
-            positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
+            positionMaturity: emp.aiMaturity || '',
             requiredCertificate: '',
             isQualified: undefined, // 暂无数据
             isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
@@ -794,21 +794,44 @@ const summaryMetrics = computed(() => {
   const certificationRecords = filteredCertificationRecords.value
   const appointmentRecords = filteredAppointmentRecords.value
   
-  // 任职达标率：统计 isQualified 为 true 的记录
-  const appointmentQualified = appointmentRecords.filter((item) => item.isQualified === true).length
-  // 检查是否有任职达标数据（至少有一条记录的 isQualified 不是 undefined）
-  const hasAppointmentData = appointmentRecords.some((item) => item.isQualified !== undefined)
-  const appointmentRate = appointmentRecords.length
-    ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
-    : 0
+  let appointmentRate = 0
+  let hasAppointmentData = false
+  let certificationRate = 0
+  let hasCertData = false
   
-  // 认证达标率：统计 isCertStandard 为 true 的记录
-  const certStandardCount = certificationRecords.filter((item) => item.isCertStandard === true).length
-  // 检查是否有认证达标数据（至少有一条记录的 isCertStandard 不是 undefined）
-  const hasCertData = certificationRecords.some((item) => item.isCertStandard !== undefined)
-  const certificationRate = certificationRecords.length
-    ? Math.round((certStandardCount / certificationRecords.length) * 100)
-    : 0
+  // 当角色为全员时，使用新的计算方式
+  if (actualRole.value === '0') {
+    // 任职达标率：有任职级别（qualificationLevel）的人数 / 全量人员数量
+    const appointmentWithLevel = appointmentRecords.filter((item) => item.qualificationLevel && item.qualificationLevel.trim()).length
+    appointmentRate = appointmentRecords.length
+      ? Math.round((appointmentWithLevel / appointmentRecords.length) * 100)
+      : 0
+    hasAppointmentData = appointmentRecords.length > 0
+    
+    // 认证达标率：有证书名称（certificateName）的人数 / 全量人员数量
+    const certWithName = certificationRecords.filter((item) => item.certificateName && item.certificateName.trim()).length
+    certificationRate = certificationRecords.length
+      ? Math.round((certWithName / certificationRecords.length) * 100)
+      : 0
+    hasCertData = certificationRecords.length > 0
+  } else {
+    // 其他角色：使用原有的计算方式
+    // 任职达标率：统计 isQualified 为 true 的记录
+    const appointmentQualified = appointmentRecords.filter((item) => item.isQualified === true).length
+    // 检查是否有任职达标数据（至少有一条记录的 isQualified 不是 undefined）
+    hasAppointmentData = appointmentRecords.some((item) => item.isQualified !== undefined)
+    appointmentRate = appointmentRecords.length
+      ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
+      : 0
+    
+    // 认证达标率：统计 isCertStandard 为 true 的记录
+    const certStandardCount = certificationRecords.filter((item) => item.isCertStandard === true).length
+    // 检查是否有认证达标数据（至少有一条记录的 isCertStandard 不是 undefined）
+    hasCertData = certificationRecords.some((item) => item.isCertStandard !== undefined)
+    certificationRate = certificationRecords.length
+      ? Math.round((certStandardCount / certificationRecords.length) * 100)
+      : 0
+  }
 
   return [
     { label: '任职记录', value: appointmentRecords.length, unit: '条' },
@@ -824,6 +847,22 @@ const summaryMetrics = computed(() => {
       unit: !hasCertData && certificationRecords.length > 0 ? '' : '%',
     },
   ]
+})
+
+// AI任职盘点表格默认排序：当角色为全员时，按资格级别降序排列
+const appointmentTableDefaultSort = computed(() => {
+  if (actualRole.value === '0') {
+    return { prop: 'qualificationLevel', order: 'descending' }
+  }
+  return null
+})
+
+// AI认证盘点表格默认排序：当角色为全员时，按证书名称降序排列；否则按是否达标升序
+const certificationTableDefaultSort = computed(() => {
+  if (actualRole.value === '0') {
+    return { prop: 'certificateName', order: 'descending' }
+  }
+  return { prop: 'isCertStandard', order: 'ascending' }
 })
 
 // 移除自动触发的watch，改为手动点击查询按钮触发
@@ -1089,7 +1128,7 @@ onBeforeUnmount(() => {
                 </el-icon>
               </el-tooltip>
             </template>
-            <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small">
+            <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small" :default-sort="appointmentTableDefaultSort">
               <el-table-column 
                 v-if="actualRole !== '0'"
                 label="是否达标" 
@@ -1191,6 +1230,14 @@ onBeforeUnmount(() => {
                 label="资格级别" 
                 width="84" 
                 sortable 
+                :sort-method="(a, b) => {
+                  // 空值排在最后
+                  if (!a.qualificationLevel && !b.qualificationLevel) return 0
+                  if (!a.qualificationLevel) return 1
+                  if (!b.qualificationLevel) return -1
+                  // 降序排列
+                  return b.qualificationLevel.localeCompare(a.qualificationLevel, 'zh-CN')
+                }"
                 align="center"
                 header-align="center"
               />
@@ -1358,7 +1405,7 @@ onBeforeUnmount(() => {
               height="520" 
               highlight-current-row 
               size="small"
-              :default-sort="{ prop: 'isCertStandard', order: 'ascending' }"
+              :default-sort="certificationTableDefaultSort"
             >
               <el-table-column 
                 v-if="actualRole !== '0'"
@@ -1432,6 +1479,14 @@ onBeforeUnmount(() => {
                 label="证书名称" 
                 :width="actualRole === '1' || actualRole === '2' ? '280' : '308'" 
                 sortable 
+                :sort-method="(a, b) => {
+                  // 空值排在最后
+                  if (!a.certificateName && !b.certificateName) return 0
+                  if (!a.certificateName) return 1
+                  if (!b.certificateName) return -1
+                  // 降序排列
+                  return b.certificateName.localeCompare(a.certificateName, 'zh-CN')
+                }"
                 align="center"
                 header-align="center"
               >
