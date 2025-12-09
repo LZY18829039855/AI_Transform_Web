@@ -1250,7 +1250,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="minDepartment" 
                 label="最小部门" 
-                min-width="160" 
+                min-width="200" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1507,7 +1507,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="minDepartment" 
                 label="最小部门" 
-                min-width="160" 
+                min-width="200" 
                 sortable 
                 align="center"
                 header-align="center"
