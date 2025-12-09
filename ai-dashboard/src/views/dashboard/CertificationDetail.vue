@@ -1252,7 +1252,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="qualificationLevel" 
                 label="资格级别" 
-                width="84" 
+                width="92" 
                 sortable 
                 :sort-method="qualificationLevelSort"
                 align="center"
@@ -1495,7 +1495,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="certificateName" 
                 label="证书名称" 
-                :width="actualRole === '1' || actualRole === '2' ? '280' : '308'" 
+                :width="actualRole === '1' || actualRole === '2' ? '264' : '292'" 
                 sortable 
                 :sort-method="(a, b) => {
                   // 空值排在最后
@@ -1515,7 +1515,7 @@ onBeforeUnmount(() => {
               </el-table-column>
               <el-table-column 
                 label="是否通过科目二" 
-                :width="actualRole === '1' || actualRole === '2' ? '136' : '150'" 
+                :width="actualRole === '1' || actualRole === '2' ? '128' : '142'" 
                 sortable 
                 :sort-method="(a, b) => {
                   if (a.subjectTwoPassed === true && b.subjectTwoPassed !== true) return -1
