@@ -764,23 +764,23 @@ const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: 
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
   
   // 获取当前的人员类型（personType）
-  // personType: 1-干部，2-专家，0-全员（默认为1）
+  // personType: 0-全员，1-干部，2-专家
   const role = filters.value.role ?? '0'
-  let personType = '1' // 默认值
+  let personType = '0' // 默认值：全员
   if (role === '1') {
     personType = '1' // 干部
   } else if (role === '2') {
     personType = '2' // 专家
   } else {
-    // 全员或其他情况，默认为1（干部）
-    personType = '1'
+    // 全员或其他情况，默认为0（全员）
+    personType = '0'
   }
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: deptCode,
     personType: personType,
-    queryType: '1', // 默认为1
+    queryType: '1', // 默认为1（任职人数）
     jobCategory: data.label, // 职位类信息
     // 岗位成熟度传空，不传递此参数
   }
@@ -791,8 +791,41 @@ const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: 
   })
 }
 
-// 处理职位类表格点击事件（任职人数）
-const handleJobCategoryTableCellClick = (row: MergedTableRow) => {
+// 处理职位类认证柱状图点击事件
+const handleJobCategoryCertificationBarClick = (data: { label: string; deptCode?: string; count: number; rate: number }) => {
+  // 获取当前筛选的部门ID
+  const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+  
+  // 获取当前的人员类型（personType）
+  // personType: 0-全员，1-干部，2-专家
+  const role = filters.value.role ?? '0'
+  let personType = '0' // 默认值：全员
+  if (role === '1') {
+    personType = '1' // 干部
+  } else if (role === '2') {
+    personType = '2' // 专家
+  } else {
+    // 全员或其他情况，默认为0（全员）
+    personType = '0'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    deptCode: deptCode,
+    personType: personType,
+    queryType: '2', // 默认为2（基线人数）
+    jobCategory: data.label, // 职位类信息
+    // 岗位成熟度传空，不传递此参数
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理职位类表格点击事件（任职人数或认证人数）
+const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointment' | 'certification') => {
   // 如果是总计行，不处理点击
   if (row.label === '总计') {
     return
@@ -802,23 +835,23 @@ const handleJobCategoryTableCellClick = (row: MergedTableRow) => {
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
   
   // 获取当前的人员类型（personType）
-  // personType: 1-干部，2-专家，0-全员（默认为1）
+  // personType: 0-全员，1-干部，2-专家
   const role = filters.value.role ?? '0'
-  let personType = '1' // 默认值
+  let personType = '0' // 默认值：全员
   if (role === '1') {
     personType = '1' // 干部
   } else if (role === '2') {
     personType = '2' // 专家
   } else {
-    // 全员或其他情况，默认为1（干部）
-    personType = '1'
+    // 全员或其他情况，默认为0（全员）
+    personType = '0'
   }
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: deptCode,
     personType: personType,
-    queryType: '1', // 默认为1
+    queryType: column === 'appointment' ? '1' : '2', // 任职为1，认证为2
     jobCategory: row.label, // 职位类信息
     // 岗位成熟度传空，不传递此参数
   }
@@ -1717,6 +1750,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="jobCategoryAppointmentLegendTotals"
               :height="320"
+              @bar-click="handleJobCategoryAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1749,6 +1783,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="jobCategoryCertificationLegendTotals"
               :height="320"
+              @bar-click="handleJobCategoryCertificationBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1821,7 +1856,16 @@ onActivated(() => {
               <el-table-column prop="label" label="职位类" min-width="180" align="center" header-align="center" />
               <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.appointmentCount) }}
+                  <el-link
+                    v-if="row.label !== '总计'"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleJobCategoryTableCellClick(row, 'appointment')"
+                  >
+                    {{ formatNumber(row.appointmentCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
@@ -1831,7 +1875,16 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="certificationCount" label="认证人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.certificationCount) }}
+                  <el-link
+                    v-if="row.label !== '总计'"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleJobCategoryTableCellClick(row, 'certification')"
+                  >
+                    {{ formatNumber(row.certificationCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
