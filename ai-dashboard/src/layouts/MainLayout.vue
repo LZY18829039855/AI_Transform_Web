@@ -19,11 +19,8 @@ const handleGoHome = () => {
   router.push({ name: 'Home' })
 }
 
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  appStore.setActiveTab('maturity')
-  router.push({ name: 'Home' })
-  ElMessage.success('已退出登录')
+const handlePermissionManagement = () => {
+  ElMessage.info('页面开发中')
 }
 </script>
 
@@ -56,7 +53,7 @@ const handleLogout = () => {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="handleGoHome">返回首页</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">权限管理</el-dropdown-item>
+                <el-dropdown-item divided @click="handlePermissionManagement">权限管理</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
