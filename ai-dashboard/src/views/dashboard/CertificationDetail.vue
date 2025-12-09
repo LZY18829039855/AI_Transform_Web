@@ -671,6 +671,36 @@ const resetFilters = () => {
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
+// 资格级别排序方法：有数据的排在前面，等级越高越靠前
+const qualificationLevelSort = (a: any, b: any) => {
+  // 空值排在最后
+  if (!a.qualificationLevel && !b.qualificationLevel) {
+    return 0
+  }
+  if (!a.qualificationLevel) {
+    return 1
+  }
+  if (!b.qualificationLevel) {
+    return -1
+  }
+  
+  // 提取数字部分进行排序（等级越高越靠前，即降序）
+  const extractLevel = (levelStr: string) => {
+    if (!levelStr) {
+      return 0
+    }
+    // 提取字符串中的数字，支持格式如"1级"、"2级"、"3级"等
+    const match = levelStr.match(/\d+/)
+    return match ? parseInt(match[0], 10) : 0
+  }
+  
+  const levelA = extractLevel(a.qualificationLevel)
+  const levelB = extractLevel(b.qualificationLevel)
+  
+  // 降序排列：等级高的排在前面
+  return levelB - levelA
+}
+
 // 导出数据
 const handleExport = () => {
   if (!detailData.value) {
@@ -849,10 +879,10 @@ const summaryMetrics = computed(() => {
   ]
 })
 
-// AI任职盘点表格默认排序：当角色为全员时，按资格级别升序排列
+// AI任职盘点表格默认排序：当角色为全员时，按资格级别降序排列（等级越高越靠前）
 const appointmentTableDefaultSort = computed(() => {
   if (actualRole.value === '0') {
-    return { prop: 'qualificationLevel', order: 'ascending' }
+    return { prop: 'qualificationLevel', order: 'descending' }
   }
   return null
 })
@@ -1230,14 +1260,7 @@ onBeforeUnmount(() => {
                 label="资格级别" 
                 width="84" 
                 sortable 
-                :sort-method="(a, b) => {
-                  // 空值排在最后
-                  if (!a.qualificationLevel && !b.qualificationLevel) return 0
-                  if (!a.qualificationLevel) return 1
-                  if (!b.qualificationLevel) return -1
-                  // 升序排列
-                  return a.qualificationLevel.localeCompare(b.qualificationLevel, 'zh-CN')
-                }"
+                :sort-method="qualificationLevelSort"
                 align="center"
                 header-align="center"
               />
