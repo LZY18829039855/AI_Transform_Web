@@ -1242,7 +1242,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel5" 
                 label="五级部门" 
-                min-width="180" 
+                min-width="220" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1499,7 +1499,7 @@ onBeforeUnmount(() => {
               <el-table-column 
                 prop="departmentLevel5" 
                 label="五级部门" 
-                min-width="180" 
+                min-width="220" 
                 sortable 
                 align="center"
                 header-align="center"
