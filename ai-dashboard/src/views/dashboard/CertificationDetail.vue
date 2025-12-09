@@ -82,7 +82,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     name: employee.name || '',
     employeeId: employee.employeeNumber || '',
     positionCategory: employee.competenceCategory || employee.competenceCategoryCn || '',
-    positionSubCategory: '', // 职位子类为空，不展示
+    positionSubCategory: employee.competenceSubcategory || '',
     departmentLevel1: employee.firstLevelDept || '',
     departmentLevel2: employee.secondLevelDept || '',
     departmentLevel3: employee.thirdLevelDept || '',
@@ -173,7 +173,7 @@ const fetchDetail = async () => {
             name: emp.name || '',
             employeeId: emp.employeeNumber || '',
             positionCategory: emp.competenceCategory || '',
-            positionSubCategory: '',
+            positionSubCategory: emp.competenceSubcategory || '',
             departmentLevel1: emp.firstLevelDept || '',
             departmentLevel2: emp.secondLevelDept || '',
             departmentLevel3: emp.thirdLevelDept || '',
