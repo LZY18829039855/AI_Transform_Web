@@ -100,7 +100,7 @@ const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): A
     expiryDate: employee.competenceTo ? new Date(employee.competenceTo).toLocaleDateString('zh-CN') : '',
     isCadre: employee.isCadre === 1,
     cadreType: employee.cadreType || '',
-    isExpert: undefined, // 暂无数据
+    isExpert: employee.isExpert !== undefined ? employee.isExpert === 1 : undefined,
     isFrontlineManager: undefined, // 暂无数据
     organizationMaturity: undefined, // 暂无数据
     positionMaturity: (employee.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
@@ -191,7 +191,7 @@ const fetchDetail = async () => {
             expiryDate: emp.competenceTo ? new Date(emp.competenceTo).toLocaleDateString('zh-CN') : '',
             isCadre: emp.isCadre === 1,
             cadreType: emp.cadreType || '',
-            isExpert: undefined,
+            isExpert: emp.isExpert !== undefined ? emp.isExpert === 1 : undefined,
             isFrontlineManager: undefined,
             organizationMaturity: undefined,
             positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || undefined,
@@ -336,7 +336,7 @@ const fetchDetail = async () => {
             subjectTwoPassed: emp.isPassedSubject2 === 1,
             isCadre: emp.isCadre === 1,
             cadreType: emp.cadreType || undefined,
-            isExpert: undefined, // 暂无数据
+            isExpert: emp.isExpert !== undefined ? emp.isExpert === 1 : undefined,
             isFrontlineManager: undefined, // 暂无数据
             organizationMaturity: undefined, // 暂无数据
             positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
@@ -516,7 +516,7 @@ const fetchDetail = async () => {
             subjectTwoPassed: emp.isPassedSubject2 === 1,
             isCadre: emp.isCadre === 1,
             cadreType: emp.cadreType || undefined,
-            isExpert: undefined, // 暂无数据
+            isExpert: emp.isExpert !== undefined ? emp.isExpert === 1 : undefined,
             isFrontlineManager: undefined, // 暂无数据
             organizationMaturity: undefined, // 暂无数据
             positionMaturity: (emp.aiMaturity as 'L1' | 'L2' | 'L3') || 'L1',
