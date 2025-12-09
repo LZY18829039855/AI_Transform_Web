@@ -1195,7 +1195,6 @@ onBeforeUnmount(() => {
               <el-table-column prop="effectiveDate" label="生效日期" width="112" align="center" header-align="center" />
               <el-table-column prop="expiryDate" label="失效日期" width="112" align="center" header-align="center" />
               <el-table-column 
-                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
@@ -1453,7 +1452,6 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
               <el-table-column 
-                v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="positionSubCategory" 
                 label="职位子类" 
                 min-width="140" 
