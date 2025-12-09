@@ -849,18 +849,18 @@ const summaryMetrics = computed(() => {
   ]
 })
 
-// AI任职盘点表格默认排序：当角色为全员时，按资格级别降序排列
+// AI任职盘点表格默认排序：当角色为全员时，按资格级别升序排列
 const appointmentTableDefaultSort = computed(() => {
   if (actualRole.value === '0') {
-    return { prop: 'qualificationLevel', order: 'descending' }
+    return { prop: 'qualificationLevel', order: 'ascending' }
   }
   return null
 })
 
-// AI认证盘点表格默认排序：当角色为全员时，按证书名称降序排列；否则按是否达标升序
+// AI认证盘点表格默认排序：当角色为全员时，按证书名称升序排列；否则按是否达标升序
 const certificationTableDefaultSort = computed(() => {
   if (actualRole.value === '0') {
-    return { prop: 'certificateName', order: 'descending' }
+    return { prop: 'certificateName', order: 'ascending' }
   }
   return { prop: 'isCertStandard', order: 'ascending' }
 })
@@ -1235,8 +1235,8 @@ onBeforeUnmount(() => {
                   if (!a.qualificationLevel && !b.qualificationLevel) return 0
                   if (!a.qualificationLevel) return 1
                   if (!b.qualificationLevel) return -1
-                  // 降序排列
-                  return b.qualificationLevel.localeCompare(a.qualificationLevel, 'zh-CN')
+                  // 升序排列
+                  return a.qualificationLevel.localeCompare(b.qualificationLevel, 'zh-CN')
                 }"
                 align="center"
                 header-align="center"
@@ -1484,8 +1484,8 @@ onBeforeUnmount(() => {
                   if (!a.certificateName && !b.certificateName) return 0
                   if (!a.certificateName) return 1
                   if (!b.certificateName) return -1
-                  // 降序排列
-                  return b.certificateName.localeCompare(a.certificateName, 'zh-CN')
+                  // 升序排列
+                  return a.certificateName.localeCompare(b.certificateName, 'zh-CN')
                 }"
                 align="center"
                 header-align="center"
