@@ -880,9 +880,11 @@ const summaryMetrics = computed(() => {
 })
 
 // AI任职盘点表格默认排序：当角色为全员时，按资格级别降序排列（等级越高越靠前）
+// 注意：使用ascending是因为sort-method已经实现了降序逻辑（levelB - levelA）
+// 当order为ascending时，Element Plus不会反转sort-method的结果，会直接使用降序逻辑
 const appointmentTableDefaultSort = computed(() => {
   if (actualRole.value === '0') {
-    return { prop: 'qualificationLevel', order: 'descending' }
+    return { prop: 'qualificationLevel', order: 'ascending' }
   }
   return null
 })
@@ -1185,14 +1187,6 @@ onBeforeUnmount(() => {
               <el-table-column prop="name" label="姓名" :width="actualRole === '1' || actualRole === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
               <el-table-column prop="employeeId" label="工号" :width="actualRole === '1' || actualRole === '2' ? '94' : '108'" align="center" header-align="center" />
               <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                :width="actualRole === '1' || actualRole === '2' ? '126' : '112'" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
                 width="98" 
@@ -1218,7 +1212,7 @@ onBeforeUnmount(() => {
                 v-if="actualRole === '1'"
                 prop="cadreType" 
                 label="干部类型" 
-                width="98" 
+                width="114" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1339,7 +1333,7 @@ onBeforeUnmount(() => {
                 v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="cadreType" 
                 label="干部类型" 
-                width="84" 
+                width="100" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1357,6 +1351,15 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
+              <el-table-column 
+                v-if="actualRole !== '1' && actualRole !== '2'"
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                :width="actualRole === '1' || actualRole === '2' ? '142' : '128'" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
               <el-table-column 
                 v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否基层主管" 
@@ -1459,14 +1462,6 @@ onBeforeUnmount(() => {
               <el-table-column prop="name" label="姓名" :width="actualRole === '1' || actualRole === '2' ? '70' : '84'" fixed="left" align="center" header-align="center" />
               <el-table-column prop="employeeId" label="工号" :width="actualRole === '1' || actualRole === '2' ? '94' : '108'" align="center" header-align="center" />
               <el-table-column 
-                prop="positionMaturity" 
-                label="岗位AI成熟度" 
-                :width="actualRole === '1' || actualRole === '2' ? '126' : '112'" 
-                sortable 
-                align="center"
-                header-align="center"
-              />
-              <el-table-column 
                 prop="positionCategory" 
                 label="职位类" 
                 width="98" 
@@ -1492,7 +1487,7 @@ onBeforeUnmount(() => {
                 v-if="actualRole === '1'"
                 prop="cadreType" 
                 label="干部类型" 
-                width="98" 
+                width="114" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1602,7 +1597,7 @@ onBeforeUnmount(() => {
                 v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="cadreType" 
                 label="干部类型" 
-                width="84" 
+                width="100" 
                 sortable 
                 align="center"
                 header-align="center"
@@ -1620,6 +1615,15 @@ onBeforeUnmount(() => {
                   <span v-else class="pending-data">待提供数据</span>
                 </template>
               </el-table-column>
+              <el-table-column 
+                v-if="actualRole !== '1' && actualRole !== '2'"
+                prop="positionMaturity" 
+                label="岗位AI成熟度" 
+                :width="actualRole === '1' || actualRole === '2' ? '142' : '128'" 
+                sortable 
+                align="center"
+                header-align="center"
+              />
               <el-table-column 
                 v-if="actualRole !== '1' && actualRole !== '2'"
                 label="是否基层主管" 
