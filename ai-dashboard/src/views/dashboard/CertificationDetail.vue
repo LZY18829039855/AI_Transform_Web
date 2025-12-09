@@ -1262,7 +1262,7 @@ onBeforeUnmount(() => {
                 v-if="actualRole !== '1' && actualRole !== '2'"
                 prop="acquisitionMethod" 
                 label="获取方式" 
-                min-width="160" 
+                width="92" 
                 sortable 
                 align="center"
                 header-align="center"
