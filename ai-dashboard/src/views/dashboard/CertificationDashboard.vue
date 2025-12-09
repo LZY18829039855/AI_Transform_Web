@@ -658,23 +658,59 @@ const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: s
   }
   
   // 获取当前的人员类型（personType）
-  // personType: 1-干部，2-专家，0-全员（默认为1）
+  // personType: 0-全员，1-干部，2-专家
   const role = filters.value.role ?? '0'
-  let personType = '1' // 默认值
+  let personType = '0' // 默认值：全员
   if (role === '1') {
     personType = '1' // 干部
   } else if (role === '2') {
     personType = '2' // 专家
   } else {
-    // 全员或其他情况，默认为1（干部）
-    personType = '1'
+    // 全员或其他情况，默认为0（全员）
+    personType = '0'
   }
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: data.deptCode,
     personType: personType,
-    queryType: '1', // 默认为1
+    queryType: '2', // 默认为2（基线人数）
+    // 岗位成熟度与职位类数据传空，不传递这些参数
+  }
+  
+  router.push({
+    path: '/dashboard/certification/detail/detail',
+    query: queryParams,
+  })
+}
+
+// 处理部门认证柱状图点击事件
+const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?: string; count: number; rate: number }) => {
+  console.log('handleDepartmentCertificationBarClick called:', data)
+  
+  if (!data.deptCode) {
+    console.warn('Department certification bar click: deptCode is missing', data)
+    return
+  }
+  
+  // 获取当前的人员类型（personType）
+  // personType: 0-全员，1-干部，2-专家
+  const role = filters.value.role ?? '0'
+  let personType = '0' // 默认值：全员
+  if (role === '1') {
+    personType = '1' // 干部
+  } else if (role === '2') {
+    personType = '2' // 专家
+  } else {
+    // 全员或其他情况，默认为0（全员）
+    personType = '0'
+  }
+  
+  // 构建查询参数
+  const queryParams: Record<string, string | undefined> = {
+    deptCode: data.deptCode,
+    personType: personType,
+    queryType: '2', // 默认为2（基线人数）
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
@@ -696,23 +732,23 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
   }
   
   // 获取当前的人员类型（personType）
-  // personType: 1-干部，2-专家，0-全员（默认为1）
+  // personType: 0-全员，1-干部，2-专家
   const role = filters.value.role ?? '0'
-  let personType = '1' // 默认值
+  let personType = '0' // 默认值：全员
   if (role === '1') {
     personType = '1' // 干部
   } else if (role === '2') {
     personType = '2' // 专家
   } else {
-    // 全员或其他情况，默认为1（干部）
-    personType = '1'
+    // 全员或其他情况，默认为0（全员）
+    personType = '0'
   }
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: row.deptCode,
     personType: personType,
-    queryType: '1', // 默认为1
+    queryType: '2', // 默认为2（基线人数）
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
@@ -1523,6 +1559,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="departmentLegendTotals"
               :height="320"
+              @bar-click="handleDepartmentAppointmentBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1555,6 +1592,7 @@ onActivated(() => {
               rate-label="占比"
               :legend-totals="departmentCertificationLegendTotals"
               :height="320"
+              @bar-click="handleDepartmentCertificationBarClick"
             >
               <template #title-suffix>
                 <el-tooltip
@@ -1627,7 +1665,16 @@ onActivated(() => {
               <el-table-column prop="label" label="部门" min-width="180" align="center" header-align="center" />
               <el-table-column prop="appointmentCount" :label="departmentCountLabel" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.appointmentCount) }}
+                  <el-link
+                    v-if="row.label !== '总计'"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleDepartmentTableCellClick(row, 'appointment')"
+                  >
+                    {{ formatNumber(row.appointmentCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
@@ -1637,7 +1684,16 @@ onActivated(() => {
               </el-table-column>
               <el-table-column prop="certificationCount" label="认证总人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
-                  {{ formatNumber(row.certificationCount) }}
+                  <el-link
+                    v-if="row.label !== '总计'"
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleDepartmentTableCellClick(row, 'certification')"
+                  >
+                    {{ formatNumber(row.certificationCount) }}
+                  </el-link>
+                  <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
