@@ -125,18 +125,19 @@ const getDeptCodeFromPath = (path?: string[]): string => {
 const fetchDetail = async () => {
   loading.value = true
   try {
-    // 检查是否是从部门柱状图点击跳转过来的（有deptCode、personType、queryType参数）
+    // 检查是否是从部门柱状图或职位类柱状图点击跳转过来的（有deptCode、personType、queryType参数）
     const deptCodeFromRoute = route.query.deptCode as string | undefined
     const personTypeFromRoute = route.query.personType as string | undefined
     const queryTypeFromRoute = route.query.queryType as string | undefined
+    const jobCategoryFromRoute = route.query.jobCategory as string | undefined
     
-    // 如果是从部门柱状图点击跳转过来的，直接使用这些参数
+    // 如果是从部门柱状图或职位类柱状图点击跳转过来的，直接使用这些参数
     if (deptCodeFromRoute && personTypeFromRoute && queryTypeFromRoute) {
       const deptCode = deptCodeFromRoute
       const personType = Number(personTypeFromRoute)
       const queryType = Number(queryTypeFromRoute)
       const maturityParam: string | undefined = undefined // 岗位成熟度传空
-      const jobCategory: string | undefined = undefined // 职位类传空
+      const jobCategory: string | undefined = jobCategoryFromRoute || undefined // 从路由参数中读取职位类
       
       // 并行加载任职和认证数据
       const [qualifiedResponse, certResponse] = await Promise.all([
