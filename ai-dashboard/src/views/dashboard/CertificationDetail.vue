@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, QuestionFilled, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
@@ -638,7 +638,9 @@ const fetchDetail = async () => {
           actualRole.value = '0'
         }
       } else {
-        // 如果 roleOptions 还没有数据，至少确保 actualRole 有正确的初始值
+        // 如果 roleOptions 还没有数据，先设置角色值
+        // 当 roleOptions 加载完成后，Element Plus 的 select 组件会根据 value 匹配对应的 label
+        filters.value.role = normalizedRole
         actualRole.value = normalizedRole
       }
     }
@@ -915,6 +917,23 @@ const certificationTableDefaultSort = computed(() => {
 //   { deep: true }
 // )
 
+// 监听 roleOptions 的变化，确保当 roleOptions 加载完成后，当前角色值能正确显示
+watch(
+  () => roleOptions.value,
+  (newOptions) => {
+    // 当 roleOptions 从空变为有数据时，检查当前角色值是否在选项中
+    if (newOptions.length > 0 && filters.value.role) {
+      const roleExists = newOptions.some((option) => option.value === filters.value.role)
+      if (!roleExists) {
+        // 如果当前角色值不在选项中，重置为 '0'（全员）
+        filters.value.role = '0'
+        actualRole.value = '0'
+      }
+    }
+  },
+  { immediate: false }
+)
+
 onMounted(() => {
   initDepartmentTree()
   
@@ -939,20 +958,8 @@ onMounted(() => {
     filters.value.maturity = '全部'
   }
   
-  // 从路由参数中读取角色视图（如果是从柱状图点击跳转过来的）
-  const roleFromQuery = route.query.role as string | undefined
-  if (roleFromQuery && ['0', '1', '2', '3'].includes(roleFromQuery)) {
-    // 如果roleOptions已经有数据，检查该角色是否存在
-    if (roleOptions.value.length > 0) {
-      const roleExists = roleOptions.value.some((option) => option.value === roleFromQuery)
-      if (roleExists) {
-        filters.value.role = roleFromQuery as CertificationRole
-      }
-    } else {
-      // 如果roleOptions还没有数据，先设置，等数据加载完成后再验证
-      filters.value.role = roleFromQuery as CertificationRole
-    }
-  }
+  // 注意：角色视图的设置应该在 fetchDetail() 完成后进行，因为 roleOptions 依赖于 detailData
+  // fetchDetail() 的 finally 块中已经有逻辑根据 normalizedRole 设置角色值
   
   // 根据点击的列和来源决定默认显示的标签页
   // 优先判断具体的列，再判断baseline和source参数
@@ -1006,20 +1013,8 @@ onActivated(() => {
     filters.value.maturity = '全部'
   }
   
-  // 从路由参数中读取角色视图（如果是从柱状图点击跳转过来的）
-  const roleFromQuery = route.query.role as string | undefined
-  if (roleFromQuery && ['0', '1', '2', '3'].includes(roleFromQuery)) {
-    // 如果roleOptions已经有数据，检查该角色是否存在
-    if (roleOptions.value.length > 0) {
-      const roleExists = roleOptions.value.some((option) => option.value === roleFromQuery)
-      if (roleExists) {
-        filters.value.role = roleFromQuery as CertificationRole
-      }
-    } else {
-      // 如果roleOptions还没有数据，先设置，等数据加载完成后再验证
-      filters.value.role = roleFromQuery as CertificationRole
-    }
-  }
+  // 注意：角色视图的设置应该在 fetchDetail() 完成后进行，因为 roleOptions 依赖于 detailData
+  // fetchDetail() 的 finally 块中已经有逻辑根据 normalizedRole 设置角色值
   
   fetchDetail()
 })
