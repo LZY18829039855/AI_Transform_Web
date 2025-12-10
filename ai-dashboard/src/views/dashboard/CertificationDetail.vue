@@ -631,6 +631,7 @@ const fetchDetail = async () => {
     if (!wasUserQuery) {
       const targetRole = normalizedRole.value
       if (roleOptions.value.length > 0) {
+        // roleOptions 已经有数据，可以安全地设置角色值
         const roleExists = roleOptions.value.some((option) => option.value === targetRole)
         if (roleExists) {
           // 使用 nextTick 确保在 DOM 更新后再设置值，让 Element Plus 能正确显示 label
@@ -643,10 +644,11 @@ const fetchDetail = async () => {
           actualRole.value = '0'
         }
       } else {
-        // 如果 roleOptions 还没有数据，先设置角色值
-        // 当 roleOptions 加载完成后，watch 会重新设置以确保正确显示
-        filters.value.role = targetRole
-        actualRole.value = targetRole
+        // 如果 roleOptions 还没有数据，不要设置角色值，保持为 '0'
+        // 当 roleOptions 加载完成后，watch 会自动设置正确的值
+        // 这样可以避免在 roleOptions 加载前显示数字
+        filters.value.role = '0'
+        actualRole.value = normalizedRole.value // 只更新 actualRole，用于控制表格样式
       }
     }
   }
@@ -925,28 +927,33 @@ const certificationTableDefaultSort = computed(() => {
 // 监听 roleOptions 的变化，确保当 roleOptions 加载完成后，当前角色值能正确显示
 watch(
   () => roleOptions.value,
-  (newOptions) => {
-    // 当 roleOptions 有数据时，根据路由参数设置角色值
+  (newOptions, oldOptions) => {
+    // 当 roleOptions 从空变为有数据时，根据路由参数设置角色值
     if (newOptions.length > 0) {
       const targetRole = normalizedRole.value
       const targetRoleExists = newOptions.some((option) => option.value === targetRole)
-      const currentRoleExists = newOptions.some((option) => option.value === filters.value.role)
       
       // 如果目标角色（从路由参数获取）在选项中，使用目标角色
-      if (targetRoleExists && filters.value.role !== targetRole) {
+      if (targetRoleExists) {
         // 使用 nextTick 确保在 DOM 更新后再设置值，让 Element Plus 能正确显示 label
         nextTick(() => {
-          filters.value.role = targetRole
-          actualRole.value = targetRole
+          if (filters.value.role !== targetRole) {
+            filters.value.role = targetRole
+            actualRole.value = targetRole
+          }
         })
-      } else if (!currentRoleExists) {
-        // 如果目标角色不在选项中，且当前角色值也不在选项中，重置为 '0'
-        filters.value.role = '0'
-        actualRole.value = '0'
+      } else {
+        // 如果目标角色不在选项中，检查当前角色值是否在选项中
+        const currentRoleExists = newOptions.some((option) => option.value === filters.value.role)
+        if (!currentRoleExists) {
+          // 如果当前角色值也不在选项中，重置为 '0'
+          filters.value.role = '0'
+          actualRole.value = '0'
+        }
       }
     }
   },
-  { immediate: false }
+  { immediate: true } // 设置为 immediate: true，确保在 roleOptions 初始化时也能触发
 )
 
 // 监听路由参数 role 的变化，确保当路由参数变化时能正确更新角色值
