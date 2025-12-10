@@ -744,7 +744,7 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
     departmentPath = filters.value.departmentPath || []
   } else {
     // 否则，构建包含该deptCode的路径
-    // 如果当前有部门筛选，则在该路径基础上添加deptCode；否则直接使用deptCode
+    // 如果当前有部门筛选，则在该路径基础上添加deptCode；否则构建完整路径
     const currentPath = filters.value.departmentPath || []
     if (currentPath.length > 0) {
       // 检查deptCode是否已经在路径中
@@ -755,9 +755,8 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
         departmentPath = [...currentPath, data.deptCode]
       }
     } else {
-      // 如果没有当前路径，构建基本路径
-      // 如果deptCode是三级部门，路径应该是 ['ICT_BG', 'CLOUD_CORE_NETWORK', deptCode]
-      // 由于部门树的结构，三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
+      // 如果没有当前路径，构建完整路径
+      // 三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
       departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', data.deptCode]
     }
   }
@@ -771,7 +770,7 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
-  // 如果部门路径存在，添加到查询参数中
+  // 如果部门路径存在，添加到查询参数中（确保路径不为空）
   if (departmentPath.length > 0) {
     queryParams.departmentPath = departmentPath.join(',')
   }
@@ -823,9 +822,8 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
         departmentPath = [...currentPath, row.deptCode]
       }
     } else {
-      // 如果没有当前路径，构建基本路径
-      // 如果deptCode是三级部门，路径应该是 ['ICT_BG', 'CLOUD_CORE_NETWORK', deptCode]
-      // 由于部门树的结构，三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
+      // 如果没有当前路径，构建完整路径
+      // 三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
       departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', row.deptCode]
     }
   }
@@ -839,7 +837,7 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
-  // 如果部门路径存在，添加到查询参数中
+  // 如果部门路径存在，添加到查询参数中（确保路径不为空）
   if (departmentPath.length > 0) {
     queryParams.departmentPath = departmentPath.join(',')
   }

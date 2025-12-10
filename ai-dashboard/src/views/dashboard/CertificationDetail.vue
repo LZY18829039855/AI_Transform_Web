@@ -233,10 +233,24 @@ const fetchDetail = async () => {
       }
       
       // 从路由参数中更新筛选框的值（部门和角色视图）
-      // 更新部门路径
+      // 更新部门路径（等待部门树初始化完成）
       const departmentPathFromQuery = parseDepartmentPathFromQuery()
       if (departmentPathFromQuery.length > 0) {
-        filters.value.departmentPath = departmentPathFromQuery
+        // 确保部门树已初始化，然后设置部门路径
+        // 如果部门树还没有初始化，先初始化，然后设置路径
+        if (departmentOptions.value.length === 0) {
+          initDepartmentTree().then(() => {
+            // 使用 nextTick 确保 DOM 更新后再设置路径
+            nextTick(() => {
+              filters.value.departmentPath = departmentPathFromQuery
+            })
+          })
+        } else {
+          // 部门树已初始化，直接设置路径
+          nextTick(() => {
+            filters.value.departmentPath = departmentPathFromQuery
+          })
+        }
       }
       
       // 更新职位类
