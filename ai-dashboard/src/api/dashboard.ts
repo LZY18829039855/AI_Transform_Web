@@ -81,11 +81,13 @@ const mapDepartmentCertStatsToCharts = (stats?: DepartmentCertStatistic[]) => {
       label: normalizeLabel(item.deptName, item.deptCode),
       count: item.totalCount ?? 0,
       rate: Number(item.certRate ?? 0),
+      deptCode: item.deptCode, // 添加部门编码，用于点击跳转
     })),
     certification: stats.map((item) => ({
       label: normalizeLabel(item.deptName, item.deptCode),
       count: resolveQualifiedCount(item),
       rate: resolveQualifiedRate(item),
+      deptCode: item.deptCode, // 添加部门编码，用于点击跳转
     })),
   }
 }
