@@ -670,12 +670,43 @@ const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: s
     personType = '0'
   }
   
+  // 构建部门路径：如果deptCode是'0'，则使用当前筛选的部门路径；否则需要构建包含该deptCode的路径
+  let departmentPath: string[] = []
+  if (data.deptCode === '0') {
+    // 如果是'0'，使用当前筛选的部门路径
+    departmentPath = filters.value.departmentPath || []
+  } else {
+    // 否则，构建包含该deptCode的路径
+    // 如果当前有部门筛选，则在该路径基础上添加deptCode；否则直接使用deptCode
+    const currentPath = filters.value.departmentPath || []
+    if (currentPath.length > 0) {
+      // 检查deptCode是否已经在路径中
+      if (currentPath.includes(data.deptCode)) {
+        departmentPath = currentPath
+      } else {
+        // 添加新的部门代码到路径
+        departmentPath = [...currentPath, data.deptCode]
+      }
+    } else {
+      // 如果没有当前路径，构建基本路径
+      // 如果deptCode是三级部门，路径应该是 ['ICT_BG', 'CLOUD_CORE_NETWORK', deptCode]
+      // 由于部门树的结构，三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
+      departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', data.deptCode]
+    }
+  }
+  
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: data.deptCode,
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
+    role: role, // 传递角色视图
     // 岗位成熟度与职位类数据传空，不传递这些参数
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (departmentPath.length > 0) {
+    queryParams.departmentPath = departmentPath.join(',')
   }
   
   router.push({
@@ -706,12 +737,43 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
     personType = '0'
   }
   
+  // 构建部门路径：如果deptCode是'0'，则使用当前筛选的部门路径；否则需要构建包含该deptCode的路径
+  let departmentPath: string[] = []
+  if (data.deptCode === '0') {
+    // 如果是'0'，使用当前筛选的部门路径
+    departmentPath = filters.value.departmentPath || []
+  } else {
+    // 否则，构建包含该deptCode的路径
+    // 如果当前有部门筛选，则在该路径基础上添加deptCode；否则直接使用deptCode
+    const currentPath = filters.value.departmentPath || []
+    if (currentPath.length > 0) {
+      // 检查deptCode是否已经在路径中
+      if (currentPath.includes(data.deptCode)) {
+        departmentPath = currentPath
+      } else {
+        // 添加新的部门代码到路径
+        departmentPath = [...currentPath, data.deptCode]
+      }
+    } else {
+      // 如果没有当前路径，构建基本路径
+      // 如果deptCode是三级部门，路径应该是 ['ICT_BG', 'CLOUD_CORE_NETWORK', deptCode]
+      // 由于部门树的结构，三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
+      departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', data.deptCode]
+    }
+  }
+  
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: data.deptCode,
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
+    role: role, // 传递角色视图
     // 岗位成熟度与职位类数据传空，不传递这些参数
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (departmentPath.length > 0) {
+    queryParams.departmentPath = departmentPath.join(',')
   }
   
   router.push({
@@ -744,12 +806,42 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
     personType = '0'
   }
   
+  // 构建部门路径：如果deptCode是'0'，则使用当前筛选的部门路径；否则需要构建包含该deptCode的路径
+  let departmentPath: string[] = []
+  if (row.deptCode === '0') {
+    // 如果是'0'，使用当前筛选的部门路径
+    departmentPath = filters.value.departmentPath || []
+  } else {
+    // 否则，构建包含该deptCode的路径
+    const currentPath = filters.value.departmentPath || []
+    if (currentPath.length > 0) {
+      // 检查deptCode是否已经在路径中
+      if (currentPath.includes(row.deptCode)) {
+        departmentPath = currentPath
+      } else {
+        // 添加新的部门代码到路径
+        departmentPath = [...currentPath, row.deptCode]
+      }
+    } else {
+      // 如果没有当前路径，构建基本路径
+      // 如果deptCode是三级部门，路径应该是 ['ICT_BG', 'CLOUD_CORE_NETWORK', deptCode]
+      // 由于部门树的结构，三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
+      departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', row.deptCode]
+    }
+  }
+  
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
     deptCode: row.deptCode,
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
+    role: role, // 传递角色视图
     // 岗位成熟度与职位类数据传空，不传递这些参数
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (departmentPath.length > 0) {
+    queryParams.departmentPath = departmentPath.join(',')
   }
   
   router.push({
@@ -782,7 +874,13 @@ const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: 
     personType: personType,
     queryType: '2', // 默认为2（基数人数）
     jobCategory: data.label, // 职位类信息
+    role: role, // 传递角色视图
     // 岗位成熟度传空，不传递此参数
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
   router.push({
@@ -815,7 +913,13 @@ const handleJobCategoryCertificationBarClick = (data: { label: string; deptCode?
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
     jobCategory: data.label, // 职位类信息
+    role: role, // 传递角色视图
     // 岗位成熟度传空，不传递此参数
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
   router.push({
@@ -853,7 +957,13 @@ const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointme
     personType: personType,
     queryType: '2', // 默认为2（基数人数）
     jobCategory: row.label, // 职位类信息
+    role: role, // 传递角色视图
     // 岗位成熟度传空，不传递此参数
+  }
+  
+  // 如果部门路径存在，添加到查询参数中
+  if (filters.value.departmentPath && Array.isArray(filters.value.departmentPath) && filters.value.departmentPath.length > 0) {
+    queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
   router.push({

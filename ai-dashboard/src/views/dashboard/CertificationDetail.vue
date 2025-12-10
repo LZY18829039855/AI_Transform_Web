@@ -939,6 +939,21 @@ onMounted(() => {
     filters.value.maturity = '全部'
   }
   
+  // 从路由参数中读取角色视图（如果是从柱状图点击跳转过来的）
+  const roleFromQuery = route.query.role as string | undefined
+  if (roleFromQuery && ['0', '1', '2', '3'].includes(roleFromQuery)) {
+    // 如果roleOptions已经有数据，检查该角色是否存在
+    if (roleOptions.value.length > 0) {
+      const roleExists = roleOptions.value.some((option) => option.value === roleFromQuery)
+      if (roleExists) {
+        filters.value.role = roleFromQuery as CertificationRole
+      }
+    } else {
+      // 如果roleOptions还没有数据，先设置，等数据加载完成后再验证
+      filters.value.role = roleFromQuery as CertificationRole
+    }
+  }
+  
   // 根据点击的列和来源决定默认显示的标签页
   // 优先判断具体的列，再判断baseline和source参数
   const column = route.query.column as string | undefined
@@ -989,6 +1004,21 @@ onActivated(() => {
     filters.value.maturity = maturityFromQuery as '全部' | 'L1' | 'L2' | 'L3'
   } else {
     filters.value.maturity = '全部'
+  }
+  
+  // 从路由参数中读取角色视图（如果是从柱状图点击跳转过来的）
+  const roleFromQuery = route.query.role as string | undefined
+  if (roleFromQuery && ['0', '1', '2', '3'].includes(roleFromQuery)) {
+    // 如果roleOptions已经有数据，检查该角色是否存在
+    if (roleOptions.value.length > 0) {
+      const roleExists = roleOptions.value.some((option) => option.value === roleFromQuery)
+      if (roleExists) {
+        filters.value.role = roleFromQuery as CertificationRole
+      }
+    } else {
+      // 如果roleOptions还没有数据，先设置，等数据加载完成后再验证
+      filters.value.role = roleFromQuery as CertificationRole
+    }
   }
   
   fetchDetail()
