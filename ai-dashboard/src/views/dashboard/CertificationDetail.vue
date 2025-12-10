@@ -27,12 +27,15 @@ const isUserQuery = ref(false)
 // 表格引用
 const appointmentTableRef = ref()
 const ROLE_VALUES: CertificationRole[] = ['0', '1', '2', '3']
-const routeRole = route.query.role as string | undefined
-const normalizedRole: CertificationRole = ROLE_VALUES.includes(routeRole as CertificationRole)
-  ? (routeRole as CertificationRole)
-  : '0'
+// 使用 computed 让 normalizedRole 能够响应路由参数的变化
+const normalizedRole = computed<CertificationRole>(() => {
+  const routeRole = route.query.role as string | undefined
+  return ROLE_VALUES.includes(routeRole as CertificationRole)
+    ? (routeRole as CertificationRole)
+    : '0'
+})
 // 实际用于控制表格样式的角色（只在点击查询按钮后更新）
-const actualRole = ref<CertificationRole>(normalizedRole)
+const actualRole = ref<CertificationRole>(normalizedRole.value)
 // 从路由参数中解析部门路径
 const parseDepartmentPathFromQuery = (): string[] => {
   const departmentPathStr = route.query.departmentPath as string | undefined
@@ -55,11 +58,10 @@ const parseMaturityFromQuery = (): '全部' | 'L1' | 'L2' | 'L3' => {
   return '全部'
 }
 
-// 初始化filters时，如果normalizedRole不是'0'，但roleOptions还没有数据，先设置为'0'
+// 初始化filters时，统一设置为'0'，避免显示数字
 // 等数据加载完成后再根据路由参数设置正确的值
-const initialRole = normalizedRole === '0' ? '0' : '0' // 先统一设置为'0'，避免显示数字
 const filters = ref<CertificationDetailFilters>({
-  role: initialRole,
+  role: '0', // 初始值统一设置为'0'，避免在roleOptions加载前显示数字
   maturity: parseMaturityFromQuery(),
   departmentPath: parseDepartmentPathFromQuery(),
   jobCategory: (route.query.jobCategory as string) || undefined,
@@ -219,7 +221,7 @@ const fetchDetail = async () => {
     }
     
     // 确定使用的角色：如果用户点击查询按钮，使用filters.value.role；否则使用normalizedRole（从路由参数获取）
-    const currentRole = isUserQuery.value ? filters.value.role : normalizedRole
+    const currentRole = isUserQuery.value ? filters.value.role : normalizedRole.value
     
     // 检查是否是干部数据查询（任职或认证）
     const isCadreQuery = 
@@ -627,21 +629,24 @@ const fetchDetail = async () => {
     // 数据加载完成后，只有在首次加载（非用户查询）时才根据路由参数设置角色值
     // 如果用户点击了查询按钮，保持用户选择的角色值不变
     if (!wasUserQuery) {
+      const targetRole = normalizedRole.value
       if (roleOptions.value.length > 0) {
-        const roleExists = roleOptions.value.some((option) => option.value === normalizedRole)
+        const roleExists = roleOptions.value.some((option) => option.value === targetRole)
         if (roleExists) {
-          filters.value.role = normalizedRole
-          // 首次加载时，同步更新实际角色
-          actualRole.value = normalizedRole
+          // 使用 nextTick 确保在 DOM 更新后再设置值，让 Element Plus 能正确显示 label
+          nextTick(() => {
+            filters.value.role = targetRole
+            actualRole.value = targetRole
+          })
         } else {
           filters.value.role = '0'
           actualRole.value = '0'
         }
       } else {
         // 如果 roleOptions 还没有数据，先设置角色值
-        // 当 roleOptions 加载完成后，Element Plus 的 select 组件会根据 value 匹配对应的 label
-        filters.value.role = normalizedRole
-        actualRole.value = normalizedRole
+        // 当 roleOptions 加载完成后，watch 会重新设置以确保正确显示
+        filters.value.role = targetRole
+        actualRole.value = targetRole
       }
     }
   }
@@ -921,13 +926,42 @@ const certificationTableDefaultSort = computed(() => {
 watch(
   () => roleOptions.value,
   (newOptions) => {
-    // 当 roleOptions 从空变为有数据时，检查当前角色值是否在选项中
-    if (newOptions.length > 0 && filters.value.role) {
-      const roleExists = newOptions.some((option) => option.value === filters.value.role)
-      if (!roleExists) {
-        // 如果当前角色值不在选项中，重置为 '0'（全员）
+    // 当 roleOptions 有数据时，根据路由参数设置角色值
+    if (newOptions.length > 0) {
+      const targetRole = normalizedRole.value
+      const targetRoleExists = newOptions.some((option) => option.value === targetRole)
+      const currentRoleExists = newOptions.some((option) => option.value === filters.value.role)
+      
+      // 如果目标角色（从路由参数获取）在选项中，使用目标角色
+      if (targetRoleExists && filters.value.role !== targetRole) {
+        // 使用 nextTick 确保在 DOM 更新后再设置值，让 Element Plus 能正确显示 label
+        nextTick(() => {
+          filters.value.role = targetRole
+          actualRole.value = targetRole
+        })
+      } else if (!currentRoleExists) {
+        // 如果目标角色不在选项中，且当前角色值也不在选项中，重置为 '0'
         filters.value.role = '0'
         actualRole.value = '0'
+      }
+    }
+  },
+  { immediate: false }
+)
+
+// 监听路由参数 role 的变化，确保当路由参数变化时能正确更新角色值
+watch(
+  () => route.query.role,
+  (newRole) => {
+    // 当路由参数 role 变化时，如果 roleOptions 已经有数据，立即更新
+    if (roleOptions.value.length > 0) {
+      const targetRole = normalizedRole.value
+      const roleExists = roleOptions.value.some((option) => option.value === targetRole)
+      if (roleExists && filters.value.role !== targetRole) {
+        nextTick(() => {
+          filters.value.role = targetRole
+          actualRole.value = targetRole
+        })
       }
     }
   },
