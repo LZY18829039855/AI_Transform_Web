@@ -204,7 +204,23 @@ const fetchDetail = async () => {
       detailData.value = {
         appointmentRecords,
         certificationRecords,
-        filters: detailData.value?.filters ?? { roles: [] },
+        filters: {
+          departmentTree: departmentOptions.value,
+          jobFamilies: [],
+          jobCategories: [],
+          jobSubCategories: [],
+          roles: [
+            { label: '全员', value: '0' },
+            { label: '干部', value: '1' },
+            { label: '专家', value: '2' },
+            { label: '基层主管', value: '3' },
+          ],
+          maturityOptions: [
+            { label: '全部', value: '全部' },
+            { label: 'L2', value: 'L2' },
+            { label: 'L3', value: 'L3' },
+          ],
+        },
       }
       
       // 根据personType设置角色
@@ -229,28 +245,29 @@ const fetchDetail = async () => {
       }
       
       // 更新角色视图（从路由参数中读取）
+      // 由于已经设置了 filters.roles，roleOptions 应该立即有值
       const roleFromRoute = route.query.role as string | undefined
       if (roleFromRoute && ROLE_VALUES.includes(roleFromRoute as CertificationRole)) {
         const targetRole = roleFromRoute as CertificationRole
-        // 等待 roleOptions 加载完成后再设置角色值
-        if (roleOptions.value.length > 0) {
-          const roleExists = roleOptions.value.some((option) => option.value === targetRole)
-          if (roleExists) {
-            nextTick(() => {
+        // roleOptions 现在应该有值了（因为已经设置了 filters.roles）
+        // 使用 nextTick 确保 computed 已经更新
+        nextTick(() => {
+          if (roleOptions.value.length > 0) {
+            const roleExists = roleOptions.value.some((option) => option.value === targetRole)
+            if (roleExists) {
               filters.value.role = targetRole
               actualRole.value = targetRole
-            })
+            } else {
+              // 如果角色不在选项中，设置默认值
+              filters.value.role = '0'
+              actualRole.value = '0'
+            }
           } else {
-            // 如果角色不在选项中，设置默认值
+            // 如果 roleOptions 还没有数据，设置默认值
             filters.value.role = '0'
-            actualRole.value = '0'
+            actualRole.value = targetRole
           }
-        } else {
-          // 如果 roleOptions 还没有数据，先设置 actualRole，等 watch 触发时再设置 filters.value.role
-          actualRole.value = targetRole
-          // 同时设置 filters.value.role，避免显示数字
-          filters.value.role = '0'
-        }
+        })
       } else {
         // 如果没有角色参数，使用默认值
         filters.value.role = '0'
