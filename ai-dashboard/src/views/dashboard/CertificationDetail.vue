@@ -216,6 +216,47 @@ const fetchDetail = async () => {
         activeTab.value = 'certification'
       }
       
+      // 从路由参数中更新筛选框的值（部门和角色视图）
+      // 更新部门路径
+      const departmentPathFromQuery = parseDepartmentPathFromQuery()
+      if (departmentPathFromQuery.length > 0) {
+        filters.value.departmentPath = departmentPathFromQuery
+      }
+      
+      // 更新职位类
+      if (jobCategoryFromRoute) {
+        filters.value.jobCategory = jobCategoryFromRoute
+      }
+      
+      // 更新角色视图（从路由参数中读取）
+      const roleFromRoute = route.query.role as string | undefined
+      if (roleFromRoute && ROLE_VALUES.includes(roleFromRoute as CertificationRole)) {
+        const targetRole = roleFromRoute as CertificationRole
+        // 等待 roleOptions 加载完成后再设置角色值
+        if (roleOptions.value.length > 0) {
+          const roleExists = roleOptions.value.some((option) => option.value === targetRole)
+          if (roleExists) {
+            nextTick(() => {
+              filters.value.role = targetRole
+              actualRole.value = targetRole
+            })
+          } else {
+            // 如果角色不在选项中，设置默认值
+            filters.value.role = '0'
+            actualRole.value = '0'
+          }
+        } else {
+          // 如果 roleOptions 还没有数据，先设置 actualRole，等 watch 触发时再设置 filters.value.role
+          actualRole.value = targetRole
+          // 同时设置 filters.value.role，避免显示数字
+          filters.value.role = '0'
+        }
+      } else {
+        // 如果没有角色参数，使用默认值
+        filters.value.role = '0'
+        actualRole.value = '0'
+      }
+      
       loading.value = false
       return
     }
