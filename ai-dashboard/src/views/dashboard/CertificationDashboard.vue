@@ -780,7 +780,7 @@ const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: 
   const queryParams: Record<string, string | undefined> = {
     deptCode: deptCode,
     personType: personType,
-    queryType: '1', // 默认为1（任职人数）
+    queryType: '2', // 默认为2（基数人数）
     jobCategory: data.label, // 职位类信息
     // 岗位成熟度传空，不传递此参数
   }
@@ -851,7 +851,7 @@ const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointme
   const queryParams: Record<string, string | undefined> = {
     deptCode: deptCode,
     personType: personType,
-    queryType: column === 'appointment' ? '1' : '2', // 任职为1，认证为2
+    queryType: '2', // 默认为2（基数人数）
     jobCategory: row.label, // 职位类信息
     // 岗位成熟度传空，不传递此参数
   }
