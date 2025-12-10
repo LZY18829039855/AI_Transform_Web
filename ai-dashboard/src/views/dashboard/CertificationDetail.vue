@@ -77,6 +77,9 @@ const {
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
+// 待设置的部门路径（用于从部门/职位类柱状图跳转时）
+const pendingDepartmentPath = ref<string[] | null>(null)
+
 // 将EmployeeDetailVO转换为AppointmentAuditRecord
 const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): AppointmentAuditRecord => {
   return {
@@ -233,23 +236,14 @@ const fetchDetail = async () => {
       }
       
       // 从路由参数中更新筛选框的值（部门和角色视图）
-      // 更新部门路径（等待部门树初始化完成）
+      // 更新部门路径（使用待设置机制，等待部门树加载完成）
       const departmentPathFromQuery = parseDepartmentPathFromQuery()
       if (departmentPathFromQuery.length > 0) {
-        // 确保部门树已初始化，然后设置部门路径
-        // 如果部门树还没有初始化，先初始化，然后设置路径
+        // 将路径存储到待设置变量中，等待部门树加载完成后由 watch 自动设置
+        pendingDepartmentPath.value = departmentPathFromQuery
+        // 确保部门树已初始化
         if (departmentOptions.value.length === 0) {
-          initDepartmentTree().then(() => {
-            // 使用 nextTick 确保 DOM 更新后再设置路径
-            nextTick(() => {
-              filters.value.departmentPath = departmentPathFromQuery
-            })
-          })
-        } else {
-          // 部门树已初始化，直接设置路径
-          nextTick(() => {
-            filters.value.departmentPath = departmentPathFromQuery
-          })
+          initDepartmentTree()
         }
       }
       
@@ -1047,13 +1041,40 @@ watch(
   { immediate: false }
 )
 
+// 监听部门树的变化，当部门树加载完成且有待设置的路径时，自动设置部门路径
+watch(
+  () => departmentOptions.value,
+  (newTree) => {
+    // 如果有待设置的部门路径，且部门树已加载
+    if (pendingDepartmentPath.value && newTree.length > 0) {
+      const path = pendingDepartmentPath.value
+      // 检查路径的第一级是否在部门树中存在
+      // 对于多级路径，级联选择器支持懒加载，所以只要第一级存在即可设置
+      const firstLevelExists = newTree.some((node) => node.value === path[0])
+      
+      if (firstLevelExists) {
+        // 使用 nextTick 确保 DOM 更新后再设置路径
+        // 延迟一点时间，确保级联选择器已完全初始化
+        setTimeout(() => {
+          nextTick(() => {
+            filters.value.departmentPath = path
+            pendingDepartmentPath.value = null // 清除待设置路径
+          })
+        }, 100)
+      }
+    }
+  },
+  { deep: true, immediate: true }
+)
+
 onMounted(() => {
   initDepartmentTree()
   
   // 从路由参数中更新filters（确保路由参数已准备好）
   const departmentPathFromQuery = parseDepartmentPathFromQuery()
   if (departmentPathFromQuery.length > 0) {
-    filters.value.departmentPath = departmentPathFromQuery
+    // 使用待设置机制，等待部门树加载完成
+    pendingDepartmentPath.value = departmentPathFromQuery
   }
   
   const jobCategoryFromQuery = route.query.jobCategory as string | undefined
@@ -1108,7 +1129,8 @@ onActivated(() => {
   // 从路由参数中更新filters（当从其他页面返回时，路由参数可能已变化）
   const departmentPathFromQuery = parseDepartmentPathFromQuery()
   if (departmentPathFromQuery.length > 0) {
-    filters.value.departmentPath = departmentPathFromQuery
+    // 使用待设置机制，等待部门树加载完成
+    pendingDepartmentPath.value = departmentPathFromQuery
   }
   
   const jobCategoryFromQuery = route.query.jobCategory as string | undefined
