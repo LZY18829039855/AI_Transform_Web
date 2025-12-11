@@ -58,3 +58,5 @@ export function getUserAvatarUrl(): string | null {
   return `https://w3.huawei.com/w3lab/rest/yellowpage/face/${userId}/120`
 }
 
+
+

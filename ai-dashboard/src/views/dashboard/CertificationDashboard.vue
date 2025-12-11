@@ -127,6 +127,84 @@ const {
 } = useDepartmentFilter()
 
 const roleOptions = computed(() => normalizeRoleOptions(dashboardFilters.value?.roles ?? []))
+
+// 职位类排序顺序
+const jobCategoryOrder = ['软件类', '测试类', '系统类', '研究类', '其他类']
+
+// 获取职位类的排序索引
+const getJobCategoryOrder = (jobCategory: string): number => {
+  const index = jobCategoryOrder.indexOf(jobCategory)
+  return index >= 0 ? index : jobCategoryOrder.length // 未定义的职位类排在最后
+}
+
+// 对专家数据进行排序（按成熟度级别分组，然后对职位类排序）
+const sortExpertDataByJobCategory = <T extends { maturityLevel?: string; jobCategory?: string; isMaturityRow?: boolean }>(
+  data: T[]
+): T[] => {
+  if (!data || data.length === 0) {
+    return data
+  }
+
+  const sortedData: T[] = []
+  let currentMaturityGroup: T[] = []
+
+  for (const row of data) {
+    // 判断是否是成熟度行：isMaturityRow 为 true，或者 maturityLevel 有值且 jobCategory 为空
+    const isMaturityRow = row.isMaturityRow === true || 
+      (!!row.maturityLevel && (!row.jobCategory || row.jobCategory.trim() === ''))
+    
+    if (isMaturityRow) {
+      // 如果之前有未处理的组，先排序并添加到结果中
+      if (currentMaturityGroup.length > 0) {
+        // 对职位类行进行排序
+        currentMaturityGroup.sort((a, b) => {
+          const orderA = getJobCategoryOrder(a.jobCategory || '')
+          const orderB = getJobCategoryOrder(b.jobCategory || '')
+          return orderA - orderB
+        })
+        sortedData.push(...currentMaturityGroup)
+        currentMaturityGroup = []
+      }
+      // 添加成熟度行
+      sortedData.push(row)
+    } else if (row.jobCategory) {
+      // 职位类行，添加到当前组
+      currentMaturityGroup.push(row)
+    } else {
+      // 其他情况，直接添加
+      sortedData.push(row)
+    }
+  }
+
+  // 处理最后一组
+  if (currentMaturityGroup.length > 0) {
+    currentMaturityGroup.sort((a, b) => {
+      const orderA = getJobCategoryOrder(a.jobCategory || '')
+      const orderB = getJobCategoryOrder(b.jobCategory || '')
+      return orderA - orderB
+    })
+    sortedData.push(...currentMaturityGroup)
+  }
+
+  return sortedData
+}
+
+// 排序后的专家任职数据
+const sortedExpertAppointmentData = computed(() => {
+  if (!expertData.value?.appointment) {
+    return []
+  }
+  return sortExpertDataByJobCategory(expertData.value.appointment)
+})
+
+// 排序后的专家认证数据
+const sortedExpertCertificationData = computed(() => {
+  if (!expertData.value?.certification) {
+    return []
+  }
+  return sortExpertDataByJobCategory(expertData.value.certification)
+})
+
 const departmentStatistics = computed(
   () => departmentStats.value?.employeeCertStatistics?.departmentStatistics ?? []
 )
@@ -189,7 +267,7 @@ const departmentCertificationChartPoints = computed<StaffChartPoint[]>(() =>
     ? departmentCertificationStatsPoints.value
     : fallbackDepartmentCertificationPoints.value
 )
-const departmentCountLabel = computed(() => '任职总人数')
+const departmentCountLabel = computed(() => 'AI任职总人数')
 const departmentLegendTotals = computed<Record<string, string> | undefined>(() => {
   if (!hasDepartmentStats.value) return undefined
   const total = departmentStats.value?.employeeCertStatistics?.totalStatistics
@@ -229,7 +307,7 @@ const jobCategoryAppointmentLegendTotals = computed<Record<string, string> | und
   const total = jobCategoryStats.value?.competenceCategoryCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    任职人数: `${resolveJobCategoryQualifiedCount(total)}人`,
+    任职总人数: `${resolveJobCategoryQualifiedCount(total)}人`,
     占比: `${resolveJobCategoryQualifiedRate(total)}%`,
   }
 })
@@ -240,7 +318,7 @@ const jobCategoryCertificationLegendTotals = computed<Record<string, string> | u
   const total = jobCategoryStats.value?.competenceCategoryCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    认证人数: `${resolveJobCategoryCertificationCount(total)}人`,
+    认证总人数: `${resolveJobCategoryCertificationCount(total)}人`,
     占比: `${resolveJobCategoryCertificationRate(total)}%`,
   }
 })
@@ -303,6 +381,62 @@ const organizationCertificationPoints = computed<StaffChartPoint[]>(() => {
       // 占比一致时，按人数从高到低排序
       return b.count - a.count
     })
+})
+
+// 组织AI成熟度任职数据图例总计
+const organizationAppointmentLegendTotals = computed<Record<string, string> | undefined>(() => {
+  const points = dashboardData.value?.allStaff.organizationAppointment ?? []
+  if (points.length === 0) {
+    return undefined
+  }
+  // 计算总人数和总任职人数
+  let totalBaseline = 0
+  let totalAppointed = 0
+  points.forEach((point) => {
+    // 从占比反推总人数：总人数 = 任职人数 / (占比 / 100) = 任职人数 * 100 / 占比
+    if (point.rate > 0) {
+      const baseline = Math.round((point.count * 100) / point.rate)
+      totalBaseline += baseline
+      totalAppointed += point.count
+    } else {
+      // 如果占比为0，无法反推，直接累加人数（这种情况较少）
+      totalAppointed += point.count
+    }
+  })
+  // 计算总占比
+  const totalRate = totalBaseline > 0 ? ((totalAppointed / totalBaseline) * 100).toFixed(2) : '0.00'
+  return {
+    任职总人数: `${totalAppointed}人`,
+    占比: `${totalRate}%`,
+  }
+})
+
+// 组织AI成熟度认证数据图例总计
+const organizationCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
+  const points = dashboardData.value?.allStaff.organizationCertification ?? []
+  if (points.length === 0) {
+    return undefined
+  }
+  // 计算总人数和总认证人数
+  let totalBaseline = 0
+  let totalCertified = 0
+  points.forEach((point) => {
+    // 从占比反推总人数：总人数 = 认证人数 / (占比 / 100) = 认证人数 * 100 / 占比
+    if (point.rate > 0) {
+      const baseline = Math.round((point.count * 100) / point.rate)
+      totalBaseline += baseline
+      totalCertified += point.count
+    } else {
+      // 如果占比为0，无法反推，直接累加人数（这种情况较少）
+      totalCertified += point.count
+    }
+  })
+  // 计算总占比
+  const totalRate = totalBaseline > 0 ? ((totalCertified / totalBaseline) * 100).toFixed(2) : '0.00'
+  return {
+    认证总人数: `${totalCertified}人`,
+    占比: `${totalRate}%`,
+  }
 })
 
 // 合并后的表格数据（用于表格视图）
@@ -461,13 +595,13 @@ const handleExpertQualifiedCellClick = (row: Record<string, unknown>, column: st
   const jobCategory = (row.jobCategory as string) || ''
   
   // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
-  if (!maturityLevel && jobCategory && expertData.value?.appointment) {
-    const currentIndex = expertData.value.appointment.findIndex(
+  if (!maturityLevel && jobCategory && sortedExpertAppointmentData.value.length > 0) {
+    const currentIndex = sortedExpertAppointmentData.value.findIndex(
       (r) => r === row
     )
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
-      const prevRow = expertData.value.appointment[i]
+      const prevRow = sortedExpertAppointmentData.value[i]
       if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
         maturityLevel = (prevRow.maturityLevel as string) || ''
         break
@@ -510,13 +644,13 @@ const handleExpertCertCellClick = (row: Record<string, unknown>, column: string)
   const jobCategory = (row.jobCategory as string) || ''
   
   // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
-  if (!maturityLevel && jobCategory && expertData.value?.certification) {
-    const currentIndex = expertData.value.certification.findIndex(
+  if (!maturityLevel && jobCategory && sortedExpertCertificationData.value.length > 0) {
+    const currentIndex = sortedExpertCertificationData.value.findIndex(
       (r) => r === row
     )
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
-      const prevRow = expertData.value.certification[i]
+      const prevRow = sortedExpertCertificationData.value[i]
       if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
         maturityLevel = (prevRow.maturityLevel as string) || ''
         break
@@ -1503,7 +1637,7 @@ onActivated(() => {
               <el-skeleton :rows="4" animated v-if="loadingExpert" />
               <el-table
                 v-else-if="expertData"
-                :data="expertData.appointment"
+                :data="sortedExpertAppointmentData"
                 border
                 stripe
                 size="small"
@@ -1603,7 +1737,7 @@ onActivated(() => {
               <el-skeleton :rows="4" animated v-if="loadingExpert" />
               <el-table
                 v-else-if="expertData"
-                :data="expertData.certification"
+                :data="sortedExpertCertificationData"
                 border
                 stripe
                 size="small"
@@ -1818,12 +1952,12 @@ onActivated(() => {
                   <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
+              <el-table-column prop="appointmentRate" label="AI任职占比" min-width="120" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.appointmentRate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationCount" label="认证总人数" min-width="140" align="center" header-align="center">
+              <el-table-column prop="certificationCount" label="AI认证总人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
                     v-if="row.label !== '总计'"
@@ -1837,7 +1971,7 @@ onActivated(() => {
                   <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
+              <el-table-column prop="certificationRate" label="AI认证占比" min-width="120" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.certificationRate) }}
                 </template>
@@ -1854,7 +1988,7 @@ onActivated(() => {
               v-else-if="dashboardData"
               title="职位类任职数据"
               :points="jobCategoryAppointmentPoints"
-              count-label="任职人数"
+              count-label="任职总人数"
               rate-label="占比"
               :legend-totals="jobCategoryAppointmentLegendTotals"
               :height="320"
@@ -1887,7 +2021,7 @@ onActivated(() => {
               v-else-if="dashboardData"
               title="职位类认证数据"
               :points="jobCategoryCertificationPoints"
-              count-label="认证人数"
+              count-label="认证总人数"
               rate-label="占比"
               :legend-totals="jobCategoryCertificationLegendTotals"
               :height="320"
@@ -1962,7 +2096,7 @@ onActivated(() => {
               style="width: 100%"
             >
               <el-table-column prop="label" label="职位类" min-width="180" align="center" header-align="center" />
-              <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
+              <el-table-column prop="appointmentCount" label="AI任职人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
                     v-if="row.label !== '总计'"
@@ -1976,12 +2110,12 @@ onActivated(() => {
                   <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
+              <el-table-column prop="appointmentRate" label="AI任职占比" min-width="120" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.appointmentRate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationCount" label="认证人数" min-width="140" align="center" header-align="center">
+              <el-table-column prop="certificationCount" label="AI认证人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
                     v-if="row.label !== '总计'"
@@ -1995,7 +2129,7 @@ onActivated(() => {
                   <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
+              <el-table-column prop="certificationRate" label="AI认证占比" min-width="120" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.certificationRate) }}
                 </template>
@@ -2012,8 +2146,9 @@ onActivated(() => {
               v-else-if="dashboardData"
               title="组织AI成熟度任职数据"
               :points="organizationAppointmentPoints"
-              count-label="任职人数"
+              count-label="任职总人数"
               rate-label="占比"
+              :legend-totals="organizationAppointmentLegendTotals"
               :height="320"
             >
               <template #title-suffix>
@@ -2043,8 +2178,9 @@ onActivated(() => {
               v-else-if="dashboardData"
               title="组织AI成熟度认证数据"
               :points="organizationCertificationPoints"
-              count-label="认证人数"
+              count-label="认证总人数"
               rate-label="占比"
+              :legend-totals="organizationCertificationLegendTotals"
               :height="320"
             >
               <template #title-suffix>
@@ -2111,22 +2247,22 @@ onActivated(() => {
               style="width: 100%"
             >
               <el-table-column prop="label" label="组织AI成熟度" min-width="180" align="center" header-align="center" />
-              <el-table-column prop="appointmentCount" label="任职人数" min-width="140" align="center" header-align="center">
+              <el-table-column prop="appointmentCount" label="AI任职人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatNumber(row.appointmentCount) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="appointmentRate" label="任职占比" min-width="120" align="center" header-align="center">
+              <el-table-column prop="appointmentRate" label="AI任职占比" min-width="120" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.appointmentRate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationCount" label="认证人数" min-width="140" align="center" header-align="center">
+              <el-table-column prop="certificationCount" label="AI认证人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatNumber(row.certificationCount) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="certificationRate" label="认证占比" min-width="120" align="center" header-align="center">
+              <el-table-column prop="certificationRate" label="AI认证占比" min-width="120" align="center" header-align="center">
                 <template #default="{ row }">
                   {{ formatPercent(row.certificationRate) }}
                 </template>
