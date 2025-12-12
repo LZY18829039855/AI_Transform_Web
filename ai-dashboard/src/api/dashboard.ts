@@ -386,6 +386,7 @@ export const fetchExpertData = async (
           appointedByRequirement: maturity.qualifiedByRequirementCount ?? 0,
           appointmentRate: Number(maturity.qualifiedRate),
           certificationCompliance: Number(maturity.qualifiedByRequirementRate ?? 0),
+          baselineCountByRequirement: maturity.baselineCountByRequirement,
           isMaturityRow: true,
         })
 
@@ -406,6 +407,7 @@ export const fetchExpertData = async (
                 appointedByRequirement: jobCategory.qualifiedByRequirementCount ?? 0,
                 appointmentRate: Number(jobCategory.qualifiedRate),
                 certificationCompliance: Number(jobCategory.qualifiedByRequirementRate ?? 0),
+                baselineCountByRequirement: jobCategory.baselineCountByRequirement,
                 isMaturityRow: false,
               })
             } else {
@@ -422,9 +424,12 @@ export const fetchExpertData = async (
               : 0
             // 计算非软件类的按要求任职人数和占比
             let nonSoftwareQualifiedByRequirement = 0
+            let nonSoftwareBaselineCountByRequirement = 0
             maturity.jobCategoryStatistics.forEach((jobCategory) => {
               if (jobCategory.jobCategory !== '软件类') {
                 nonSoftwareQualifiedByRequirement += jobCategory.qualifiedByRequirementCount ?? 0
+                // 累加baselineCountByRequirement（L2非软件类为0，已由后端处理）
+                nonSoftwareBaselineCountByRequirement += jobCategory.baselineCountByRequirement ?? 0
               }
             })
             const nonSoftwareQualifiedByRequirementRate = nonSoftwareBaseline > 0 
@@ -438,6 +443,7 @@ export const fetchExpertData = async (
               appointedByRequirement: nonSoftwareQualifiedByRequirement,
               appointmentRate: Number(nonSoftwareRate.toFixed(2)),
               certificationCompliance: Number(nonSoftwareQualifiedByRequirementRate.toFixed(2)),
+              baselineCountByRequirement: nonSoftwareBaselineCountByRequirement,
               isMaturityRow: false,
             })
           }
@@ -452,6 +458,7 @@ export const fetchExpertData = async (
               appointedByRequirement: jobCategory.qualifiedByRequirementCount ?? 0,
               appointmentRate: Number(jobCategory.qualifiedRate),
               certificationCompliance: Number(jobCategory.qualifiedByRequirementRate ?? 0),
+              baselineCountByRequirement: jobCategory.baselineCountByRequirement,
               isMaturityRow: false,
             })
           })
@@ -466,6 +473,7 @@ export const fetchExpertData = async (
           appointedByRequirement: maturity.qualifiedByRequirementCount ?? 0,
           appointmentRate: Number(maturity.qualifiedRate),
           certificationCompliance: Number(maturity.qualifiedByRequirementRate ?? 0),
+          baselineCountByRequirement: maturity.baselineCountByRequirement,
           isMaturityRow: true,
         })
       }
@@ -481,6 +489,7 @@ export const fetchExpertData = async (
         appointedByRequirement: stats.totalStatistics.qualifiedByRequirementCount ?? 0,
         appointmentRate: Number(stats.totalStatistics.qualifiedRate),
         certificationCompliance: Number(stats.totalStatistics.qualifiedByRequirementRate ?? 0),
+        baselineCountByRequirement: stats.totalStatistics.baselineCountByRequirement,
         isMaturityRow: true,
       })
     }

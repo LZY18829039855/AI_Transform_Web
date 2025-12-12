@@ -232,6 +232,7 @@ export interface ExpertAppointmentSummaryRow {
   appointedByRequirement: number
   appointmentRate: number
   certificationCompliance: number
+  baselineCountByRequirement?: number
 }
 
 export interface CadreCertificationSummaryRow {
@@ -449,6 +450,7 @@ export interface ExpertJobCategoryQualifiedStatistics {
   qualifiedRate: number
   qualifiedByRequirementCount?: number
   qualifiedByRequirementRate?: number
+  baselineCountByRequirement?: number
 }
 
 export interface ExpertMaturityQualifiedStatistics {
@@ -458,6 +460,7 @@ export interface ExpertMaturityQualifiedStatistics {
   qualifiedRate: number
   qualifiedByRequirementCount?: number
   qualifiedByRequirementRate?: number
+  baselineCountByRequirement?: number
   jobCategoryStatistics?: ExpertJobCategoryQualifiedStatistics[]
 }
 
