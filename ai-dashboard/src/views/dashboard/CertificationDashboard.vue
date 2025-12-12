@@ -1648,7 +1648,6 @@ onActivated(() => {
                 <el-table-column prop="baseline" label="基线人数" min-width="110" align="center" header-align="center">
                   <template #default="{ row }">
                     <el-link
-                      v-if="!(row as any).isL2CalculatedNonSoftware"
                       type="primary"
                       :underline="false"
                       class="clickable-cell"
@@ -1656,12 +1655,11 @@ onActivated(() => {
                     >
                       {{ formatNumber(row.baseline) }}
                     </el-link>
-                    <span v-else>{{ formatNumber(row.baseline) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="aiCertificateHolders" label="AI专业级持证人数" min-width="180" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware || (!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory !== '软件类')">
+                    <template v-if="!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory !== '软件类')">
                       /
                     </template>
                     <el-link
@@ -1677,7 +1675,7 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware || (!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory !== '软件类')">
+                    <template v-if="!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory !== '软件类')">
                       /
                     </template>
                     <template v-else>
@@ -1687,17 +1685,23 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware || (!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory === '软件类')">
+                    <template v-if="!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory === '软件类')">
                       /
                     </template>
-                    <template v-else>
+                    <el-link
+                      v-else
+                      type="primary"
+                      :underline="false"
+                      class="clickable-cell"
+                      @click="handleCadreCertCellClick(row, 'subjectTwoPassed')"
+                    >
                       {{ formatNumber(row.subjectTwoPassed) }}
-                    </template>
+                    </el-link>
                   </template>
                 </el-table-column>
                 <el-table-column prop="subjectTwoRate" label="科目二通过率" min-width="140" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="(row as any).isL2CalculatedNonSoftware || (!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory === '软件类')">
+                    <template v-if="!row.isMaturityRow && (row as any).actualMaturityLevel && ['L2', 'L3'].includes((row as any).actualMaturityLevel) && row.jobCategory === '软件类')">
                       /
                     </template>
                     <template v-else>
