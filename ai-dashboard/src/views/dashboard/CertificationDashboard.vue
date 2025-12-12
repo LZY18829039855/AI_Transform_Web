@@ -1858,9 +1858,7 @@ onActivated(() => {
                       /
                     </template>
                     <template v-else>
-                      <span style="color: #909399;">
-                        {{ formatNumber(getAppointedByRequirement(row) as number) }}
-                      </span>
+                      {{ formatNumber(getAppointedByRequirement(row) as number) }}
                     </template>
                   </template>
                 </el-table-column>
@@ -2579,6 +2577,26 @@ onActivated(() => {
       flex: 1;
       --el-table-border-color: rgba(47, 59, 82, 0.08);
       --el-table-row-hover-bg-color: rgba(58, 122, 254, 0.08);
+      
+      // 确保所有表格单元格中的文本使用正常颜色（除非是占位符或链接）
+      td {
+        color: #2f3b52 !important;
+        
+        .cell {
+          color: #2f3b52 !important;
+          
+          // 保留占位符文本的灰色
+          .pending-data {
+            color: #909399 !important;
+          }
+          
+          // 确保普通文本和数字使用正常颜色（不包括链接）
+          span:not(.pending-data):not(.el-link):not(.el-link__inner),
+          div:not(.pending-data) {
+            color: #2f3b52 !important;
+          }
+        }
+      }
     }
 
     :deep(.row-even) {
