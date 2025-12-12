@@ -586,6 +586,179 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
   })
 }
 
+// 判断是否是L2非软件类
+const isL2NonSoftware = (row: Record<string, unknown>): boolean => {
+  // 如果是成熟度行，直接返回false
+  if (row.isMaturityRow || (row.maturityLevel && !row.jobCategory)) {
+    return false
+  }
+  
+  const jobCategory = (row.jobCategory as string) || ''
+  let maturityLevel = (row.maturityLevel as string) || ''
+  
+  // 如果是职位类行（maturityLevel 为空），需要从表格数据中查找父级的成熟度级别
+  if (!maturityLevel && jobCategory && sortedExpertAppointmentData.value.length > 0) {
+    const currentIndex = sortedExpertAppointmentData.value.findIndex(
+      (r) => r === row
+    )
+    // 向上查找最近的成熟度行
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevRow = sortedExpertAppointmentData.value[i]
+      if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
+        maturityLevel = (prevRow.maturityLevel as string) || ''
+        break
+      }
+    }
+  }
+  
+  // 判断是否是L2非软件类：成熟度是L2，职位类不是软件类，且职位类不为空
+  return maturityLevel === 'L2' && jobCategory !== '软件类' && jobCategory !== ''
+}
+
+// 计算成熟度行的按岗位要求AI任职基线人数（排除L2非软件类，不处理总计行）
+const calculateMaturityRowBaseline = (row: Record<string, unknown>): number => {
+  const maturityLevel = (row.maturityLevel as string) || ''
+  if (!maturityLevel || !sortedExpertAppointmentData.value.length) {
+    return row.baseline as number || 0
+  }
+  
+  // 找到该成熟度下的所有职位类行，排除L2非软件类
+  let totalBaseline = 0
+  const currentIndex = sortedExpertAppointmentData.value.findIndex(
+    (r) => r === row
+  )
+  
+  if (currentIndex < 0) {
+    return row.baseline as number || 0
+  }
+  
+  // 向下查找该成熟度下的所有职位类行
+  for (let i = currentIndex + 1; i < sortedExpertAppointmentData.value.length; i++) {
+    const nextRow = sortedExpertAppointmentData.value[i]
+    // 如果遇到下一个成熟度行、总计行或其他汇总行，停止
+    if (nextRow.isMaturityRow || (nextRow.maturityLevel && !nextRow.jobCategory)) {
+      break
+    }
+    // 如果是职位类行，且不是L2非软件类，则累加基线人数
+    if (nextRow.jobCategory && !isL2NonSoftware(nextRow)) {
+      totalBaseline += (nextRow.baseline as number) || 0
+    }
+  }
+  
+  return totalBaseline
+}
+
+// 计算成熟度行的按岗位要求已获取AI任职人数（排除L2非软件类，不处理总计行）
+const calculateMaturityRowAppointedByRequirement = (row: Record<string, unknown>): number => {
+  const maturityLevel = (row.maturityLevel as string) || ''
+  if (!maturityLevel || !sortedExpertAppointmentData.value.length) {
+    return row.appointedByRequirement as number || 0
+  }
+  
+  // 找到该成熟度下的所有职位类行，排除L2非软件类
+  let totalAppointed = 0
+  const currentIndex = sortedExpertAppointmentData.value.findIndex(
+    (r) => r === row
+  )
+  
+  if (currentIndex < 0) {
+    return row.appointedByRequirement as number || 0
+  }
+  
+  // 向下查找该成熟度下的所有职位类行
+  for (let i = currentIndex + 1; i < sortedExpertAppointmentData.value.length; i++) {
+    const nextRow = sortedExpertAppointmentData.value[i]
+    // 如果遇到下一个成熟度行、总计行或其他汇总行，停止
+    if (nextRow.isMaturityRow || (nextRow.maturityLevel && !nextRow.jobCategory)) {
+      break
+    }
+    // 如果是职位类行，且不是L2非软件类，则累加按岗位要求已获取AI任职人数
+    if (nextRow.jobCategory && !isL2NonSoftware(nextRow)) {
+      totalAppointed += (nextRow.appointedByRequirement as number) || 0
+    }
+  }
+  
+  return totalAppointed
+}
+
+// 计算按岗位要求AI任职基线人数（排除L2非软件类）
+const getBaselineByRequirement = (row: Record<string, unknown>): number | string => {
+  // 如果是L2非软件类，返回"/"
+  if (isL2NonSoftware(row)) {
+    return '/'
+  }
+  
+  const maturityLevel = (row.maturityLevel as string) || ''
+  
+  // 如果是总计行，计算所有成熟度行的和
+  if (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total') {
+    if (!sortedExpertAppointmentData.value.length) {
+      return 0
+    }
+    
+    // 找到所有成熟度行（L2、L3），累加它们的"按岗位要求AI任职基线人数"
+    let totalBaseline = 0
+    for (const dataRow of sortedExpertAppointmentData.value) {
+      const rowMaturityLevel = (dataRow.maturityLevel as string) || ''
+      // 如果是成熟度行（L2或L3），计算它的"按岗位要求AI任职基线人数"
+      if ((dataRow.isMaturityRow || (rowMaturityLevel && !dataRow.jobCategory)) && 
+          (rowMaturityLevel === 'L2' || rowMaturityLevel === 'L3')) {
+        const baselineValue = calculateMaturityRowBaseline(dataRow)
+        totalBaseline += baselineValue
+      }
+    }
+    
+    return totalBaseline
+  }
+  
+  // 如果是成熟度行，需要重新计算，排除L2非软件类的基线人数
+  if (row.isMaturityRow || (maturityLevel && !row.jobCategory)) {
+    return calculateMaturityRowBaseline(row)
+  }
+  
+  // 普通职位类行，直接返回基线人数
+  return row.baseline as number || 0
+}
+
+// 获取按岗位要求已获取AI任职人数（L2非软件类返回"/"，实际值视为0）
+const getAppointedByRequirement = (row: Record<string, unknown>): number | string => {
+  // 如果是L2非软件类，返回"/"
+  if (isL2NonSoftware(row)) {
+    return '/'
+  }
+  
+  const maturityLevel = (row.maturityLevel as string) || ''
+  
+  // 如果是总计行，计算所有成熟度行的和
+  if (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total') {
+    if (!sortedExpertAppointmentData.value.length) {
+      return 0
+    }
+    
+    // 找到所有成熟度行（L2、L3），累加它们的"按岗位要求已获取AI任职人数"
+    let totalAppointed = 0
+    for (const dataRow of sortedExpertAppointmentData.value) {
+      const rowMaturityLevel = (dataRow.maturityLevel as string) || ''
+      // 如果是成熟度行（L2或L3），计算它的"按岗位要求已获取AI任职人数"
+      if ((dataRow.isMaturityRow || (rowMaturityLevel && !dataRow.jobCategory)) && 
+          (rowMaturityLevel === 'L2' || rowMaturityLevel === 'L3')) {
+        const appointedValue = calculateMaturityRowAppointedByRequirement(dataRow)
+        totalAppointed += appointedValue
+      }
+    }
+    
+    return totalAppointed
+  }
+  
+  // 如果是成熟度行，需要重新计算，排除L2非软件类的值
+  if (row.isMaturityRow || (maturityLevel && !row.jobCategory)) {
+    return calculateMaturityRowAppointedByRequirement(row)
+  }
+  
+  // 普通职位类行，直接返回按岗位要求已获取AI任职人数
+  return row.appointedByRequirement as number || 0
+}
+
 // 处理专家任职数据表格的点击事件
 const handleExpertQualifiedCellClick = (row: Record<string, unknown>, column: string) => {
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
@@ -1432,12 +1605,12 @@ onActivated(() => {
                     {{ formatPercent(row.appointmentRate) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130" align="center" header-align="center">
+                <el-table-column prop="appointedByRequirement" label="按岗位要求已获取AI任职人数" min-width="130" align="center" header-align="center">
                   <template #default="{ row }">
                     {{ formatNumber(row.appointedByRequirement) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="140" align="center" header-align="center">
+                <el-table-column prop="certificationCompliance" label="按岗位要求已获取AI任职人数占比" min-width="140" align="center" header-align="center">
                   <template #default="{ row }">
                     {{ formatPercent(row.certificationCompliance) }}
                   </template>
@@ -1669,6 +1842,38 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
+                <el-table-column prop="baseline" label="按岗位要求AI任职基线人数" min-width="180" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <template v-if="getBaselineByRequirement(row) === '/'">
+                      /
+                    </template>
+                    <template v-else>
+                      {{ formatNumber(getBaselineByRequirement(row) as number) }}
+                    </template>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="appointedByRequirement" label="按岗位要求已获取AI任职人数" min-width="180" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <template v-if="getAppointedByRequirement(row) === '/'">
+                      /
+                    </template>
+                    <template v-else>
+                      <span style="color: #909399;">
+                        {{ formatNumber(getAppointedByRequirement(row) as number) }}
+                      </span>
+                    </template>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="certificationCompliance" label="按岗位要求已获取AI任职人数占比" min-width="190" align="center" header-align="center">
+                  <template #default="{ row }">
+                    <template v-if="isL2NonSoftware(row)">
+                      /
+                    </template>
+                    <template v-else>
+                      {{ formatPercent(row.certificationCompliance) }}
+                    </template>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="appointed" label="AI任职人数" min-width="130" align="center" header-align="center">
                   <template #default="{ row }">
                     <el-link
@@ -1684,18 +1889,6 @@ onActivated(() => {
                 <el-table-column prop="appointmentRate" label="AI任职率" min-width="130" align="center" header-align="center">
                   <template #default="{ row }">
                     {{ formatPercent(row.appointmentRate) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="180" align="center" header-align="center">
-                  <template #default="{ row }">
-                    <span style="color: #909399;">
-                      {{ formatNumber(row.appointedByRequirement) }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="certificationCompliance" label="按要求AI任职人数占比" min-width="190" align="center" header-align="center">
-                  <template #default="{ row }">
-                    {{ formatPercent(row.certificationCompliance) }}
                   </template>
                 </el-table-column>
                 <template #empty>
