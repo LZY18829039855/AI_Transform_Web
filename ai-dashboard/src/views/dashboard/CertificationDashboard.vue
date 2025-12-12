@@ -720,49 +720,15 @@ const getBaselineByRequirement = (row: Record<string, unknown>): number | string
   return row.baseline as number || 0
 }
 
-// 获取按岗位要求已获取AI任职人数（L2非软件类返回"/"，使用后端返回的baselineCountByRequirement字段）
+// 获取按岗位要求已获取AI任职人数（L2非软件类返回"/"，直接使用后端返回的qualifiedByRequirementCount字段）
 const getAppointedByRequirement = (row: Record<string, unknown>): number | string => {
   // 如果是L2非软件类，返回"/"
   if (isL2NonSoftware(row)) {
     return '/'
   }
   
-  // 直接使用后端返回的baselineCountByRequirement字段
-  const baselineCountByRequirement = row.baselineCountByRequirement as number | undefined
-  if (baselineCountByRequirement !== undefined && baselineCountByRequirement !== null) {
-    return baselineCountByRequirement
-  }
-  
-  // 如果后端没有返回该字段，则使用原有的计算逻辑作为后备
-  const maturityLevel = (row.maturityLevel as string) || ''
-  
-  // 如果是总计行，计算所有成熟度行的和
-  if (maturityLevel === '总计' || maturityLevel === '全部' || maturityLevel === 'Total' || maturityLevel === 'total') {
-    if (!sortedExpertAppointmentData.value.length) {
-      return 0
-    }
-    
-    // 找到所有成熟度行（L2、L3），累加它们的"按岗位要求已获取AI任职人数"
-    let totalAppointed = 0
-    for (const dataRow of sortedExpertAppointmentData.value) {
-      const rowMaturityLevel = (dataRow.maturityLevel as string) || ''
-      // 如果是成熟度行（L2或L3），计算它的"按岗位要求已获取AI任职人数"
-      if ((dataRow.isMaturityRow || (rowMaturityLevel && !dataRow.jobCategory)) && 
-          (rowMaturityLevel === 'L2' || rowMaturityLevel === 'L3')) {
-        const appointedValue = calculateMaturityRowAppointedByRequirement(dataRow)
-        totalAppointed += appointedValue
-      }
-    }
-    
-    return totalAppointed
-  }
-  
-  // 如果是成熟度行，需要重新计算，排除L2非软件类的值
-  if (row.isMaturityRow || (maturityLevel && !row.jobCategory)) {
-    return calculateMaturityRowAppointedByRequirement(row)
-  }
-  
-  // 普通职位类行，直接返回按岗位要求已获取AI任职人数
+  // 直接使用后端返回的qualifiedByRequirementCount字段（已映射到appointedByRequirement）
+  // 该字段已经在API映射函数中正确设置
   return row.appointedByRequirement as number || 0
 }
 
