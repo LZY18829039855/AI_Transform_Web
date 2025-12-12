@@ -1659,7 +1659,7 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="aiCertificateHolders" label="AI专业级持证人数" min-width="180" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && ['L2', 'L3'].includes(row.actualMaturityLevel) && row.jobCategory !== '软件类')">
+                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && (row.actualMaturityLevel === 'L2' || row.actualMaturityLevel === 'L3') && row.jobCategory !== '软件类'">
                       /
                     </template>
                     <el-link
@@ -1675,7 +1675,7 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && ['L2', 'L3'].includes(row.actualMaturityLevel) && row.jobCategory !== '软件类')">
+                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && (row.actualMaturityLevel === 'L2' || row.actualMaturityLevel === 'L3') && row.jobCategory !== '软件类'">
                       /
                     </template>
                     <template v-else>
@@ -1685,7 +1685,7 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && ['L2', 'L3'].includes(row.actualMaturityLevel) && row.jobCategory === '软件类')">
+                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && (row.actualMaturityLevel === 'L2' || row.actualMaturityLevel === 'L3') && row.jobCategory === '软件类'">
                       /
                     </template>
                     <el-link
@@ -1701,7 +1701,7 @@ onActivated(() => {
                 </el-table-column>
                 <el-table-column prop="subjectTwoRate" label="科目二通过率" min-width="140" align="center" header-align="center">
                   <template #default="{ row }">
-                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && ['L2', 'L3'].includes(row.actualMaturityLevel) && row.jobCategory === '软件类')">
+                    <template v-if="!row.isMaturityRow && row.actualMaturityLevel && (row.actualMaturityLevel === 'L2' || row.actualMaturityLevel === 'L3') && row.jobCategory === '软件类'">
                       /
                     </template>
                     <template v-else>
