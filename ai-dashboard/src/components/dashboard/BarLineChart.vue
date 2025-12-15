@@ -79,7 +79,7 @@ const getOption = (): EChartsOption => {
   const isDepartmentChart = props.title === '部门任职数据' || props.title === '部门认证数据'
   const maxCharsPerLine = 4
   const departmentFirstLineChars = 4 // 部门图表第一行字符数
-  const departmentOtherLineChars = 5 // 部门图表其余行字符数
+  const departmentOtherLineChars = 6 // 部门图表其余行字符数
   
   // 职位类图表不换行，其他图表按原逻辑处理
   const shouldWrapLabels = isJobCategoryChart ? false : longestLabelLength > maxCharsPerLine
@@ -91,7 +91,7 @@ const getOption = (): EChartsOption => {
   if (isJobCategoryChart) {
     estimatedLines = 1
   } else if (isDepartmentChart && longestLabelLength > departmentFirstLineChars) {
-    // 部门图表：第一行4个字，其余行5个字
+    // 部门图表：第一行4个字，其余行6个字
     estimatedLines = 1 + Math.ceil((longestLabelLength - departmentFirstLineChars) / departmentOtherLineChars)
   } else if (shouldWrapLabels) {
     estimatedLines = Math.ceil(longestLabelLength / maxCharsPerLine)
@@ -300,12 +300,12 @@ const getOption = (): EChartsOption => {
           if (isJobCategoryChart) {
             return value
           }
-          // 部门图表：第一行4个字，其余行5个字
+          // 部门图表：第一行4个字，其余行6个字
           if (isDepartmentChart && value.length > departmentFirstLineChars) {
             const lines: string[] = []
             // 第一行4个字
             lines.push(value.slice(0, departmentFirstLineChars))
-            // 剩余部分每5个字一行
+            // 剩余部分每6个字一行
             for (let i = departmentFirstLineChars; i < value.length; i += departmentOtherLineChars) {
               lines.push(value.slice(i, i + departmentOtherLineChars))
             }
