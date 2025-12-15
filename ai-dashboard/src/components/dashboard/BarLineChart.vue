@@ -75,14 +75,27 @@ const getOption = (): EChartsOption => {
   
   // 判断是否是职位类任职数据或职位类认证数据图表
   const isJobCategoryChart = props.title === '职位类任职数据' || props.title === '职位类认证数据'
-  const maxCharsPerLine = 5
+  // 判断是否是部门图表（部门任职数据或部门认证数据）
+  const isDepartmentChart = props.title === '部门任职数据' || props.title === '部门认证数据'
+  const maxCharsPerLine = 4
+  const departmentFirstLineChars = 4 // 部门图表第一行字符数
+  const departmentOtherLineChars = 5 // 部门图表其余行字符数
   
   // 职位类图表不换行，其他图表按原逻辑处理
   const shouldWrapLabels = isJobCategoryChart ? false : longestLabelLength > maxCharsPerLine
   const axisLabelMargin = 8
   const fontSize = 12
   const lineHeight = fontSize * 1.2
-  const estimatedLines = shouldWrapLabels ? Math.ceil(longestLabelLength / maxCharsPerLine) : 1
+  // 计算预估行数：部门图表使用新的换行规则
+  let estimatedLines = 1
+  if (isJobCategoryChart) {
+    estimatedLines = 1
+  } else if (isDepartmentChart && longestLabelLength > departmentFirstLineChars) {
+    // 部门图表：第一行4个字，其余行5个字
+    estimatedLines = 1 + Math.ceil((longestLabelLength - departmentFirstLineChars) / departmentOtherLineChars)
+  } else if (shouldWrapLabels) {
+    estimatedLines = Math.ceil(longestLabelLength / maxCharsPerLine)
+  }
   const estimatedLabelHeight = estimatedLines * lineHeight
   const gridBottom = Math.max(30, Math.ceil(estimatedLabelHeight + axisLabelMargin + 16))
 
@@ -286,6 +299,17 @@ const getOption = (): EChartsOption => {
           // 职位类图表不换行，直接返回原始值
           if (isJobCategoryChart) {
             return value
+          }
+          // 部门图表：第一行4个字，其余行5个字
+          if (isDepartmentChart && value.length > departmentFirstLineChars) {
+            const lines: string[] = []
+            // 第一行4个字
+            lines.push(value.slice(0, departmentFirstLineChars))
+            // 剩余部分每5个字一行
+            for (let i = departmentFirstLineChars; i < value.length; i += departmentOtherLineChars) {
+              lines.push(value.slice(i, i + departmentOtherLineChars))
+            }
+            return lines.join('\n')
           }
           // 其他情况按原逻辑处理
           if (!shouldWrapLabels || value.length <= maxCharsPerLine) {
