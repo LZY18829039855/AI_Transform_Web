@@ -75,7 +75,7 @@ const getOption = (): EChartsOption => {
   
   // 判断是否是职位类任职数据或职位类认证数据图表
   const isJobCategoryChart = props.title === '职位类任职数据' || props.title === '职位类认证数据'
-  const maxCharsPerLine = 4
+  const maxCharsPerLine = 5
   
   // 职位类图表不换行，其他图表按原逻辑处理
   const shouldWrapLabels = isJobCategoryChart ? false : longestLabelLength > maxCharsPerLine
