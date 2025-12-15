@@ -300,6 +300,10 @@ const getOption = (): EChartsOption => {
           if (isJobCategoryChart) {
             return value
           }
+          // 特殊处理：云核心网产品工程与IT装备部，确保IT在一起显示
+          if (isDepartmentChart && value === '云核心网产品工程与IT装备部') {
+            return '云核心网产品\n工程与IT\n装备部'
+          }
           // 部门图表：第一行4个字，其余行6个字
           if (isDepartmentChart && value.length > departmentFirstLineChars) {
             const lines: string[] = []
