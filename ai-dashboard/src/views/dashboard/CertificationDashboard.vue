@@ -216,42 +216,56 @@ const resolveCertificationRate = (item?: DepartmentCertStatistic | null) =>
   Number(item?.certRate ?? 0)
 const resolveQualifiedRate = (item?: DepartmentCertStatistic | null) =>
   Number(item?.qualifiedRate ?? 0)
-const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
-  departmentStatistics.value
+// 部门ID顺序定义（从左到右）
+const departmentOrder = ['047375', '047374', '043539', '041852', '033039', '038460', '030699', '038462', '038461', '047376']
+// 获取部门在顺序数组中的索引
+const getDepartmentOrder = (deptCode?: string): number => {
+  if (!deptCode) {
+    return departmentOrder.length
+  }
+  const index = departmentOrder.indexOf(deptCode)
+  return index >= 0 ? index : departmentOrder.length // 未定义的部门排在最后
+}
+const departmentStatsPoints = computed<StaffChartPoint[]>(() => {
+  const mappedData = departmentStatistics.value
     .map((item) => ({
       label: item.deptName?.trim().length ? item.deptName : item.deptCode,
       count: resolveQualifiedCount(item),
       rate: resolveQualifiedRate(item),
       deptCode: item.deptCode,
     }))
-    .filter((item) => item.rate > 0)
-    .sort((a, b) => {
-      // 首先按占比从高到低排序
-      if (b.rate !== a.rate) {
-        return b.rate - a.rate
-      }
-      // 占比一致时，按人数从高到低排序
-      return b.count - a.count
+    .filter((item) => {
+      // 只保留指定顺序中的部门
+      return item.deptCode && departmentOrder.includes(item.deptCode)
     })
-)
-const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
-  departmentStatistics.value
+    .sort((a, b) => {
+      // 按照指定的部门顺序排序
+      const orderA = getDepartmentOrder(a.deptCode)
+      const orderB = getDepartmentOrder(b.deptCode)
+      return orderA - orderB
+    })
+  return mappedData
+})
+const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() => {
+  const mappedData = departmentStatistics.value
     .map((item) => ({
       label: item.deptName?.trim().length ? item.deptName : item.deptCode,
       count: resolveCertificationCount(item),
       rate: resolveCertificationRate(item),
       deptCode: item.deptCode,
     }))
-    .filter((item) => item.rate > 0)
-    .sort((a, b) => {
-      // 首先按占比从高到低排序
-      if (b.rate !== a.rate) {
-        return b.rate - a.rate
-      }
-      // 占比一致时，按人数从高到低排序
-      return b.count - a.count
+    .filter((item) => {
+      // 只保留指定顺序中的部门
+      return item.deptCode && departmentOrder.includes(item.deptCode)
     })
-)
+    .sort((a, b) => {
+      // 按照指定的部门顺序排序
+      const orderA = getDepartmentOrder(a.deptCode)
+      const orderB = getDepartmentOrder(b.deptCode)
+      return orderA - orderB
+    })
+  return mappedData
+})
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
 const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
   () => allStaffTrends.value?.departmentAppointment ?? []
@@ -1561,6 +1575,16 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
+                <el-table-column prop="appointedByRequirement" label="按岗位要求已获取AI任职人数" min-width="130" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber(row.appointedByRequirement) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="certificationCompliance" label="按岗位要求已获取AI任职人数占比" min-width="140" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatPercent(row.certificationCompliance) }}
+                  </template>
+                </el-table-column>
                 <el-table-column prop="appointed" label="AI任职人数" min-width="100" align="center" header-align="center">
                   <template #default="{ row }">
                     <el-link
@@ -1576,16 +1600,6 @@ onActivated(() => {
                 <el-table-column prop="appointmentRate" label="AI任职率" min-width="90" align="center" header-align="center">
                   <template #default="{ row }">
                     {{ formatPercent(row.appointmentRate) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按岗位要求已获取AI任职人数" min-width="130" align="center" header-align="center">
-                  <template #default="{ row }">
-                    {{ formatNumber(row.appointedByRequirement) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="certificationCompliance" label="按岗位要求已获取AI任职人数占比" min-width="140" align="center" header-align="center">
-                  <template #default="{ row }">
-                    {{ formatPercent(row.certificationCompliance) }}
                   </template>
                 </el-table-column>
               </el-table>
