@@ -1575,12 +1575,48 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按岗位要求已获取AI任职人数" min-width="130" align="center" header-align="center">
+                <el-table-column prop="appointedByRequirement" min-width="130" align="center" header-align="center">
+                  <template #header>
+                    <span>按岗位要求已获取AI任职人数</span>
+                    <el-tooltip
+                      placement="top"
+                      effect="dark"
+                    >
+                      <template #content>
+                        <div style="line-height: 1.8;">
+                          <div style="font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
+                          <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                        </div>
+                      </template>
+                      <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                        <QuestionFilled />
+                      </el-icon>
+                    </el-tooltip>
+                  </template>
                   <template #default="{ row }">
                     {{ formatNumber(row.appointedByRequirement) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="certificationCompliance" label="按岗位要求已获取AI任职人数占比" min-width="140" align="center" header-align="center">
+                <el-table-column prop="certificationCompliance" min-width="140" align="center" header-align="center">
+                  <template #header>
+                    <span>按岗位要求已获取AI任职人数占比</span>
+                    <el-tooltip
+                      placement="top"
+                      effect="dark"
+                    >
+                      <template #content>
+                        <div style="line-height: 1.8;">
+                          <div style="font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
+                          <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                        </div>
+                      </template>
+                      <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                        <QuestionFilled />
+                      </el-icon>
+                    </el-tooltip>
+                  </template>
                   <template #default="{ row }">
                     {{ formatPercent(row.certificationCompliance) }}
                   </template>
@@ -1815,7 +1851,25 @@ onActivated(() => {
                     </el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="baseline" label="按岗位要求AI任职基线人数" min-width="180" align="center" header-align="center">
+                <el-table-column prop="baseline" min-width="180" align="center" header-align="center">
+                  <template #header>
+                    <span>按岗位要求AI任职基线人数</span>
+                    <el-tooltip
+                      placement="top"
+                      effect="dark"
+                    >
+                      <template #content>
+                        <div style="line-height: 1.8;">
+                          <div style="font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
+                          <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                        </div>
+                      </template>
+                      <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                        <QuestionFilled />
+                      </el-icon>
+                    </el-tooltip>
+                  </template>
                   <template #default="{ row }">
                     <template v-if="getBaselineByRequirement(row) === '/'">
                       /
@@ -1825,7 +1879,25 @@ onActivated(() => {
                     </template>
                   </template>
                 </el-table-column>
-                <el-table-column prop="appointedByRequirement" label="按岗位要求已获取AI任职人数" min-width="180" align="center" header-align="center">
+                <el-table-column prop="appointedByRequirement" min-width="180" align="center" header-align="center">
+                  <template #header>
+                    <span>按岗位要求已获取AI任职人数</span>
+                    <el-tooltip
+                      placement="top"
+                      effect="dark"
+                    >
+                      <template #content>
+                        <div style="line-height: 1.8;">
+                          <div style="font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
+                          <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                        </div>
+                      </template>
+                      <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                        <QuestionFilled />
+                      </el-icon>
+                    </el-tooltip>
+                  </template>
                   <template #default="{ row }">
                     <template v-if="getAppointedByRequirement(row) === '/'">
                       /
@@ -1835,7 +1907,25 @@ onActivated(() => {
                     </template>
                   </template>
                 </el-table-column>
-                <el-table-column prop="certificationCompliance" label="按岗位要求已获取AI任职人数占比" min-width="190" align="center" header-align="center">
+                <el-table-column prop="certificationCompliance" min-width="190" align="center" header-align="center">
+                  <template #header>
+                    <span>按岗位要求已获取AI任职人数占比</span>
+                    <el-tooltip
+                      placement="top"
+                      effect="dark"
+                    >
+                      <template #content>
+                        <div style="line-height: 1.8;">
+                          <div style="font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
+                          <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                        </div>
+                      </template>
+                      <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
+                        <QuestionFilled />
+                      </el-icon>
+                    </el-tooltip>
+                  </template>
                   <template #default="{ row }">
                     <template v-if="isL2NonSoftware(row)">
                       /
