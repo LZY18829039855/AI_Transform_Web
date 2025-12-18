@@ -129,7 +129,7 @@ const {
 const roleOptions = computed(() => normalizeRoleOptions(dashboardFilters.value?.roles ?? []))
 
 // 职位类排序顺序
-const jobCategoryOrder = ['软件类', '测试类', '系统类', '研究类', '其他类']
+const jobCategoryOrder = ['软件类', '研究类', '测试类', '系统类', '产品开发项目管理类', '其他类']
 
 // 获取职位类的排序索引
 const getJobCategoryOrder = (jobCategory: string): number => {

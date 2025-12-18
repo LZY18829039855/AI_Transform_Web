@@ -700,6 +700,60 @@ export const fetchDepartmentStats = async (
   }
 }
 
+// 整合职位类数据：将除了指定类别外的其他类别汇总为"其他类"
+const consolidateJobCategories = (
+  stats?: CompetenceCategoryCertStatisticsResponse
+): CompetenceCategoryCertStatisticsResponse | null => {
+  if (!stats || !stats.categoryStatistics || stats.categoryStatistics.length === 0) {
+    return stats ?? null
+  }
+
+  // 需要保留的职位类
+  const allowedCategories = ['软件类', '研究类', '测试类', '系统类', '产品开发项目管理类']
+  
+  // 用于汇总其他类的数据
+  let otherQualifiedCount = 0
+  let otherCertifiedCount = 0
+  let otherTotalCount = 0
+  
+  // 保留的职位类列表
+  const allowedCategoryStats: CompetenceCategoryCertStatistics[] = []
+  
+  stats.categoryStatistics.forEach((item) => {
+    if (allowedCategories.includes(item.competenceCategory)) {
+      // 保留的职位类，直接添加
+      allowedCategoryStats.push(item)
+    } else if (item.competenceCategory !== '总计') {
+      // 其他类别（排除总计），累加到其他类
+      otherQualifiedCount += item.qualifiedCount ?? 0
+      otherCertifiedCount += item.certifiedCount ?? 0
+      otherTotalCount += item.totalCount ?? 0
+    }
+  })
+  
+  // 如果有其他类数据，添加"其他类"统计项
+  if (otherTotalCount > 0 || otherQualifiedCount > 0 || otherCertifiedCount > 0) {
+    const otherQualifiedRate = otherTotalCount > 0 ? (otherQualifiedCount / otherTotalCount) * 100 : 0
+    const otherCertRate = otherTotalCount > 0 ? (otherCertifiedCount / otherTotalCount) * 100 : 0
+    
+    allowedCategoryStats.push({
+      competenceCategory: '其他类',
+      totalCount: otherTotalCount,
+      qualifiedCount: otherQualifiedCount,
+      certifiedCount: otherCertifiedCount,
+      qualifiedRate: otherQualifiedRate,
+      certRate: otherCertRate,
+    })
+  }
+  
+  return {
+    deptCode: stats.deptCode,
+    deptName: stats.deptName,
+    categoryStatistics: allowedCategoryStats,
+    totalStatistics: stats.totalStatistics,
+  }
+}
+
 // 获取职位类统计数据
 export const fetchJobCategoryStats = async (
   deptCode: string,
@@ -711,6 +765,9 @@ export const fetchJobCategoryStats = async (
 }> => {
   await delay()
   const competenceCategoryStats = await fetchCompetenceCategoryCertStatistics(deptCode, personType)
+
+  // 整合职位类数据
+  const consolidatedStats = consolidateJobCategories(competenceCategoryStats ?? undefined)
 
   const mapCompetenceCategoryToCharts = (
     stats?: CompetenceCategoryCertStatisticsResponse
@@ -733,12 +790,12 @@ export const fetchJobCategoryStats = async (
     }
   }
 
-  const jobCategoryCharts = mapCompetenceCategoryToCharts(competenceCategoryStats ?? undefined)
+  const jobCategoryCharts = mapCompetenceCategoryToCharts(consolidatedStats ?? undefined)
 
   return {
     jobCategoryAppointment: jobCategoryCharts?.appointment ?? [],
     jobCategoryCertification: jobCategoryCharts?.certification ?? [],
-    competenceCategoryCertStatistics: competenceCategoryStats,
+    competenceCategoryCertStatistics: consolidatedStats,
   }
 }
 
@@ -780,6 +837,9 @@ export const fetchCertificationDashboard = async (
 
   const departmentCharts = mapDepartmentCertStatsToCharts(employeeCertStats?.departmentStatistics)
 
+  // 整合职位类数据
+  const consolidatedCompetenceCategoryStats = consolidateJobCategories(competenceCategoryStats ?? undefined)
+
   // 将职位类统计数据转换为图表数据格式
   const mapCompetenceCategoryToCharts = (
     stats?: CompetenceCategoryCertStatisticsResponse
@@ -802,7 +862,7 @@ export const fetchCertificationDashboard = async (
     }
   }
 
-  const jobCategoryCharts = mapCompetenceCategoryToCharts(competenceCategoryStats ?? undefined)
+  const jobCategoryCharts = mapCompetenceCategoryToCharts(consolidatedCompetenceCategoryStats ?? undefined)
 
   // 将干部认证数据转换为表格格式
   const mapCadreCertStatsToRows = (
@@ -977,7 +1037,7 @@ export const fetchCertificationDashboard = async (
         : allStaffData.jobCategoryCertification,
     },
     employeeCertStatistics: employeeCertStats ?? null,
-    competenceCategoryCertStatistics: competenceCategoryStats ?? null,
+    competenceCategoryCertStatistics: consolidatedCompetenceCategoryStats ?? null,
     filters: {
       departmentTree: deptTree,
       roles: [
