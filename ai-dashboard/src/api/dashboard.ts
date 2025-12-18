@@ -733,8 +733,12 @@ const consolidateJobCategories = (
   
   // 如果有其他类数据，添加"其他类"统计项
   if (otherTotalCount > 0 || otherQualifiedCount > 0 || otherCertifiedCount > 0) {
-    const otherQualifiedRate = otherTotalCount > 0 ? (otherQualifiedCount / otherTotalCount) * 100 : 0
-    const otherCertRate = otherTotalCount > 0 ? (otherCertifiedCount / otherTotalCount) * 100 : 0
+    const otherQualifiedRate = otherTotalCount > 0 
+      ? Number(((otherQualifiedCount / otherTotalCount) * 100).toFixed(2)) 
+      : 0
+    const otherCertRate = otherTotalCount > 0 
+      ? Number(((otherCertifiedCount / otherTotalCount) * 100).toFixed(2)) 
+      : 0
     
     allowedCategoryStats.push({
       competenceCategory: '其他类',
