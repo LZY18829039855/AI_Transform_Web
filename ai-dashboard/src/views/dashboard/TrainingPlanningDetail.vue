@@ -18,7 +18,12 @@ const fetchData = async () => {
   loading.value = true
   try {
     const data = await fetchCoursePlanningInfoList()
-    planningData.value = data
+    // 按课程主分类排序，确保相同分类的行连续，以便正确合并单元格
+    planningData.value = data.sort((a, b) => {
+      const aType = a.bigType || ''
+      const bType = b.bigType || ''
+      return aType.localeCompare(bType)
+    })
   } finally {
     loading.value = false
   }
@@ -29,23 +34,23 @@ const objectSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
   // 只对第一列（课程主分类）进行合并
   if (columnIndex === 0) {
     const currentValue = row.bigType
-    // 计算从当前行开始，有多少行具有相同的课程主分类
-    let rowspan = 1
-    for (let i = rowIndex + 1; i < planningData.value.length; i++) {
-      if (planningData.value[i].bigType === currentValue) {
-        rowspan++
-      } else {
-        break
-      }
-    }
     // 如果当前行的值与上一行相同，则隐藏当前单元格
-    if (rowIndex > 0 && planningData.value[rowIndex - 1].bigType === currentValue) {
+    if (rowIndex > 0 && planningData.value[rowIndex - 1]?.bigType === currentValue) {
       return {
         rowspan: 0,
         colspan: 0,
       }
     }
-    // 否则返回合并的行数
+    // 计算从当前行开始，有多少行具有相同的课程主分类
+    let rowspan = 1
+    for (let i = rowIndex + 1; i < planningData.value.length; i++) {
+      if (planningData.value[i]?.bigType === currentValue) {
+        rowspan++
+      } else {
+        break
+      }
+    }
+    // 返回合并的行数
     return {
       rowspan: rowspan,
       colspan: 1,
@@ -65,7 +70,7 @@ onMounted(() => {
         <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回列表页</el-button>
         <div>
           <h2>训战课程规划明细</h2>
-          <p>查看详细的训战课程规划信息，包括课程安排、责任部门等。</p>
+          <p>查看详细的训战课程规划信息，包括课程明细、学分信息等。</p>
         </div>
       </div>
     </header>
@@ -79,7 +84,7 @@ onMounted(() => {
         <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
         <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
         <el-table-column prop="courseName" label="课程名称" width="500" align="center" />
-        <el-table-column label="课程编码（线上课程涉及）" width="300" align="center">
+        <el-table-column label="课程编码（线上课程涉及）" min-width="300" align="center">
           <template #default="{ row }">
             <el-link
               v-if="row.courseLink && row.courseName"
