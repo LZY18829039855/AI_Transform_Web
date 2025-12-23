@@ -24,6 +24,35 @@ const fetchData = async () => {
   }
 }
 
+// 单元格合并方法
+const objectSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
+  // 只对第一列（课程主分类）进行合并
+  if (columnIndex === 0) {
+    const currentValue = row.bigType
+    // 计算从当前行开始，有多少行具有相同的课程主分类
+    let rowspan = 1
+    for (let i = rowIndex + 1; i < planningData.value.length; i++) {
+      if (planningData.value[i].bigType === currentValue) {
+        rowspan++
+      } else {
+        break
+      }
+    }
+    // 如果当前行的值与上一行相同，则隐藏当前单元格
+    if (rowIndex > 0 && planningData.value[rowIndex - 1].bigType === currentValue) {
+      return {
+        rowspan: 0,
+        colspan: 0,
+      }
+    }
+    // 否则返回合并的行数
+    return {
+      rowspan: rowspan,
+      colspan: 1,
+    }
+  }
+}
+
 onMounted(() => {
   fetchData()
 })
@@ -46,10 +75,10 @@ onMounted(() => {
         <h3>训战课程规划表</h3>
       </template>
       <el-skeleton :rows="8" animated v-if="loading" />
-      <el-table v-else :data="planningData" border style="width: 100%" class="planning-table" empty-text="暂无数据">
-        <el-table-column prop="bigType" label="课程主分类" width="140" align="center" />
-        <el-table-column prop="sybType" label="训战分类" width="140" align="center" />
-        <el-table-column prop="courseName" label="课程名称" width="150" align="center" />
+      <el-table v-else :data="planningData" border style="width: 100%" class="planning-table" empty-text="暂无数据" :span-method="objectSpanMethod">
+        <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
+        <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
+        <el-table-column prop="courseName" label="课程名称" width="500" align="center" />
         <el-table-column label="课程编码（线上课程涉及）" width="300" align="center">
           <template #default="{ row }">
             <el-link
@@ -64,12 +93,12 @@ onMounted(() => {
             <span v-else style="color: #999;">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="目标人群" width="120" align="center">
+        <el-table-column label="目标人群" width="100" align="center">
           <template #default>
             <span>ALL</span>
           </template>
         </el-table-column>
-        <el-table-column prop="credit" label="学分列" width="100" align="center" />
+        <el-table-column prop="credit" label="学分列" width="80" align="center" />
       </el-table>
     </el-card>
   </section>
@@ -155,6 +184,7 @@ onMounted(() => {
     tr {
       td {
         padding: 8px 0;
+        text-align: center;
       }
     }
   }
@@ -162,6 +192,7 @@ onMounted(() => {
   :deep(.el-table__header) {
     th {
       padding: 10px 0;
+      text-align: center;
     }
   }
 }
