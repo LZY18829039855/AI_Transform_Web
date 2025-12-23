@@ -250,15 +250,28 @@ export const exportCoursePlanningToExcel = (
   // 创建工作表
   const sheet = XLSX.utils.json_to_sheet(excelData)
 
+  // 计算每列的最大宽度（根据内容）
+  const columnKeys = ['课程主分类', '训战分类', '课程名称', '课程编码（线上课程涉及）', '目标人群', '学分']
+  const columnWidths = columnKeys.map((key, colIndex) => {
+    let maxWidth = key.length // 从表头长度开始
+    // 遍历所有数据行，找到该列的最大长度
+    excelData.forEach((row) => {
+      const cellValue = String(row[key as keyof typeof row] || '')
+      // 计算字符串长度（中文字符按2个字符宽度计算）
+      const width = Array.from(cellValue).reduce((sum, char) => {
+        // 中文字符、全角字符按2计算，其他按1计算
+        return sum + (char.charCodeAt(0) > 127 ? 2 : 1)
+      }, 0)
+      if (width > maxWidth) {
+        maxWidth = width
+      }
+    })
+    // 设置列宽，加一些padding（最小宽度为10，最大不超过50，并加2个字符的padding）
+    return { wch: Math.min(Math.max(maxWidth + 2, 10), 50) }
+  })
+
   // 设置列宽
-  sheet['!cols'] = [
-    { wch: 15 }, // 课程主分类
-    { wch: 15 }, // 训战分类
-    { wch: 30 }, // 课程名称
-    { wch: 25 }, // 课程编码
-    { wch: 12 }, // 目标人群
-    { wch: 10 }, // 学分
-  ]
+  sheet['!cols'] = columnWidths
 
   // 设置表头样式（加粗、居中）
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1')
