@@ -227,8 +227,18 @@ export const exportCoursePlanningToExcel = (
   // 创建工作簿
   const workbook = XLSX.utils.book_new()
 
+  // 先按bigType排序，确保相同bigType的数据连续
+  const sortedData = [...planningData].sort((a, b) => {
+    const aType = a.bigType || ''
+    const bType = b.bigType || ''
+    if (aType !== bType) {
+      return aType.localeCompare(bType)
+    }
+    return 0
+  })
+
   // 准备数据
-  const excelData = planningData.map((item) => ({
+  const excelData = sortedData.map((item) => ({
     '课程主分类': item.bigType || '',
     '训战分类': item.sybType || '',
     '课程名称': item.courseName || '',
@@ -282,6 +292,46 @@ export const exportCoursePlanningToExcel = (
         },
       }
     }
+  }
+
+  // 合并相同bigType的单元格（A列，课程主分类）
+  const merges: XLSX.Range[] = []
+  if (sortedData.length > 0) {
+    let startRow = 1 // 从第2行开始（第1行是表头，索引为0，Excel行号是1）
+    let currentBigType = sortedData[0]?.bigType || ''
+    
+    for (let i = 1; i < sortedData.length; i++) {
+      const item = sortedData[i]
+      const excelRow = i + 1 // Excel行号（索引i对应Excel第i+1行，因为表头占第1行）
+      
+      if (item.bigType !== currentBigType) {
+        // 如果当前行的bigType与之前不同，合并之前的单元格
+        if (startRow < excelRow - 1) {
+          // 有多个相同bigType的行，需要合并
+          merges.push({
+            s: { r: startRow, c: 0 }, // 开始位置：行startRow，列0（A列）
+            e: { r: excelRow - 1, c: 0 }, // 结束位置：上一行的行号，列0（A列）
+          })
+        }
+        // 更新起始行和当前bigType
+        startRow = excelRow
+        currentBigType = item.bigType || ''
+      }
+    }
+    
+    // 处理最后一组相同bigType的单元格
+    const lastRow = sortedData.length // 最后一行数据的Excel行号
+    if (startRow < lastRow) {
+      merges.push({
+        s: { r: startRow, c: 0 },
+        e: { r: lastRow, c: 0 },
+      })
+    }
+  }
+  
+  // 设置合并单元格
+  if (merges.length > 0) {
+    sheet['!merges'] = merges
   }
 
   // 将工作表添加到工作簿

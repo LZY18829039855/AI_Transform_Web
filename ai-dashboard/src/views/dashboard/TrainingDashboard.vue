@@ -13,7 +13,6 @@ import type {
   TrainingDashboardFilters,
   TrainingExpertCadreSummaryRow,
   TrainingPersonalOverviewRow,
-  TrainingPlanningResource,
   TrainingRoleSummaryRow,
 } from '@/types/dashboard'
 
@@ -33,7 +32,6 @@ const {
   refreshDepartmentTree,
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
-const planningResources = computed<TrainingPlanningResource[]>(() => dashboardData.value?.planningResources ?? [])
 
 const DOWNLOAD_RESOURCES = [
   {
@@ -43,6 +41,10 @@ const DOWNLOAD_RESOURCES = [
     href: 'https://example.com/docs/ai-training-rules.xlsx',
   },
 ] as const
+
+const handlePlanningDetailClick = () => {
+  router.push({ name: 'TrainingPlanningDetail' })
+}
 
 const handlePlanningClick = async () => {
   try {
@@ -157,7 +159,6 @@ defineExpose({
   filters,
   departmentOptions,
   roleOptions,
-  planningResources,
   loading,
   dashboardData,
   fetchData,
@@ -182,38 +183,12 @@ defineExpose({
       </div>
     </header>
 
-    <el-card shadow="hover" class="download-resource-card" @click="handlePlanningClick">
+    <el-card shadow="hover" class="download-resource-card" @click="handlePlanningDetailClick">
       <article class="download-resource-card__item">
         <h4>{{ DOWNLOAD_RESOURCES[0].title }}</h4>
         <p>{{ DOWNLOAD_RESOURCES[0].description }}</p>
         <el-link type="primary" @click.stop="handlePlanningClick">下载明细</el-link>
       </article>
-    </el-card>
-
-    <el-card shadow="hover" class="resource-card">
-      <template #header>
-        <div class="resource-card__header">
-          <h3>训战课程规划表</h3>
-          <p>下载最新训战规划、重点岗位方案与实战日历。</p>
-        </div>
-      </template>
-      <el-table :data="planningResources" class="resource-table" border>
-        <el-table-column prop="title" label="文档名称" min-width="260">
-          <template #default="{ row }">
-            <div class="resource-table__title">
-              <strong>{{ row.title }}</strong>
-              <p v-if="row.description">{{ row.description }}</p>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="owner" label="责任部门" width="180" />
-        <el-table-column prop="updatedAt" label="更新时间" width="180" />
-        <el-table-column label="操作" width="140">
-          <template #default="{ row }">
-            <el-link type="primary" :href="row.downloadUrl" target="_blank">下载</el-link>
-          </template>
-        </el-table-column>
-      </el-table>
     </el-card>
 
     <el-card shadow="hover" class="filter-card">
