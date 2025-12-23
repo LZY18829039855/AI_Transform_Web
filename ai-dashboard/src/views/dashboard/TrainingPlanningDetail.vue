@@ -2,8 +2,9 @@
 import { onMounted, ref } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElLink, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
+import { ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
 import { fetchCoursePlanningInfoList } from '@/api/dashboard'
+import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import type { CoursePlanningInfo } from '@/types/dashboard'
 
 const router = useRouter()
@@ -73,6 +74,21 @@ const objectSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
   }
 }
 
+const handleDownload = async () => {
+  try {
+    if (planningData.value.length === 0) {
+      ElMessage.warning('暂无数据可下载')
+      return
+    }
+    // 导出Excel
+    exportCoursePlanningToExcel(planningData.value, '训战课程规划明细')
+    ElMessage.success('下载成功')
+  } catch (error) {
+    console.error('下载课程规划明细失败：', error)
+    ElMessage.error('下载失败，请稍后重试')
+  }
+}
+
 onMounted(() => {
   fetchData()
 })
@@ -92,7 +108,10 @@ onMounted(() => {
 
     <el-card shadow="hover" class="planning-table-card">
       <template #header>
-        <h3>训战课程规划表</h3>
+        <div class="table-header">
+          <h3>训战课程规划表</h3>
+          <el-button type="primary" @click="handleDownload">下载明细</el-button>
+        </div>
       </template>
       <el-skeleton :rows="8" animated v-if="loading" />
       <el-table v-else :data="planningData" border style="width: 100%" class="planning-table" empty-text="暂无数据" :span-method="objectSpanMethod">
@@ -118,7 +137,7 @@ onMounted(() => {
             <span>ALL</span>
           </template>
         </el-table-column>
-        <el-table-column prop="credit" label="学分列" width="80" align="center" />
+        <el-table-column prop="credit" label="学分" width="80" align="center" />
       </el-table>
     </el-card>
   </section>
@@ -170,6 +189,12 @@ onMounted(() => {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 
