@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx-js-style'
-import type { AppointmentAuditRecord, CertificationAuditRecord } from '@/types/dashboard'
+import type { AppointmentAuditRecord, CertificationAuditRecord, CoursePlanningInfo } from '@/types/dashboard'
 
 /**
  * 格式化布尔值为中文
@@ -205,6 +205,87 @@ export const exportCertificationDataToExcel = (
   // 将工作表添加到工作簿
   XLSX.utils.book_append_sheet(workbook, appointmentSheet, '任职数据')
   XLSX.utils.book_append_sheet(workbook, certificationSheet, '认证数据')
+
+  // 生成文件名（包含当前日期）
+  const date = new Date()
+  const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
+  const finalFileName = `${fileName}_${dateStr}.xlsx`
+
+  // 导出文件
+  XLSX.writeFile(workbook, finalFileName)
+}
+
+/**
+ * 导出课程规划明细数据到Excel
+ * @param planningData 课程规划明细数据
+ * @param fileName 文件名（不包含扩展名）
+ */
+export const exportCoursePlanningToExcel = (
+  planningData: CoursePlanningInfo[],
+  fileName: string = '训战课程规划明细',
+) => {
+  // 创建工作簿
+  const workbook = XLSX.utils.book_new()
+
+  // 准备数据
+  const excelData = planningData.map((item) => ({
+    '课程主分类': item.bigType || '',
+    '训战分类': item.sybType || '',
+    '课程名称': item.courseName || '',
+    '课程编码（线上课程涉及）': item.courseLink || '',
+    '目标人群': 'ALL',
+    '学分列': item.credit || '',
+  }))
+
+  // 创建工作表
+  const sheet = XLSX.utils.json_to_sheet(excelData)
+
+  // 设置列宽
+  sheet['!cols'] = [
+    { wch: 15 }, // 课程主分类
+    { wch: 15 }, // 训战分类
+    { wch: 30 }, // 课程名称
+    { wch: 25 }, // 课程编码
+    { wch: 12 }, // 目标人群
+    { wch: 10 }, // 学分列
+  ]
+
+  // 设置表头样式（加粗、居中）
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1')
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col })
+    if (!sheet[cellAddress]) {
+      continue
+    }
+    const cell = sheet[cellAddress]
+    sheet[cellAddress] = {
+      ...cell,
+      s: {
+        font: { bold: true },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      },
+    }
+  }
+
+  // 设置数据行样式（居中）
+  for (let row = range.s.r + 1; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
+      if (!sheet[cellAddress]) {
+        continue
+      }
+      const cell = sheet[cellAddress]
+      sheet[cellAddress] = {
+        ...cell,
+        s: {
+          alignment: { horizontal: 'center', vertical: 'center' },
+        },
+      }
+    }
+  }
+
+  // 将工作表添加到工作簿
+  XLSX.utils.book_append_sheet(workbook, sheet, '课程规划明细')
 
   // 生成文件名（包含当前日期）
   const date = new Date()

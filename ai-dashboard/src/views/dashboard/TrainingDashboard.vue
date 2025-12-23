@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElCascader, ElEmpty, ElForm, ElFormItem, ElLink, ElSelect, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
-import { fetchTrainingDashboard } from '@/api/dashboard'
+import { ElButton, ElCard, ElCascader, ElEmpty, ElForm, ElFormItem, ElLink, ElMessage, ElSelect, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
+import { fetchCoursePlanningInfoList, fetchTrainingDashboard } from '@/api/dashboard'
+import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import type {
@@ -33,6 +34,32 @@ const {
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
 const planningResources = computed<TrainingPlanningResource[]>(() => dashboardData.value?.planningResources ?? [])
+
+const DOWNLOAD_RESOURCES = [
+  {
+    id: 'rules',
+    title: '训战课程规划表',
+    description: '查看最新训战规则与学分明细',
+    href: 'https://example.com/docs/ai-training-rules.xlsx',
+  },
+] as const
+
+const handlePlanningClick = async () => {
+  try {
+    // 获取课程规划明细数据
+    const planningData = await fetchCoursePlanningInfoList()
+    if (planningData.length === 0) {
+      ElMessage.warning('暂无数据可下载')
+      return
+    }
+    // 导出Excel
+    exportCoursePlanningToExcel(planningData, '训战课程规划明细')
+    ElMessage.success('下载成功')
+  } catch (error) {
+    console.error('下载课程规划明细失败：', error)
+    ElMessage.error('下载失败，请稍后重试')
+  }
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -154,6 +181,14 @@ defineExpose({
         </p>
       </div>
     </header>
+
+    <el-card shadow="hover" class="download-resource-card" @click="handlePlanningClick">
+      <article class="download-resource-card__item">
+        <h4>{{ DOWNLOAD_RESOURCES[0].title }}</h4>
+        <p>{{ DOWNLOAD_RESOURCES[0].description }}</p>
+        <el-link type="primary" @click.stop="handlePlanningClick">下载明细</el-link>
+      </article>
+    </el-card>
 
     <el-card shadow="hover" class="resource-card">
       <template #header>
@@ -616,12 +651,49 @@ defineExpose({
     margin: $spacing-sm 0 0;
     color: #000;
     line-height: 1.6;
-    max-width: 720px;
+    white-space: nowrap;
   }
 }
 
 .header-info {
   max-width: 720px;
+}
+
+.download-resource-card {
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(58, 122, 254, 0.15);
+    transform: translateY(-2px);
+  }
+
+  &__item {
+    border-radius: $radius-lg;
+    background: rgba(58, 122, 254, 0.08);
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    width: 100%;
+
+    h4 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-main-color;
+      flex-shrink: 0;
+    }
+
+    p {
+      margin: 0;
+      color: $text-secondary-color;
+      flex: 1;
+    }
+  }
 }
 
 .resource-card {
@@ -714,6 +786,12 @@ defineExpose({
   .glass-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .download-resource-card__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
   }
 }
 </style>
