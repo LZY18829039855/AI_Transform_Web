@@ -53,6 +53,16 @@ const routes: RouteRecordRaw[] = [
         props: true,
       },
       {
+        path: 'training/planning',
+        name: 'TrainingPlanningDetail',
+        component: () => import('@/views/dashboard/TrainingPlanningDetail.vue'),
+        meta: {
+          title: '训战课程规划明细',
+          requiresAuth: true,
+          keepAlive: false,
+        },
+      },
+      {
         path: 'school',
         name: 'SchoolDashboard',
         component: () => import('@/views/dashboard/SchoolDashboard.vue'),

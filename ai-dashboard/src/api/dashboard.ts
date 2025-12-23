@@ -16,6 +16,7 @@ import type {
   CertificationRole,
   CompetenceCategoryCertStatisticsResponse,
   CourseItem,
+  CoursePlanningInfo,
   DepartmentInfoVO,
   DepartmentNode,
   EmployeeCertStatisticsResponse,
@@ -1445,6 +1446,24 @@ export const fetchCadreQualifiedDetails = async (
   } catch (error) {
     console.error('获取干部任职数据详情异常：', error)
     return null
+  }
+}
+
+/**
+ * 获取课程规划明细列表
+ * @returns 课程规划明细列表
+ */
+export const fetchCoursePlanningInfoList = async (): Promise<CoursePlanningInfo[]> => {
+  try {
+    const response = await get<Result<CoursePlanningInfo[]>>('/course-planning-info/list')
+    if (response.code === 200) {
+      return response.data || []
+    }
+    console.warn('获取课程规划明细列表失败：', response.message)
+    return []
+  } catch (error) {
+    console.error('获取课程规划明细列表异常：', error)
+    return []
   }
 }
 

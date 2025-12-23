@@ -713,3 +713,21 @@ export interface EmployeeDrillDownResponseVO {
   employeeDetails?: EmployeeDetailVO[]
 }
 
+/**
+ * 课程规划明细信息（对应后端 CoursePlanningInfoVO）
+ */
+export interface CoursePlanningInfo {
+  id?: number
+  bigType?: string // 大类（课程主分类）
+  sybType?: string // 子类（训战分类）
+  courseName?: string // 课程名称
+  courseLink?: string // 课程链接（课程编码）
+  credit?: string // 学分
+  courseStatus?: string // 课程状态
+  knowledgePoint?: string // 知识点
+  courseExplain?: string // 课程说明
+  studyDuration?: string // 学习时长
+  courseLevel?: string // 课程级别
+  inClassTest?: string // 随堂测试
+}
+
