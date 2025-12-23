@@ -240,11 +240,11 @@ export const exportCoursePlanningToExcel = (
   // 准备数据
   const excelData = sortedData.map((item) => ({
     '课程主分类': item.bigType || '',
-    '训战分类': item.sybType || '',
+    '训战分类': item.courseLevel || '',
     '课程名称': item.courseName || '',
     '课程编码（线上课程涉及）': item.courseLink || '',
     '目标人群': 'ALL',
-    '学分列': item.credit || '',
+    '学分': item.credit || '',
   }))
 
   // 创建工作表
@@ -257,7 +257,7 @@ export const exportCoursePlanningToExcel = (
     { wch: 30 }, // 课程名称
     { wch: 25 }, // 课程编码
     { wch: 12 }, // 目标人群
-    { wch: 10 }, // 学分列
+    { wch: 10 }, // 学分
   ]
 
   // 设置表头样式（加粗、居中）
