@@ -46,12 +46,11 @@ onMounted(() => {
         <h3>训战课程规划表</h3>
       </template>
       <el-skeleton :rows="8" animated v-if="loading" />
-      <el-empty v-else-if="planningData.length === 0" description="暂无数据" />
-      <el-table v-else :data="planningData" border style="width: 100%">
-        <el-table-column prop="bigType" label="课程主分类" width="140" />
-        <el-table-column prop="sybType" label="训战分类" width="140" />
-        <el-table-column prop="courseName" label="课程名称" min-width="200" />
-        <el-table-column label="课程编码（线上课程涉及）" width="200">
+      <el-table v-else :data="planningData" border style="width: 100%" class="planning-table" empty-text="暂无数据">
+        <el-table-column prop="bigType" label="课程主分类" width="140" align="center" />
+        <el-table-column prop="sybType" label="训战分类" width="140" align="center" />
+        <el-table-column prop="courseName" label="课程名称" width="150" align="center" />
+        <el-table-column label="课程编码（线上课程涉及）" width="300" align="center">
           <template #default="{ row }">
             <el-link
               v-if="row.courseLink && row.courseName"
@@ -65,7 +64,7 @@ onMounted(() => {
             <span v-else style="color: #999;">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="目标人群" width="120">
+        <el-table-column label="目标人群" width="120" align="center">
           <template #default>
             <span>ALL</span>
           </template>
@@ -148,6 +147,22 @@ onMounted(() => {
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+.planning-table {
+  :deep(.el-table__body) {
+    tr {
+      td {
+        padding: 8px 0;
+      }
+    }
+  }
+
+  :deep(.el-table__header) {
+    th {
+      padding: 10px 0;
+    }
   }
 }
 
