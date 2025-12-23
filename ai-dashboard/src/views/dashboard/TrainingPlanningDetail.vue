@@ -81,10 +81,10 @@ onMounted(() => {
       </template>
       <el-skeleton :rows="8" animated v-if="loading" />
       <el-table v-else :data="planningData" border style="width: 100%" class="planning-table" empty-text="暂无数据" :span-method="objectSpanMethod">
-        <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
-        <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
-        <el-table-column prop="courseName" label="课程名称" width="500" align="center" />
-        <el-table-column label="课程编码（线上课程涉及）" min-width="300" align="center">
+        <el-table-column prop="bigType" label="课程主分类" width="100" align="center" />
+        <el-table-column prop="courseLevel" label="训战分类" width="80" align="center" />
+        <el-table-column prop="courseName" label="课程名称" width="417" align="center" />
+        <el-table-column label="课程编码（线上课程涉及）" min-width="463" align="center">
           <template #default="{ row }">
             <el-link
               v-if="row.courseLink && row.courseName"
@@ -98,12 +98,12 @@ onMounted(() => {
             <span v-else style="color: #999;">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="目标人群" width="100" align="center">
+        <el-table-column label="目标人群" width="80" align="center">
           <template #default>
             <span>ALL</span>
           </template>
         </el-table-column>
-        <el-table-column prop="credit" label="学分列" width="80" align="center" />
+        <el-table-column prop="credit" label="学分列" width="60" align="center" />
       </el-table>
     </el-card>
   </section>
