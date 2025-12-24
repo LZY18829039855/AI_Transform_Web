@@ -298,7 +298,9 @@ const fetchDetail = async () => {
     if (isCadreQuery) {
       // 干部角色：同时加载任职和认证数据
       // 使用筛选条件中的值（部门、职位类、成熟度）
-      const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
+      // 确保使用最新的部门路径值（创建副本避免引用问题）
+      const departmentPath = filters.value.departmentPath ? [...filters.value.departmentPath] : []
+      const deptCode = getDeptCodeFromPath(departmentPath)
       const jobCategory = filters.value.jobCategory || undefined
       
       // 处理成熟度参数：
@@ -478,7 +480,9 @@ const fetchDetail = async () => {
     } else if (currentRole === '2') {
       // 专家角色：同时加载任职和认证数据
       // 使用筛选条件中的值（部门、职位类、成熟度）
-      const deptCode = getDeptCodeFromPath(filters.value.departmentPath)
+      // 确保使用最新的部门路径值（创建副本避免引用问题）
+      const departmentPath = filters.value.departmentPath ? [...filters.value.departmentPath] : []
+      const deptCode = getDeptCodeFromPath(departmentPath)
       const jobCategory = filters.value.jobCategory || undefined
       
       // 处理成熟度参数：
@@ -729,7 +733,11 @@ const handleQuery = () => {
   // 更新实际角色，用于控制表格样式
   actualRole.value = filters.value.role
   isUserQuery.value = true
-  fetchDetail()
+  // 使用 nextTick 确保级联选择器的值已经更新到 filters.value.departmentPath
+  // 虽然 v-model 是同步的，但级联选择器可能存在异步更新情况
+  nextTick(() => {
+    fetchDetail()
+  })
 }
 
 const resetFilters = () => {
