@@ -97,6 +97,7 @@ const routes: RouteRecordRaw[] = [
         path: 'certification/detail/:id',
         name: 'CertificationDetail',
         component: () => import('@/views/dashboard/CertificationDetail.vue'),
+        props: true,
         meta: {
           title: 'AI任职认证看板详情',
           requiresAuth: true,

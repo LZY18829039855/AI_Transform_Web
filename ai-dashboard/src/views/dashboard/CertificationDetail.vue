@@ -137,7 +137,8 @@ const fetchDetail = async () => {
     const jobCategoryFromRoute = route.query.jobCategory as string | undefined
     
     // 如果是从部门柱状图或职位类柱状图点击跳转过来的，直接使用这些参数
-    if (deptCodeFromRoute && personTypeFromRoute && queryTypeFromRoute) {
+    // 但是，如果用户主动点击查询按钮，应该使用当前的筛选条件，而不是路由参数
+    if (deptCodeFromRoute && personTypeFromRoute && queryTypeFromRoute && !isUserQuery.value) {
       const deptCode = deptCodeFromRoute
       const personType = Number(personTypeFromRoute)
       const queryType = Number(queryTypeFromRoute)
@@ -663,8 +664,15 @@ const fetchDetail = async () => {
         activeTab.value = 'certification'
       }
     } else {
-      // 使用原有的接口（其他角色或默认情况）
-      detailData.value = await fetchCertificationDetailData(props.id, {
+      // 使用原有的接口（其他角色或默认情况，包括全员'0'和基层主管'3'）
+      // 使用 route.params.id 作为后备，确保 id 有值
+      const detailId = props.id || (route.params.id as string) || ''
+      if (!detailId) {
+        console.error('详情页 ID 为空，无法调用接口')
+        ElMessage.error('详情页 ID 为空，无法加载数据')
+        return
+      }
+      detailData.value = await fetchCertificationDetailData(detailId, {
         ...filters.value,
         departmentPath: filters.value.departmentPath?.length
           ? [...(filters.value.departmentPath ?? [])]
@@ -1002,8 +1010,15 @@ const certificationTableDefaultSort = computed(() => {
 watch(
   () => roleOptions.value,
   (newOptions, oldOptions) => {
+    // 如果是用户主动查询，不应该重置角色值
+    if (isUserQuery.value) {
+      return
+    }
+    
     // 当 roleOptions 从空变为有数据时，根据路由参数设置角色值
-    if (newOptions.length > 0) {
+    // 只在首次加载时（从空变为有数据）才设置，避免覆盖用户选择
+    const wasEmpty = !oldOptions || oldOptions.length === 0
+    if (newOptions.length > 0 && wasEmpty) {
       const targetRole = normalizedRole.value
       const targetRoleExists = newOptions.some((option) => option.value === targetRole)
       
@@ -1034,6 +1049,11 @@ watch(
 watch(
   () => route.query.role,
   (newRole) => {
+    // 如果是用户主动查询，不应该根据路由参数重置角色值
+    if (isUserQuery.value) {
+      return
+    }
+    
     // 当路由参数 role 变化时，如果 roleOptions 已经有数据，立即更新
     if (roleOptions.value.length > 0) {
       const targetRole = normalizedRole.value
