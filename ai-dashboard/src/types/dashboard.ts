@@ -476,6 +476,23 @@ export interface SelectOption<T extends string> {
   value: T
 }
 
+// 基层主管和PM AI任职认证数据
+export interface EntryLevelManagerPmCertRow {
+  department: string // 部门
+  // TM/PL队伍数据
+  tmPlTotalCount: number // TM/PL总人数
+  tmPlAi3PlusCount: number // TM/PL具备AI 3+任职人数
+  tmPlAi3PlusRate: number // TM/PL具备AI 3+任职占比
+  tmPlProfessionalCertCount: number // TM/PL具备专业级认证人数
+  tmPlProfessionalCertRate: number // TM/PL具备专业级认证占比
+  // PM队伍数据
+  pmTotalCount: number // PM总人数
+  pmAi3PlusCount: number // PM具备AI 3+任职人数
+  pmAi3PlusRate: number // PM具备AI 3+任职占比
+  pmProfessionalCertCount: number // PM具备专业级认证人数
+  pmProfessionalCertRate: number // PM具备专业级认证占比
+}
+
 export type SchoolRole = RoleValue
 
 export interface SchoolPersonalOverview {

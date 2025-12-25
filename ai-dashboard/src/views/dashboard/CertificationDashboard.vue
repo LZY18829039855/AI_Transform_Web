@@ -31,6 +31,7 @@ import type {
   DepartmentNode,
   SelectOption,
   CertificationRole,
+  EntryLevelManagerPmCertRow,
 } from '@/types/dashboard'
 
 const router = useRouter()
@@ -38,6 +39,7 @@ const router = useRouter()
 // 各个数据块的独立loading状态
 const loadingExpert = ref(false)
 const loadingCadre = ref(false)
+const loadingEntryLevelManagerPm = ref(false)
 const loadingAllStaffTrends = ref(false)
 const loadingDepartmentStats = ref(false)
 const loadingJobCategoryStats = ref(false)
@@ -87,6 +89,7 @@ const dashboardFilters = ref<{
   departmentTree: DepartmentNode[]
   roles: SelectOption<CertificationRole>[]
 } | null>(null)
+const entryLevelManagerPmData = ref<EntryLevelManagerPmCertRow[] | null>(null)
 
 // 为了兼容现有代码，保留dashboardData的computed属性
 const dashboardData = computed<CertificationDashboardData | null>(() => {
@@ -491,6 +494,19 @@ const loadCadreData = async () => {
   }
 }
 
+const loadEntryLevelManagerPmData = async () => {
+  loadingEntryLevelManagerPm.value = true
+  try {
+    const deptCode = resolveDepartmentCode(filters.value.departmentPath)
+    // TODO: 调用后端接口获取数据，暂时使用空数据
+    entryLevelManagerPmData.value = []
+  } catch (error) {
+    console.error('加载基层主管和PM数据失败:', error)
+  } finally {
+    loadingEntryLevelManagerPm.value = false
+  }
+}
+
 const loadAllStaffTrends = async () => {
   loadingAllStaffTrends.value = true
   try {
@@ -548,6 +564,7 @@ const fetchData = async () => {
   Promise.all([
     loadExpertData(),
     loadCadreData(),
+    loadEntryLevelManagerPmData(),
     loadAllStaffTrends(),
     loadDepartmentStats(),
     loadJobCategoryStats(),
@@ -1432,6 +1449,7 @@ watch(
     // 部门筛选条件改变时，重新加载依赖部门的数据块
     loadExpertData()
     loadCadreData()
+    loadEntryLevelManagerPmData()
     loadDepartmentStats()
     loadJobCategoryStats()
   },
@@ -1777,6 +1795,115 @@ onActivated(() => {
             <el-empty v-else description="待提供数据" :image-size="80" />
           </div>
         </div>
+        </el-col>
+        <!-- 5. 基层主管和PM AI任职认证数据 -->
+        <el-col :xs="24" :lg="24">
+          <div class="summary-table-container">
+            <div class="summary-table-header">
+              <h3>基层主管和PM AI任职认证</h3>
+            </div>
+            <div class="summary-table-body">
+              <el-skeleton :rows="4" animated v-if="loadingEntryLevelManagerPm" />
+              <el-table
+                v-else-if="entryLevelManagerPmData"
+                :data="entryLevelManagerPmData"
+                border
+                stripe
+                size="small"
+                style="width: 100%"
+                :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
+              >
+                <el-table-column prop="department" label="部门" width="100" align="left" header-align="center" />
+                <!-- TM/PL队伍列组 -->
+                <el-table-column label="TM/PL队伍" align="center" header-align="center">
+                  <el-table-column prop="tmPlTotalCount" min-width="90" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">TM/PL<br/>总人数</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatNumber(row.tmPlTotalCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="tmPlAi3PlusCount" min-width="110" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>AI 3+任职人数</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatNumber(row.tmPlAi3PlusCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="tmPlAi3PlusRate" min-width="110" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>AI 3+任职占比</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatPercent(row.tmPlAi3PlusRate) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="tmPlProfessionalCertCount" min-width="120" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>专业级认证人数</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatNumber(row.tmPlProfessionalCertCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="tmPlProfessionalCertRate" min-width="120" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>专业级认证占比</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatPercent(row.tmPlProfessionalCertRate) }}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <!-- PM队伍列组 -->
+                <el-table-column label="PM队伍" align="center" header-align="center">
+                  <el-table-column prop="pmTotalCount" min-width="90" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">PM<br/>总人数</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatNumber(row.pmTotalCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="pmAi3PlusCount" min-width="110" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">PM具备<br/>AI 3+任职人数</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatNumber(row.pmAi3PlusCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="pmAi3PlusRate" min-width="110" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">PM具备<br/>AI 3+任职占比</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatPercent(row.pmAi3PlusRate) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="pmProfessionalCertCount" min-width="120" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">PM具备<br/>专业级认证人数</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatNumber(row.pmProfessionalCertCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="pmProfessionalCertRate" min-width="120" align="center" header-align="center">
+                    <template #header>
+                      <div style="line-height: 1.4; white-space: normal;">PM具备<br/>专业级认证占比</div>
+                    </template>
+                    <template #default="{ row }">
+                      {{ formatPercent(row.pmProfessionalCertRate) }}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+              </el-table>
+              <el-empty v-else description="待提供数据" :image-size="80" />
+            </div>
+          </div>
         </el-col>
       </el-row>
     </el-card>
