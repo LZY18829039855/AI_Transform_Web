@@ -24,6 +24,7 @@ import type {
   ExpertAppointmentSummaryRow,
   ExpertCertificationSummaryRow,
   MetricItem,
+  PlTmCertStatisticsResponse,
   Result,
   SchoolDashboardData,
   SchoolDashboardFilters,
@@ -1464,6 +1465,26 @@ export const fetchCoursePlanningInfoList = async (): Promise<CoursePlanningInfo[
   } catch (error) {
     console.error('获取课程规划明细列表异常：', error)
     return []
+  }
+}
+
+/**
+ * 获取PL/TM任职与认证统计数据
+ * @returns PL/TM任职与认证统计数据
+ */
+export const fetchPlTmCertStatistics = async (): Promise<PlTmCertStatisticsResponse | null> => {
+  try {
+    const response = await get<Result<PlTmCertStatisticsResponse>>(
+      '/entry-level-manager/pl-tm-cert-statistics'
+    )
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取PL/TM任职与认证数据失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取PL/TM任职与认证数据异常：', error)
+    return null
   }
 }
 

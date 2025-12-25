@@ -476,6 +476,23 @@ export interface SelectOption<T extends string> {
   value: T
 }
 
+// PL/TM部门统计数据（接口返回）
+export interface PlTmDepartmentStatistics {
+  deptCode: string // 部门编码
+  deptName: string // 部门名称
+  totalCount: number // PL/TM总人数
+  qualifiedCount: number // 通过任职标准的人数（is_qualifications_standard=1）
+  qualifiedRatio: number // 任职占比（qualifiedCount/totalCount）
+  certCount: number // 通过认证标准的人数（is_cert_standard=1）
+  certRatio: number // 认证占比（certCount/totalCount）
+}
+
+// PL/TM任职与认证统计响应（接口返回）
+export interface PlTmCertStatisticsResponse {
+  summary: PlTmDepartmentStatistics // 研发管理部汇总数据
+  departmentList: PlTmDepartmentStatistics[] // 各四级部门统计数据列表
+}
+
 // 基层主管和PM AI任职认证数据
 export interface EntryLevelManagerPmCertRow {
   department: string // 部门

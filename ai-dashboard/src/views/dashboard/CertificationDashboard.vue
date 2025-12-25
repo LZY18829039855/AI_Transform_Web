@@ -10,6 +10,7 @@ import {
   fetchDepartmentStats,
   fetchJobCategoryStats,
   fetchDashboardFilters,
+  fetchPlTmCertStatistics,
 } from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -497,11 +498,58 @@ const loadCadreData = async () => {
 const loadEntryLevelManagerPmData = async () => {
   loadingEntryLevelManagerPm.value = true
   try {
-    const deptCode = resolveDepartmentCode(filters.value.departmentPath)
-    // TODO: 调用后端接口获取数据，暂时使用空数据
-    entryLevelManagerPmData.value = []
+    const response = await fetchPlTmCertStatistics()
+    if (response) {
+      // 将接口返回的数据转换为前端需要的格式
+      const rows: EntryLevelManagerPmCertRow[] = []
+      
+      // 添加汇总数据（研发管理部整体）
+      if (response.summary) {
+        rows.push({
+          department: response.summary.deptName || '研发管理部',
+          // TM/PL队伍数据（接口返回的是PL/TM的汇总数据）
+          tmPlTotalCount: response.summary.totalCount || 0,
+          tmPlAi3PlusCount: response.summary.qualifiedCount || 0,
+          tmPlAi3PlusRate: (response.summary.qualifiedRatio || 0) * 100, // 转换为百分比
+          tmPlProfessionalCertCount: response.summary.certCount || 0,
+          tmPlProfessionalCertRate: (response.summary.certRatio || 0) * 100, // 转换为百分比
+          // PM队伍数据（接口目前只返回PL/TM数据，PM数据暂时设为0）
+          pmTotalCount: 0,
+          pmAi3PlusCount: 0,
+          pmAi3PlusRate: 0,
+          pmProfessionalCertCount: 0,
+          pmProfessionalCertRate: 0,
+        })
+      }
+      
+      // 添加各四级部门数据
+      if (response.departmentList && response.departmentList.length > 0) {
+        response.departmentList.forEach((dept) => {
+          rows.push({
+            department: dept.deptName || dept.deptCode || '未知部门',
+            // TM/PL队伍数据
+            tmPlTotalCount: dept.totalCount || 0,
+            tmPlAi3PlusCount: dept.qualifiedCount || 0,
+            tmPlAi3PlusRate: (dept.qualifiedRatio || 0) * 100, // 转换为百分比
+            tmPlProfessionalCertCount: dept.certCount || 0,
+            tmPlProfessionalCertRate: (dept.certRatio || 0) * 100, // 转换为百分比
+            // PM队伍数据（接口目前只返回PL/TM数据，PM数据暂时设为0）
+            pmTotalCount: 0,
+            pmAi3PlusCount: 0,
+            pmAi3PlusRate: 0,
+            pmProfessionalCertCount: 0,
+            pmProfessionalCertRate: 0,
+          })
+        })
+      }
+      
+      entryLevelManagerPmData.value = rows
+    } else {
+      entryLevelManagerPmData.value = []
+    }
   } catch (error) {
     console.error('加载基层主管和PM数据失败:', error)
+    entryLevelManagerPmData.value = []
   } finally {
     loadingEntryLevelManagerPm.value = false
   }
