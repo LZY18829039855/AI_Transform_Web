@@ -1470,7 +1470,8 @@ const getRowStyle = ({ row }: { row: any }) => {
   if (row.isMaturityRow || (row.maturityLevel && ['L2', 'L3', '总计', '全部', 'Total', 'total'].includes(row.maturityLevel))) {
     return {
       fontWeight: 'bold',
-      fontSize: '14px',
+      fontSize: '15px',
+      color: '#000',
     }
   }
   return {}
@@ -1481,7 +1482,8 @@ const getCellStyle = ({ row }: { row: any }) => {
   if (row.isMaturityRow || (row.maturityLevel && ['L2', 'L3', '总计', '全部', 'Total', 'total'].includes(row.maturityLevel))) {
     return {
       fontWeight: 'bold',
-      fontSize: '14px',
+      fontSize: '15px',
+      color: '#000',
     }
   }
   return {}
@@ -2883,15 +2885,18 @@ onActivated(() => {
     :deep(.el-table) {
       .maturity-row {
         font-weight: bold !important;
-        font-size: 14px !important; // 增大两号（从12px到14px）
+        font-size: 15px !important; // 增大一号（从14px到15px）
+        color: #000 !important;
         
         td {
           font-weight: bold !important;
-          font-size: 14px !important;
+          font-size: 15px !important;
+          color: #000 !important;
           
           .cell {
             font-weight: bold !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
+            color: #000 !important;
             line-height: 1.5 !important;
             
             // 确保链接和文本都应用样式
@@ -2901,7 +2906,8 @@ onActivated(() => {
             div,
             * {
               font-weight: bold !important;
-              font-size: 14px !important;
+              font-size: 15px !important;
+              color: #000 !important;
             }
           }
         }
@@ -2911,16 +2917,19 @@ onActivated(() => {
       &.el-table--small {
         .maturity-row {
           font-weight: bold !important;
-          font-size: 14px !important;
+          font-size: 15px !important;
+          color: #000 !important;
           
           td {
             font-weight: bold !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
+            color: #000 !important;
             padding: 8px 0 !important;
             
             .cell {
               font-weight: bold !important;
-              font-size: 14px !important;
+              font-size: 15px !important;
+              color: #000 !important;
               line-height: 1.5 !important;
               
               .el-link,
@@ -2929,7 +2938,8 @@ onActivated(() => {
               div,
               * {
                 font-weight: bold !important;
-                font-size: 14px !important;
+                font-size: 15px !important;
+                color: #000 !important;
               }
             }
           }
