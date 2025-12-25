@@ -1861,10 +1861,10 @@ onActivated(() => {
                 style="width: 100%"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
               >
-                <el-table-column prop="department" label="部门" width="100" align="left" header-align="center" />
+                <el-table-column prop="department" label="部门" width="145" align="left" header-align="center" />
                 <!-- TM/PL队伍列组 -->
                 <el-table-column label="TM/PL队伍" align="center" header-align="center">
-                  <el-table-column prop="tmPlTotalCount" min-width="90" align="center" header-align="center">
+                  <el-table-column prop="tmPlTotalCount" min-width="70" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">TM/PL<br/>总人数</div>
                     </template>
@@ -1907,7 +1907,7 @@ onActivated(() => {
                 </el-table-column>
                 <!-- PM队伍列组 -->
                 <el-table-column label="PM队伍" align="center" header-align="center">
-                  <el-table-column prop="pmTotalCount" min-width="90" align="center" header-align="center">
+                  <el-table-column prop="pmTotalCount" min-width="70" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">PM<br/>总人数</div>
                     </template>
