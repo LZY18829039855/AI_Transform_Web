@@ -1861,7 +1861,7 @@ onActivated(() => {
                 style="width: 100%"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
               >
-                <el-table-column prop="department" label="部门" width="145" align="left" header-align="center" />
+                <el-table-column prop="department" label="部门" width="201" align="left" header-align="center" />
                 <!-- TM/PL队伍列组 -->
                 <el-table-column label="TM/PL队伍" align="center" header-align="center">
                   <el-table-column prop="tmPlTotalCount" min-width="70" align="center" header-align="center">
@@ -1872,7 +1872,7 @@ onActivated(() => {
                       {{ formatNumber(row.tmPlTotalCount) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="tmPlAi3PlusCount" min-width="110" align="center" header-align="center">
+                  <el-table-column prop="tmPlAi3PlusCount" min-width="103" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>AI 3+任职人数</div>
                     </template>
@@ -1880,7 +1880,7 @@ onActivated(() => {
                       {{ formatNumber(row.tmPlAi3PlusCount) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="tmPlAi3PlusRate" min-width="110" align="center" header-align="center">
+                  <el-table-column prop="tmPlAi3PlusRate" min-width="103" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>AI 3+任职占比</div>
                     </template>
@@ -1888,7 +1888,7 @@ onActivated(() => {
                       {{ formatPercent(row.tmPlAi3PlusRate) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="tmPlProfessionalCertCount" min-width="120" align="center" header-align="center">
+                  <el-table-column prop="tmPlProfessionalCertCount" min-width="113" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>专业级认证人数</div>
                     </template>
@@ -1896,7 +1896,7 @@ onActivated(() => {
                       {{ formatNumber(row.tmPlProfessionalCertCount) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="tmPlProfessionalCertRate" min-width="120" align="center" header-align="center">
+                  <el-table-column prop="tmPlProfessionalCertRate" min-width="113" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">TM/PL具备<br/>专业级认证占比</div>
                     </template>
@@ -1915,7 +1915,7 @@ onActivated(() => {
                       {{ formatNumber(row.pmTotalCount) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="pmAi3PlusCount" min-width="110" align="center" header-align="center">
+                  <el-table-column prop="pmAi3PlusCount" min-width="103" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">PM具备<br/>AI 3+任职人数</div>
                     </template>
@@ -1923,7 +1923,7 @@ onActivated(() => {
                       {{ formatNumber(row.pmAi3PlusCount) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="pmAi3PlusRate" min-width="110" align="center" header-align="center">
+                  <el-table-column prop="pmAi3PlusRate" min-width="103" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">PM具备<br/>AI 3+任职占比</div>
                     </template>
@@ -1931,7 +1931,7 @@ onActivated(() => {
                       {{ formatPercent(row.pmAi3PlusRate) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="pmProfessionalCertCount" min-width="120" align="center" header-align="center">
+                  <el-table-column prop="pmProfessionalCertCount" min-width="113" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">PM具备<br/>专业级认证人数</div>
                     </template>
@@ -1939,7 +1939,7 @@ onActivated(() => {
                       {{ formatNumber(row.pmProfessionalCertCount) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="pmProfessionalCertRate" min-width="120" align="center" header-align="center">
+                  <el-table-column prop="pmProfessionalCertRate" min-width="113" align="center" header-align="center">
                     <template #header>
                       <div style="line-height: 1.4; white-space: normal;">PM具备<br/>专业级认证占比</div>
                     </template>
