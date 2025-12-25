@@ -1482,6 +1482,19 @@ const getCellClassName = ({ row, column }: { row: any; column: any }) => {
   return ''
 }
 
+// 基层主管和PM表格的单元格样式
+const getEntryLevelManagerPmCellStyle = ({ row, column }: { row: any; column: any }) => {
+  // 如果是研发管理部所在行，整行应用加粗、字号增大一号的样式
+  if (row.department === '研发管理部') {
+    return {
+      fontWeight: 'bold',
+      fontSize: '15px',
+      color: '#000',
+    }
+  }
+  return {}
+}
+
 
 const resetFilters = () => {
   filters.value = {
@@ -1860,8 +1873,9 @@ onActivated(() => {
                 size="small"
                 style="width: 100%"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
+                :cell-style="getEntryLevelManagerPmCellStyle"
               >
-                <el-table-column prop="department" label="部门" width="201" align="left" header-align="center" />
+                <el-table-column prop="department" label="部门" width="201" align="center" header-align="center" />
                 <!-- TM/PL队伍列组 -->
                 <el-table-column label="TM/PL队伍" align="center" header-align="center">
                   <el-table-column prop="tmPlTotalCount" min-width="70" align="center" header-align="center">
