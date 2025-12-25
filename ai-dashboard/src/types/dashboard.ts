@@ -510,6 +510,28 @@ export interface EntryLevelManagerPmCertRow {
   pmProfessionalCertRate: number // PM具备专业级认证占比
 }
 
+export interface CadrePositionOverviewRow {
+  department: string // 部门
+  totalPositionCount: number // 干部岗位总数
+  l2L3TotalCount: number // L2、L3干部岗位总数
+  l2L3Rate: number // L2/L3干部岗位占比
+  l2SoftwareCount: number // L2干部岗位数量-软件类
+  l2NonSoftwareCount: number // L2干部岗位数量-非软件类
+  l3SoftwareCount: number // L3干部岗位数量-软件类
+  l3NonSoftwareCount: number // L3干部岗位数量-非软件类
+}
+
+export interface CadreAiAppointmentCertRow {
+  department: string // 部门
+  totalCadreCount: number // 干部总人数
+  l2L3Count: number // L2/L3人数
+  softwareL2Count: number // 软件L2人数
+  softwareL3Count: number // 软件L3人数
+  nonSoftwareL2L3Count: number // 非软件L2/L3人数
+  meetRequirementL2L3Count: number // 满足岗位AI要求L2/L3干部人数
+  meetRequirementL2L3Rate: number // 满足岗位AI要求L2/L3干部占比
+}
+
 export type SchoolRole = RoleValue
 
 export interface SchoolPersonalOverview {

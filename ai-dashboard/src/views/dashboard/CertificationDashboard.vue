@@ -33,6 +33,8 @@ import type {
   SelectOption,
   CertificationRole,
   EntryLevelManagerPmCertRow,
+  CadrePositionOverviewRow,
+  CadreAiAppointmentCertRow,
 } from '@/types/dashboard'
 
 const router = useRouter()
@@ -91,6 +93,8 @@ const dashboardFilters = ref<{
   roles: SelectOption<CertificationRole>[]
 } | null>(null)
 const entryLevelManagerPmData = ref<EntryLevelManagerPmCertRow[] | null>(null)
+const cadrePositionOverviewData = ref<CadrePositionOverviewRow[] | null>(null)
+const cadreAiAppointmentCertData = ref<CadreAiAppointmentCertRow[] | null>(null)
 
 // 为了兼容现有代码，保留dashboardData的computed属性
 const dashboardData = computed<CertificationDashboardData | null>(() => {
@@ -1877,6 +1881,129 @@ onActivated(() => {
             <el-empty v-else description="待提供数据" :image-size="80" />
           </div>
         </div>
+        </el-col>
+        <!-- 4.1 AI干部岗位概述表 -->
+        <el-col :xs="24" :lg="24">
+          <div class="summary-table-container">
+            <div class="summary-table-header">
+              <h3>AI干部岗位概述表</h3>
+            </div>
+            <div class="summary-table-body">
+              <el-skeleton :rows="4" animated v-if="loadingCadre" />
+              <el-table
+                v-else
+                :data="cadrePositionOverviewData || []"
+                border
+                stripe
+                size="small"
+                style="width: 100%"
+                :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
+              >
+                <el-table-column prop="department" label="部门" width="201" align="center" header-align="center" />
+                <el-table-column prop="totalPositionCount" label="干部岗位总数" min-width="120" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber(row.totalPositionCount) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="l2L3TotalCount" label="L2/L3干部岗位总数" min-width="180" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber(row.l2L3TotalCount) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="l2L3Rate" label="L2/L3干部岗位占比" min-width="160" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatPercent(row.l2L3Rate) }}
+                  </template>
+                </el-table-column>
+                <!-- L2干部岗位数量（大列） -->
+                <el-table-column label="L2干部岗位数量" align="center" header-align="center">
+                  <el-table-column prop="l2SoftwareCount" label="软件类" min-width="100" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.l2SoftwareCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="l2NonSoftwareCount" label="非软件类" min-width="110" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.l2NonSoftwareCount) }}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <!-- L3干部岗位数量（大列） -->
+                <el-table-column label="L3干部岗位数量" align="center" header-align="center">
+                  <el-table-column prop="l3SoftwareCount" label="软件类" min-width="100" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.l3SoftwareCount) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="l3NonSoftwareCount" label="非软件类" min-width="110" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.l3NonSoftwareCount) }}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+        </el-col>
+        <!-- 4.2 干部AI任职认证表 -->
+        <el-col :xs="24" :lg="24">
+          <div class="summary-table-container">
+            <div class="summary-table-header">
+              <h3>干部AI任职认证表</h3>
+            </div>
+            <div class="summary-table-body">
+              <el-skeleton :rows="4" animated v-if="loadingCadre" />
+              <el-table
+                v-else
+                :data="cadreAiAppointmentCertData || []"
+                border
+                stripe
+                size="small"
+                style="width: 100%"
+                :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
+              >
+                <el-table-column prop="department" label="部门" width="201" align="center" header-align="center" />
+                <el-table-column prop="totalCadreCount" label="干部总人数" min-width="120" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber(row.totalCadreCount) }}
+                  </template>
+                </el-table-column>
+                <!-- L2/L3干部情况（大列） -->
+                <el-table-column label="L2/L3干部情况" align="center" header-align="center">
+                  <el-table-column prop="l2L3Count" label="L2/L3人数" min-width="110" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.l2L3Count) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="softwareL2Count" label="软件L2人数" min-width="120" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.softwareL2Count) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="softwareL3Count" label="软件L3人数" min-width="120" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.softwareL3Count) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="nonSoftwareL2L3Count" label="非软件L2/L3人数" min-width="150" align="center" header-align="center">
+                    <template #default="{ row }">
+                      {{ formatNumber(row.nonSoftwareL2L3Count) }}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column prop="meetRequirementL2L3Count" label="满足岗位AI要求L2/L3干部人数" min-width="240" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatNumber(row.meetRequirementL2L3Count) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="meetRequirementL2L3Rate" label="满足岗位AI要求L2/L3干部占比" min-width="240" align="center" header-align="center">
+                  <template #default="{ row }">
+                    {{ formatPercent(row.meetRequirementL2L3Rate) }}
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </el-col>
         <!-- 5. 基层主管和PM AI任职认证数据 -->
         <el-col :xs="24" :lg="24">
