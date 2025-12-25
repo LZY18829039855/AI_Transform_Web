@@ -543,6 +543,25 @@ const loadEntryLevelManagerPmData = async () => {
         })
       }
       
+      // 在最后添加"云核总计"行，数据与云核心网研发管理部完全一致
+      const cloudCoreDept = rows.find((row) => row.department === '云核心网研发管理部')
+      if (cloudCoreDept) {
+        rows.push({
+          department: '云核总计',
+          // 复制云核心网研发管理部的所有数据
+          tmPlTotalCount: cloudCoreDept.tmPlTotalCount,
+          tmPlAi3PlusCount: cloudCoreDept.tmPlAi3PlusCount,
+          tmPlAi3PlusRate: cloudCoreDept.tmPlAi3PlusRate,
+          tmPlProfessionalCertCount: cloudCoreDept.tmPlProfessionalCertCount,
+          tmPlProfessionalCertRate: cloudCoreDept.tmPlProfessionalCertRate,
+          pmTotalCount: cloudCoreDept.pmTotalCount,
+          pmAi3PlusCount: cloudCoreDept.pmAi3PlusCount,
+          pmAi3PlusRate: cloudCoreDept.pmAi3PlusRate,
+          pmProfessionalCertCount: cloudCoreDept.pmProfessionalCertCount,
+          pmProfessionalCertRate: cloudCoreDept.pmProfessionalCertRate,
+        })
+      }
+      
       entryLevelManagerPmData.value = rows
     } else {
       entryLevelManagerPmData.value = []
@@ -1484,8 +1503,8 @@ const getCellClassName = ({ row, column }: { row: any; column: any }) => {
 
 // 基层主管和PM表格的单元格样式
 const getEntryLevelManagerPmCellStyle = ({ row, column }: { row: any; column: any }) => {
-  // 如果是研发管理部所在行，整行应用加粗、字号增大一号的样式
-  if (row.department === '研发管理部') {
+  // 如果是云核心网研发管理部或云核总计所在行，整行应用加粗、字号增大一号的样式
+  if (row.department === '云核心网研发管理部' || row.department === '云核总计') {
     return {
       fontWeight: 'bold',
       fontSize: '15px',

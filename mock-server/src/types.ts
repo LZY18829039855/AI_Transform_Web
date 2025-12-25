@@ -185,3 +185,20 @@ export interface ExpertAiQualifiedStatisticsResponse {
   maturityStatistics: ExpertMaturityQualifiedStatistics[]
   totalStatistics: ExpertMaturityQualifiedStatistics
 }
+
+// PL/TM部门统计数据
+export interface PlTmDepartmentStatistics {
+  deptCode: string
+  deptName: string
+  totalCount: number
+  qualifiedCount: number
+  qualifiedRatio: number
+  certCount: number
+  certRatio: number
+}
+
+// PL/TM任职与认证统计响应
+export interface PlTmCertStatisticsResponse {
+  summary: PlTmDepartmentStatistics
+  departmentList: PlTmDepartmentStatistics[]
+}
