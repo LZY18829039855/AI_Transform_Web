@@ -9,11 +9,20 @@ export function getPlTmCertStatistics(): PlTmCertStatisticsResponse {
   const summary: PlTmDepartmentStatistics = {
     deptCode: '030681',
     deptName: '云核心网研发管理部',
-    totalCount: 150,
-    qualifiedCount: 120,
-    qualifiedRatio: 0.8,
-    certCount: 100,
-    certRatio: 0.6667,
+    plTm: {
+      totalCount: 150,
+      qualifiedCount: 120,
+      qualifiedRatio: 0.8,
+      certCount: 100,
+      certRatio: 0.6667,
+    },
+    pm: {
+      totalCount: 80,
+      qualifiedCount: 60,
+      qualifiedRatio: 0.75,
+      certCount: 50,
+      certRatio: 0.625,
+    },
   }
 
   // 各四级部门统计数据
@@ -21,29 +30,56 @@ export function getPlTmCertStatistics(): PlTmCertStatisticsResponse {
     {
       deptCode: '030681001',
       deptName: '部门A',
-      totalCount: 50,
-      qualifiedCount: 40,
-      qualifiedRatio: 0.8,
-      certCount: 35,
-      certRatio: 0.7,
+      plTm: {
+        totalCount: 50,
+        qualifiedCount: 40,
+        qualifiedRatio: 0.8,
+        certCount: 35,
+        certRatio: 0.7,
+      },
+      pm: {
+        totalCount: 30,
+        qualifiedCount: 22,
+        qualifiedRatio: 0.7333,
+        certCount: 18,
+        certRatio: 0.6,
+      },
     },
     {
       deptCode: '030681002',
       deptName: '部门B',
-      totalCount: 60,
-      qualifiedCount: 50,
-      qualifiedRatio: 0.8333,
-      certCount: 40,
-      certRatio: 0.6667,
+      plTm: {
+        totalCount: 60,
+        qualifiedCount: 50,
+        qualifiedRatio: 0.8333,
+        certCount: 40,
+        certRatio: 0.6667,
+      },
+      pm: {
+        totalCount: 35,
+        qualifiedCount: 28,
+        qualifiedRatio: 0.8,
+        certCount: 22,
+        certRatio: 0.6286,
+      },
     },
     {
       deptCode: '030681003',
       deptName: '部门C',
-      totalCount: 40,
-      qualifiedCount: 30,
-      qualifiedRatio: 0.75,
-      certCount: 25,
-      certRatio: 0.625,
+      plTm: {
+        totalCount: 40,
+        qualifiedCount: 30,
+        qualifiedRatio: 0.75,
+        certCount: 25,
+        certRatio: 0.625,
+      },
+      pm: {
+        totalCount: 15,
+        qualifiedCount: 10,
+        qualifiedRatio: 0.6667,
+        certCount: 10,
+        certRatio: 0.6667,
+      },
     },
   ]
 

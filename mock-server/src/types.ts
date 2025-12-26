@@ -186,19 +186,25 @@ export interface ExpertAiQualifiedStatisticsResponse {
   totalStatistics: ExpertMaturityQualifiedStatistics
 }
 
+// PL/TM或PM统计数据
+export interface PlTmPmStatistics {
+  totalCount: number // 总人数
+  qualifiedCount: number // 通过任职标准的人数（is_qualifications_standard=1）
+  qualifiedRatio: number // 任职占比（qualifiedCount/totalCount）
+  certCount: number // 通过认证标准的人数（is_cert_standard=1）
+  certRatio: number // 认证占比（certCount/totalCount）
+}
+
 // PL/TM部门统计数据
 export interface PlTmDepartmentStatistics {
-  deptCode: string
-  deptName: string
-  totalCount: number
-  qualifiedCount: number
-  qualifiedRatio: number
-  certCount: number
-  certRatio: number
+  deptCode: string // 部门编码
+  deptName: string // 部门名称
+  plTm: PlTmPmStatistics // PL/TM统计数据（PL和TM合并统计）
+  pm: PlTmPmStatistics // PM（项目经理）统计数据（单独统计）
 }
 
 // PL/TM任职与认证统计响应
 export interface PlTmCertStatisticsResponse {
-  summary: PlTmDepartmentStatistics
-  departmentList: PlTmDepartmentStatistics[]
+  summary: PlTmDepartmentStatistics // 研发管理部汇总数据
+  departmentList: PlTmDepartmentStatistics[] // 各四级部门统计数据列表
 }

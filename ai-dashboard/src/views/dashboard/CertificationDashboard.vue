@@ -511,18 +511,18 @@ const loadEntryLevelManagerPmData = async () => {
       if (response.summary) {
         rows.push({
           department: response.summary.deptName || '研发管理部',
-          // TM/PL队伍数据（接口返回的是PL/TM的汇总数据）
-          tmPlTotalCount: response.summary.totalCount || 0,
-          tmPlAi3PlusCount: response.summary.qualifiedCount || 0,
-          tmPlAi3PlusRate: (response.summary.qualifiedRatio || 0) * 100, // 转换为百分比
-          tmPlProfessionalCertCount: response.summary.certCount || 0,
-          tmPlProfessionalCertRate: (response.summary.certRatio || 0) * 100, // 转换为百分比
-          // PM队伍数据（接口目前只返回PL/TM数据，PM数据暂时设为0）
-          pmTotalCount: 0,
-          pmAi3PlusCount: 0,
-          pmAi3PlusRate: 0,
-          pmProfessionalCertCount: 0,
-          pmProfessionalCertRate: 0,
+          // TM/PL队伍数据（从 plTm 对象中获取）
+          tmPlTotalCount: response.summary.plTm?.totalCount || 0,
+          tmPlAi3PlusCount: response.summary.plTm?.qualifiedCount || 0,
+          tmPlAi3PlusRate: (response.summary.plTm?.qualifiedRatio || 0) * 100, // 转换为百分比
+          tmPlProfessionalCertCount: response.summary.plTm?.certCount || 0,
+          tmPlProfessionalCertRate: (response.summary.plTm?.certRatio || 0) * 100, // 转换为百分比
+          // PM队伍数据（从 pm 对象中获取）
+          pmTotalCount: response.summary.pm?.totalCount || 0,
+          pmAi3PlusCount: response.summary.pm?.qualifiedCount || 0,
+          pmAi3PlusRate: (response.summary.pm?.qualifiedRatio || 0) * 100, // 转换为百分比
+          pmProfessionalCertCount: response.summary.pm?.certCount || 0,
+          pmProfessionalCertRate: (response.summary.pm?.certRatio || 0) * 100, // 转换为百分比
         })
       }
       
@@ -531,18 +531,18 @@ const loadEntryLevelManagerPmData = async () => {
         response.departmentList.forEach((dept) => {
           rows.push({
             department: dept.deptName || dept.deptCode || '未知部门',
-            // TM/PL队伍数据
-            tmPlTotalCount: dept.totalCount || 0,
-            tmPlAi3PlusCount: dept.qualifiedCount || 0,
-            tmPlAi3PlusRate: (dept.qualifiedRatio || 0) * 100, // 转换为百分比
-            tmPlProfessionalCertCount: dept.certCount || 0,
-            tmPlProfessionalCertRate: (dept.certRatio || 0) * 100, // 转换为百分比
-            // PM队伍数据（接口目前只返回PL/TM数据，PM数据暂时设为0）
-            pmTotalCount: 0,
-            pmAi3PlusCount: 0,
-            pmAi3PlusRate: 0,
-            pmProfessionalCertCount: 0,
-            pmProfessionalCertRate: 0,
+            // TM/PL队伍数据（从 plTm 对象中获取）
+            tmPlTotalCount: dept.plTm?.totalCount || 0,
+            tmPlAi3PlusCount: dept.plTm?.qualifiedCount || 0,
+            tmPlAi3PlusRate: (dept.plTm?.qualifiedRatio || 0) * 100, // 转换为百分比
+            tmPlProfessionalCertCount: dept.plTm?.certCount || 0,
+            tmPlProfessionalCertRate: (dept.plTm?.certRatio || 0) * 100, // 转换为百分比
+            // PM队伍数据（从 pm 对象中获取）
+            pmTotalCount: dept.pm?.totalCount || 0,
+            pmAi3PlusCount: dept.pm?.qualifiedCount || 0,
+            pmAi3PlusRate: (dept.pm?.qualifiedRatio || 0) * 100, // 转换为百分比
+            pmProfessionalCertCount: dept.pm?.certCount || 0,
+            pmProfessionalCertRate: (dept.pm?.certRatio || 0) * 100, // 转换为百分比
           })
         })
       }
