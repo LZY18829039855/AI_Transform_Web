@@ -11,6 +11,7 @@ import {
   fetchJobCategoryStats,
   fetchDashboardFilters,
   fetchPlTmCertStatistics,
+  fetchCadrePositionOverview,
 } from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -487,11 +488,64 @@ const loadExpertData = async () => {
   }
 }
 
+const loadCadrePositionOverview = async () => {
+  try {
+    const res = await fetchCadrePositionOverview()
+    if (res) {
+      const rows: CadrePositionOverviewRow[] = []
+
+      // 递归处理部门列表
+      const processDept = (dept: any) => {
+        // 创建当前部门的行数据
+        const row: CadrePositionOverviewRow = {
+          department: dept.deptName,
+          totalPositionCount: dept.totalPositionCount,
+          l2L3TotalCount: dept.l2L3PositionCount,
+          l2L3Rate: dept.l2L3PositionRatio,
+          l2SoftwareCount: dept.l2Statistics?.softwareCount || 0,
+          l2NonSoftwareCount: dept.l2Statistics?.nonSoftwareCount || 0,
+          l3SoftwareCount: dept.l3Statistics?.softwareCount || 0,
+          l3NonSoftwareCount: dept.l3Statistics?.nonSoftwareCount || 0,
+          isLevel3: dept.deptLevel === 'L3',
+          isLevel4: dept.deptLevel === 'L4',
+          deptCode: dept.deptCode,
+        }
+        rows.push(row)
+
+        // 如果有子部门，递归处理
+        if (dept.children && dept.children.length > 0) {
+          dept.children.forEach((child: any) => processDept(child))
+        }
+      }
+
+      if (res.departmentList) {
+        res.departmentList.forEach((dept) => processDept(dept))
+      }
+
+      cadrePositionOverviewData.value = rows
+    }
+  } catch (error) {
+    console.error('获取AI干部岗位概述数据失败:', error)
+  }
+}
+
+const cadrePositionOverviewRowStyle = ({ row }: { row: CadrePositionOverviewRow }) => {
+  if (row.isLevel3) {
+    return { fontWeight: 'bold', fontSize: '15px', backgroundColor: '#fafafa' }
+  }
+  return {}
+}
+
 const loadCadreData = async () => {
   loadingCadre.value = true
   try {
     const deptCode = resolveDepartmentCode(filters.value.departmentPath)
-    cadreData.value = await fetchCadreData(deptCode)
+    await Promise.all([
+      fetchCadreData(deptCode).then((res) => {
+        cadreData.value = res
+      }),
+      loadCadrePositionOverview(),
+    ])
   } catch (error) {
     console.error('加载干部数据失败:', error)
   } finally {
@@ -1898,6 +1952,7 @@ onActivated(() => {
                 size="small"
                 style="width: 100%"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
+                :row-style="cadrePositionOverviewRowStyle"
               >
                 <el-table-column prop="department" label="部门" width="201" align="center" header-align="center" />
                 <el-table-column prop="totalPositionCount" label="干部岗位总数" min-width="120" align="center" header-align="center">

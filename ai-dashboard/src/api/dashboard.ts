@@ -5,6 +5,7 @@ import type {
   CadreCertificationSummaryRow,
   CadreMaturityJobCategoryCertStatisticsResponse,
   CadreMaturityJobCategoryQualifiedStatisticsResponse,
+  CadrePositionOverviewResponseVO,
   ExpertAiCertStatisticsResponse,
   ExpertAiQualifiedStatisticsResponse,
   CertificationAuditRecord,
@@ -1484,6 +1485,26 @@ export const fetchPlTmCertStatistics = async (): Promise<PlTmCertStatisticsRespo
     return null
   } catch (error) {
     console.error('获取PL/TM任职与认证数据异常：', error)
+    return null
+  }
+}
+
+/**
+ * 获取AI干部岗位概述统计数据
+ * @returns AI干部岗位概述统计数据
+ */
+export const fetchCadrePositionOverview = async (): Promise<CadrePositionOverviewResponseVO | null> => {
+  try {
+    const response = await get<Result<CadrePositionOverviewResponseVO>>(
+      '/cadre-cert-statistics/cadre-position-overview'
+    )
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取AI干部岗位概述数据失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取AI干部岗位概述数据异常：', error)
     return null
   }
 }

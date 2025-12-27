@@ -525,6 +525,10 @@ export interface CadrePositionOverviewRow {
   l2NonSoftwareCount: number // L2干部岗位数量-非软件类
   l3SoftwareCount: number // L3干部岗位数量-软件类
   l3NonSoftwareCount: number // L3干部岗位数量-非软件类
+  // 辅助字段
+  isLevel3?: boolean
+  isLevel4?: boolean
+  deptCode?: string
 }
 
 export interface CadreAiAppointmentCertRow {
@@ -793,3 +797,34 @@ export interface CoursePlanningInfo {
   inClassTest?: string // 随堂测试
 }
 
+// AI干部岗位概述表相关接口
+export interface L2L3StatisticsVO {
+  totalCount: number
+  softwareCount: number
+  nonSoftwareCount: number
+}
+
+export interface DepartmentPositionStatisticsVO {
+  deptCode: string
+  deptName: string
+  deptLevel: string
+  totalPositionCount: number
+  l2L3PositionCount: number
+  l2L3PositionRatio: number
+  l2Statistics: L2L3StatisticsVO
+  l3Statistics: L2L3StatisticsVO
+  children?: DepartmentPositionStatisticsVO[]
+}
+
+export interface SummaryStatisticsVO {
+  totalPositionCount: number
+  l2L3PositionCount: number
+  l2L3PositionRatio: number
+  l2Statistics: L2L3StatisticsVO
+  l3Statistics: L2L3StatisticsVO
+}
+
+export interface CadrePositionOverviewResponseVO {
+  summary: SummaryStatisticsVO
+  departmentList: DepartmentPositionStatisticsVO[]
+}
