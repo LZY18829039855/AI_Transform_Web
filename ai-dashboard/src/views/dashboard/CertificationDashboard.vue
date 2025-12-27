@@ -12,6 +12,7 @@ import {
   fetchDashboardFilters,
   fetchPlTmCertStatistics,
   fetchCadrePositionOverview,
+  fetchCadreAiCertificationOverview,
 } from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -36,6 +37,7 @@ import type {
   EntryLevelManagerPmCertRow,
   CadrePositionOverviewRow,
   CadreAiAppointmentCertRow,
+  CadreAiOverviewStatisticsVO,
 } from '@/types/dashboard'
 
 const router = useRouter()
@@ -552,6 +554,61 @@ const cadrePositionOverviewRowStyle = ({ row }: { row: CadrePositionOverviewRow 
   return {}
 }
 
+const loadCadreAiAppointmentCertData = async () => {
+  try {
+    const res = await fetchCadreAiCertificationOverview()
+    if (res) {
+      const rows: CadreAiAppointmentCertRow[] = []
+
+      // 递归处理部门列表
+      const processDept = (dept: CadreAiOverviewStatisticsVO) => {
+        const row: CadreAiAppointmentCertRow = {
+          department: dept.deptName,
+          totalCadreCount: dept.totalCadreCount,
+          l2L3Count: dept.l2L3Count,
+          softwareL2Count: dept.softwareL2Count,
+          softwareL3Count: dept.softwareL3Count,
+          nonSoftwareL2L3Count: dept.nonSoftwareL2L3Count,
+          meetRequirementL2L3Count: dept.meetRequirementL2L3Count,
+          meetRequirementL2L3Rate: dept.meetRequirementL2L3Rate,
+          isLevel3: dept.deptLevel === 'L3',
+          isLevel4: dept.deptLevel === 'L4',
+          deptCode: dept.deptCode,
+        }
+        rows.push(row)
+
+        if (dept.children && dept.children.length > 0) {
+          dept.children.forEach((child) => processDept(child))
+        }
+      }
+
+      if (res.departmentList) {
+        res.departmentList.forEach((dept) => processDept(dept))
+      }
+
+      // 添加总计行
+      if (res.summary) {
+        rows.push({
+          department: '云核总计',
+          totalCadreCount: res.summary.totalCadreCount,
+          l2L3Count: res.summary.l2L3Count,
+          softwareL2Count: res.summary.softwareL2Count,
+          softwareL3Count: res.summary.softwareL3Count,
+          nonSoftwareL2L3Count: res.summary.nonSoftwareL2L3Count,
+          meetRequirementL2L3Count: res.summary.meetRequirementL2L3Count,
+          meetRequirementL2L3Rate: res.summary.meetRequirementL2L3Rate,
+          isLevel3: true,
+          isLevel4: false,
+        })
+      }
+
+      cadreAiAppointmentCertData.value = rows
+    }
+  } catch (error) {
+    console.error('获取干部AI任职认证表数据失败:', error)
+  }
+}
+
 const loadCadreData = async () => {
   loadingCadre.value = true
   try {
@@ -561,6 +618,7 @@ const loadCadreData = async () => {
         cadreData.value = res
       }),
       loadCadrePositionOverview(),
+      loadCadreAiAppointmentCertData(),
     ])
   } catch (error) {
     console.error('加载干部数据失败:', error)

@@ -540,6 +540,10 @@ export interface CadreAiAppointmentCertRow {
   nonSoftwareL2L3Count: number // 非软件L2/L3人数
   meetRequirementL2L3Count: number // 满足岗位AI要求L2/L3干部人数
   meetRequirementL2L3Rate: number // 满足岗位AI要求L2/L3干部占比
+  // 辅助字段
+  isLevel3?: boolean
+  isLevel4?: boolean
+  deptCode?: string
 }
 
 export type SchoolRole = RoleValue
@@ -827,4 +831,24 @@ export interface SummaryStatisticsVO {
 export interface CadrePositionOverviewResponseVO {
   summary: SummaryStatisticsVO
   departmentList: DepartmentPositionStatisticsVO[]
+}
+
+// 干部AI任职认证表相关接口
+export interface CadreAiOverviewStatisticsVO {
+  deptCode: string
+  deptName: string
+  deptLevel?: string
+  totalCadreCount: number
+  l2L3Count: number
+  softwareL2Count: number
+  softwareL3Count: number
+  nonSoftwareL2L3Count: number
+  meetRequirementL2L3Count: number
+  meetRequirementL2L3Rate: number
+  children?: CadreAiOverviewStatisticsVO[]
+}
+
+export interface CadreAiCertificationOverviewResponseVO {
+  summary: CadreAiOverviewStatisticsVO
+  departmentList: CadreAiOverviewStatisticsVO[]
 }
