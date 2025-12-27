@@ -1517,7 +1517,7 @@ export const fetchCadrePositionOverview = async (): Promise<CadrePositionOvervie
 export const fetchCadreAiCertificationOverview = async (): Promise<CadreAiCertificationOverviewResponseVO | null> => {
   try {
     const response = await get<Result<CadreAiCertificationOverviewResponseVO>>(
-      '/cadre-ai-certification-overview'
+      '/cadre-cert-statistics/cadre-ai-certification-overview'
     )
     if (response.code === 200) {
       return response.data
