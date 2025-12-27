@@ -522,6 +522,22 @@ const loadCadrePositionOverview = async () => {
         res.departmentList.forEach((dept) => processDept(dept))
       }
 
+      // 添加总计行
+      if (res.summary) {
+        rows.push({
+          department: '云核总计',
+          totalPositionCount: res.summary.totalPositionCount,
+          l2L3TotalCount: res.summary.l2L3PositionCount,
+          l2L3Rate: res.summary.l2L3PositionRatio,
+          l2SoftwareCount: res.summary.l2Statistics?.softwareCount || 0,
+          l2NonSoftwareCount: res.summary.l2Statistics?.nonSoftwareCount || 0,
+          l3SoftwareCount: res.summary.l3Statistics?.softwareCount || 0,
+          l3NonSoftwareCount: res.summary.l3Statistics?.nonSoftwareCount || 0,
+          isLevel3: true, // 使用相同样式
+          isLevel4: false,
+        })
+      }
+
       cadrePositionOverviewData.value = rows
     }
   } catch (error) {
