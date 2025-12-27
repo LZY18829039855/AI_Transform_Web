@@ -538,8 +538,8 @@ export interface CadreAiAppointmentCertRow {
   softwareL2Count: number // 软件L2人数
   softwareL3Count: number // 软件L3人数
   nonSoftwareL2L3Count: number // 非软件L2/L3人数
-  meetRequirementL2L3Count: number // 满足岗位AI要求L2/L3干部人数
-  meetRequirementL2L3Rate: number // 满足岗位AI要求L2/L3干部占比
+  qualifiedL2L3Count: number // 满足岗位AI要求L2/L3干部人数
+  qualifiedL2L3Ratio: number // 满足岗位AI要求L2/L3干部占比
   // 辅助字段
   isLevel3?: boolean
   isLevel4?: boolean
@@ -843,8 +843,8 @@ export interface CadreAiOverviewStatisticsVO {
   softwareL2Count: number
   softwareL3Count: number
   nonSoftwareL2L3Count: number
-  meetRequirementL2L3Count: number
-  meetRequirementL2L3Rate: number
+  qualifiedL2L3Count: number
+  qualifiedL2L3Ratio: number
   children?: CadreAiOverviewStatisticsVO[]
 }
 

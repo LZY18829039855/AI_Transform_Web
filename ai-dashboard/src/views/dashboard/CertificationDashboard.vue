@@ -554,6 +554,13 @@ const cadrePositionOverviewRowStyle = ({ row }: { row: CadrePositionOverviewRow 
   return {}
 }
 
+const cadreAiAppointmentCertRowStyle = ({ row }: { row: CadreAiAppointmentCertRow }) => {
+  if (row.isLevel3) {
+    return { fontWeight: 'bold', fontSize: '15px', backgroundColor: '#fafafa' }
+  }
+  return {}
+}
+
 const loadCadreAiAppointmentCertData = async () => {
   try {
     const res = await fetchCadreAiCertificationOverview()
@@ -569,8 +576,8 @@ const loadCadreAiAppointmentCertData = async () => {
           softwareL2Count: dept.softwareL2Count,
           softwareL3Count: dept.softwareL3Count,
           nonSoftwareL2L3Count: dept.nonSoftwareL2L3Count,
-          meetRequirementL2L3Count: dept.meetRequirementL2L3Count,
-          meetRequirementL2L3Rate: dept.meetRequirementL2L3Rate,
+          qualifiedL2L3Count: dept.qualifiedL2L3Count,
+          qualifiedL2L3Ratio: dept.qualifiedL2L3Ratio,
           isLevel3: dept.deptLevel === 'L3',
           isLevel4: dept.deptLevel === 'L4',
           deptCode: dept.deptCode,
@@ -595,8 +602,8 @@ const loadCadreAiAppointmentCertData = async () => {
           softwareL2Count: res.summary.softwareL2Count,
           softwareL3Count: res.summary.softwareL3Count,
           nonSoftwareL2L3Count: res.summary.nonSoftwareL2L3Count,
-          meetRequirementL2L3Count: res.summary.meetRequirementL2L3Count,
-          meetRequirementL2L3Rate: res.summary.meetRequirementL2L3Rate,
+          qualifiedL2L3Count: res.summary.qualifiedL2L3Count,
+          qualifiedL2L3Ratio: res.summary.qualifiedL2L3Ratio,
           isLevel3: true,
           isLevel4: false,
         })
@@ -2090,6 +2097,7 @@ onActivated(() => {
                 size="small"
                 style="width: 100%"
                 :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4', padding: '8px 4px' }"
+                :row-style="cadreAiAppointmentCertRowStyle"
               >
                 <el-table-column prop="department" label="部门" width="201" align="center" header-align="center" />
                 <el-table-column prop="totalCadreCount" label="干部总人数" min-width="120" align="center" header-align="center">
@@ -2120,14 +2128,14 @@ onActivated(() => {
                     </template>
                   </el-table-column>
                 </el-table-column>
-                <el-table-column prop="meetRequirementL2L3Count" label="满足岗位AI要求L2/L3干部人数" min-width="240" align="center" header-align="center">
+                <el-table-column prop="qualifiedL2L3Count" label="满足岗位AI要求L2/L3干部人数" min-width="240" align="center" header-align="center">
                   <template #default="{ row }">
-                    {{ formatNumber(row.meetRequirementL2L3Count) }}
+                    {{ formatNumber(row.qualifiedL2L3Count) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="meetRequirementL2L3Rate" label="满足岗位AI要求L2/L3干部占比" min-width="240" align="center" header-align="center">
+                <el-table-column prop="qualifiedL2L3Ratio" label="满足岗位AI要求L2/L3干部占比" min-width="240" align="center" header-align="center">
                   <template #default="{ row }">
-                    {{ formatPercent(row.meetRequirementL2L3Rate) }}
+                    {{ formatPercent(row.qualifiedL2L3Ratio) }}
                   </template>
                 </el-table-column>
               </el-table>
