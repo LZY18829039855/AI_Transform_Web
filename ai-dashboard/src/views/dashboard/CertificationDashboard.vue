@@ -1506,11 +1506,13 @@ const formatPercent = (value: number) => {
 
 // 计算表格总计行数据
 // totalRate: 可选的正确总计占比（从totalStatistics获取）
-const calculateTableTotal = (points: StaffChartPoint[], totalRate?: number) => {
+// totalCount: 可选的正确总计人数（从totalStatistics获取）
+const calculateTableTotal = (points: StaffChartPoint[], totalRate?: number, totalCount?: number) => {
   if (!points || points.length === 0) {
-    return { label: '总计', count: 0, rate: totalRate ?? 0 }
+    return { label: '总计', count: totalCount ?? 0, rate: totalRate ?? 0 }
   }
-  const totalCount = points.reduce((sum, point) => sum + (point.count || 0), 0)
+  // 如果提供了正确的总计人数，使用它；否则从图表数据累加
+  const finalCount = totalCount !== undefined ? totalCount : points.reduce((sum, point) => sum + (point.count || 0), 0)
   // 如果提供了正确的总计占比，使用它；否则使用平均值作为后备
   const finalRate = totalRate !== undefined ? totalRate : (
     points.length > 0 
@@ -1519,7 +1521,7 @@ const calculateTableTotal = (points: StaffChartPoint[], totalRate?: number) => {
   )
   return {
     label: '总计',
-    count: totalCount,
+    count: finalCount,
     rate: finalRate,
   }
 }
@@ -1573,10 +1575,12 @@ const calculateMergedTableTotal = (
   appointmentPoints: StaffChartPoint[],
   certificationPoints: StaffChartPoint[],
   appointmentTotalRate?: number,
-  certificationTotalRate?: number
+  certificationTotalRate?: number,
+  appointmentTotalCount?: number,
+  certificationTotalCount?: number
 ): MergedTableRow => {
-  const appointmentTotal = calculateTableTotal(appointmentPoints, appointmentTotalRate)
-  const certificationTotal = calculateTableTotal(certificationPoints, certificationTotalRate)
+  const appointmentTotal = calculateTableTotal(appointmentPoints, appointmentTotalRate, appointmentTotalCount)
+  const certificationTotal = calculateTableTotal(certificationPoints, certificationTotalRate, certificationTotalCount)
   return {
     label: '总计',
     appointmentCount: appointmentTotal.count,
@@ -2656,7 +2660,9 @@ onActivated(() => {
                 departmentChartPoints,
                 departmentCertificationChartPoints,
                 hasDepartmentStats ? resolveQualifiedRate(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined,
-                hasDepartmentStats ? resolveCertificationRate(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined
+                hasDepartmentStats ? resolveCertificationRate(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined,
+                hasDepartmentStats ? resolveQualifiedCount(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined,
+                hasDepartmentStats ? resolveCertificationCount(departmentStats?.employeeCertStatistics?.totalStatistics) : undefined
               )]"
               border
               stripe
@@ -2814,7 +2820,9 @@ onActivated(() => {
                 jobCategoryAppointmentPoints,
                 jobCategoryCertificationPoints,
                 hasJobCategoryStats ? resolveJobCategoryQualifiedRate(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined,
-                hasJobCategoryStats ? resolveJobCategoryCertificationRate(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined
+                hasJobCategoryStats ? resolveJobCategoryCertificationRate(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined,
+                hasJobCategoryStats ? resolveJobCategoryQualifiedCount(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined,
+                hasJobCategoryStats ? resolveJobCategoryCertificationCount(jobCategoryStats?.competenceCategoryCertStatistics?.totalStatistics) : undefined
               )]"
               border
               stripe
