@@ -2048,7 +2048,7 @@ onActivated(() => {
         </div>
         </el-col>
         <!-- 4.1 AI干部岗位概述表 -->
-        <el-col :xs="24" :lg="24">
+        <el-col :xs="24" :lg="24" v-if="false">
           <div class="summary-table-container">
             <div class="summary-table-header">
               <h3>AI干部岗位概述表</h3>
@@ -2112,7 +2112,7 @@ onActivated(() => {
           </div>
         </el-col>
         <!-- 4.2 干部AI任职认证表 -->
-        <el-col :xs="24" :lg="24">
+        <el-col :xs="24" :lg="24" v-if="false">
           <div class="summary-table-container">
             <div class="summary-table-header">
               <h3>干部AI任职认证表</h3>
@@ -2173,7 +2173,7 @@ onActivated(() => {
           </div>
         </el-col>
         <!-- 5. 基层主管和PM AI任职认证数据 -->
-        <el-col :xs="24" :lg="24">
+        <el-col :xs="24" :lg="24" v-if="false">
           <div class="summary-table-container">
             <div class="summary-table-header">
               <h3>基层主管和PM AI任职认证</h3>
