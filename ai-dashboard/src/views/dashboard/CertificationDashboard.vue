@@ -237,6 +237,16 @@ const getDepartmentOrder = (deptCode?: string): number => {
   const index = departmentOrder.indexOf(deptCode)
   return index >= 0 ? index : departmentOrder.length // 未定义的部门排在最后
 }
+
+// 获取当前选择的部门代码
+const currentDeptCode = computed(() => resolveDepartmentCode(filters.value.departmentPath))
+
+// 判断是否需要过滤部门数据：当选择的部门ID是"0"或"031562"时，需要过滤
+const shouldFilterDepartments = computed(() => {
+  const deptCode = currentDeptCode.value
+  return deptCode === '0' || deptCode === '031562'
+})
+
 const departmentStatsPoints = computed<StaffChartPoint[]>(() => {
   const mappedData = departmentStatistics.value
     .map((item) => ({
@@ -245,17 +255,25 @@ const departmentStatsPoints = computed<StaffChartPoint[]>(() => {
       rate: resolveQualifiedRate(item),
       deptCode: item.deptCode,
     }))
-    .filter((item) => {
-      // 只保留指定顺序中的部门
-      return item.deptCode && departmentOrder.includes(item.deptCode)
-    })
-    .sort((a, b) => {
-      // 按照指定的部门顺序排序
+  
+  // 根据当前选择的部门ID决定是否过滤
+  const filteredData = shouldFilterDepartments.value
+    ? mappedData.filter((item) => {
+        // 当选择的部门ID是"0"或"031562"时，只保留指定顺序中的部门
+        return item.deptCode && departmentOrder.includes(item.deptCode)
+      })
+    : mappedData // 否则直接显示后端返回的所有数据
+  
+  // 如果需要过滤，按照指定的部门顺序排序；否则保持后端返回的顺序
+  if (shouldFilterDepartments.value) {
+    return filteredData.sort((a, b) => {
       const orderA = getDepartmentOrder(a.deptCode)
       const orderB = getDepartmentOrder(b.deptCode)
       return orderA - orderB
     })
-  return mappedData
+  }
+  
+  return filteredData
 })
 const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() => {
   const mappedData = departmentStatistics.value
@@ -265,17 +283,25 @@ const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() => {
       rate: resolveCertificationRate(item),
       deptCode: item.deptCode,
     }))
-    .filter((item) => {
-      // 只保留指定顺序中的部门
-      return item.deptCode && departmentOrder.includes(item.deptCode)
-    })
-    .sort((a, b) => {
-      // 按照指定的部门顺序排序
+  
+  // 根据当前选择的部门ID决定是否过滤
+  const filteredData = shouldFilterDepartments.value
+    ? mappedData.filter((item) => {
+        // 当选择的部门ID是"0"或"031562"时，只保留指定顺序中的部门
+        return item.deptCode && departmentOrder.includes(item.deptCode)
+      })
+    : mappedData // 否则直接显示后端返回的所有数据
+  
+  // 如果需要过滤，按照指定的部门顺序排序；否则保持后端返回的顺序
+  if (shouldFilterDepartments.value) {
+    return filteredData.sort((a, b) => {
       const orderA = getDepartmentOrder(a.deptCode)
       const orderB = getDepartmentOrder(b.deptCode)
       return orderA - orderB
     })
-  return mappedData
+  }
+  
+  return filteredData
 })
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
 const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
