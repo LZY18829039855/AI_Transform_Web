@@ -1326,15 +1326,6 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
 
 // 处理部门表格点击事件（任职人数或认证人数）
 const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointment' | 'certification') => {
-  // 如果是总计行，不处理点击
-  if (row.label === '总计') {
-    return
-  }
-  
-  if (!row.deptCode) {
-    return
-  }
-  
   // 获取当前的人员类型（personType）
   // personType: 0-全员，1-干部，2-专家
   const role = filters.value.role ?? '0'
@@ -1348,32 +1339,47 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
     personType = '0'
   }
   
-  // 构建部门路径：如果deptCode是'0'，则使用当前筛选的部门路径；否则需要构建包含该deptCode的路径
+  // 如果是总计行，使用当前筛选的部门或根部门
+  let deptCode: string
   let departmentPath: string[] = []
-  if (row.deptCode === '0') {
-    // 如果是'0'，使用当前筛选的部门路径
+  
+  if (row.label === '总计') {
+    // 总计行：使用当前筛选的部门路径，如果没有则使用根部门 '0'
+    deptCode = resolveDepartmentCode(filters.value.departmentPath) || '0'
     departmentPath = filters.value.departmentPath || []
   } else {
-    // 否则，构建包含该deptCode的路径
-    const currentPath = filters.value.departmentPath || []
-    if (currentPath.length > 0) {
-      // 检查deptCode是否已经在路径中
-      if (currentPath.includes(row.deptCode)) {
-        departmentPath = currentPath
-      } else {
-        // 添加新的部门代码到路径
-        departmentPath = [...currentPath, row.deptCode]
-      }
+    // 非总计行：使用行数据中的 deptCode
+    if (!row.deptCode) {
+      return
+    }
+    deptCode = row.deptCode
+    
+    // 构建部门路径：如果deptCode是'0'，则使用当前筛选的部门路径；否则需要构建包含该deptCode的路径
+    if (row.deptCode === '0') {
+      // 如果是'0'，使用当前筛选的部门路径
+      departmentPath = filters.value.departmentPath || []
     } else {
-      // 如果没有当前路径，构建完整路径
-      // 三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
-      departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', row.deptCode]
+      // 否则，构建包含该deptCode的路径
+      const currentPath = filters.value.departmentPath || []
+      if (currentPath.length > 0) {
+        // 检查deptCode是否已经在路径中
+        if (currentPath.includes(row.deptCode)) {
+          departmentPath = currentPath
+        } else {
+          // 添加新的部门代码到路径
+          departmentPath = [...currentPath, row.deptCode]
+        }
+      } else {
+        // 如果没有当前路径，构建完整路径
+        // 三级部门默认在 ['ICT_BG', 'CLOUD_CORE_NETWORK'] 下
+        departmentPath = ['ICT_BG', 'CLOUD_CORE_NETWORK', row.deptCode]
+      }
     }
   }
   
   // 构建查询参数
   const queryParams: Record<string, string | undefined> = {
-    deptCode: row.deptCode,
+    deptCode: deptCode,
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
     role: role, // 传递角色视图
@@ -1471,11 +1477,6 @@ const handleJobCategoryCertificationBarClick = (data: { label: string; deptCode?
 
 // 处理职位类表格点击事件（任职人数或认证人数）
 const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointment' | 'certification') => {
-  // 如果是总计行，不处理点击
-  if (row.label === '总计') {
-    return
-  }
-  
   // 获取当前筛选的部门ID
   const deptCode = resolveDepartmentCode(filters.value.departmentPath)
   
@@ -1497,9 +1498,14 @@ const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointme
     deptCode: deptCode,
     personType: personType,
     queryType: '2', // 默认为2（基数人数）
-    jobCategory: row.label, // 职位类信息
     role: role, // 传递角色视图
     // 岗位成熟度传空，不传递此参数
+  }
+  
+  // 如果是总计行，不传递 jobCategory 参数（表示查询所有职位类）
+  // 如果不是总计行，传递职位类信息
+  if (row.label !== '总计') {
+    queryParams.jobCategory = row.label
   }
   
   // 如果部门路径存在，添加到查询参数中
@@ -2701,7 +2707,6 @@ onActivated(() => {
               <el-table-column prop="appointmentCount" :label="departmentCountLabel" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
-                    v-if="row.label !== '总计'"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -2709,7 +2714,6 @@ onActivated(() => {
                   >
                     {{ formatNumber(row.appointmentCount) }}
                   </el-link>
-                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="AI任职占比" min-width="120" align="center" header-align="center">
@@ -2720,7 +2724,6 @@ onActivated(() => {
               <el-table-column prop="certificationCount" label="AI认证总人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
-                    v-if="row.label !== '总计'"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -2728,7 +2731,6 @@ onActivated(() => {
                   >
                     {{ formatNumber(row.certificationCount) }}
                   </el-link>
-                  <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="certificationRate" label="AI认证占比" min-width="120" align="center" header-align="center">
@@ -2861,7 +2863,6 @@ onActivated(() => {
               <el-table-column prop="appointmentCount" label="AI任职人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
-                    v-if="row.label !== '总计'"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -2869,7 +2870,6 @@ onActivated(() => {
                   >
                     {{ formatNumber(row.appointmentCount) }}
                   </el-link>
-                  <span v-else>{{ formatNumber(row.appointmentCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="appointmentRate" label="AI任职占比" min-width="120" align="center" header-align="center">
@@ -2880,7 +2880,6 @@ onActivated(() => {
               <el-table-column prop="certificationCount" label="AI认证人数" min-width="140" align="center" header-align="center">
                 <template #default="{ row }">
                   <el-link
-                    v-if="row.label !== '总计'"
                     type="primary"
                     :underline="false"
                     class="clickable-cell"
@@ -2888,7 +2887,6 @@ onActivated(() => {
                   >
                     {{ formatNumber(row.certificationCount) }}
                   </el-link>
-                  <span v-else>{{ formatNumber(row.certificationCount) }}</span>
                 </template>
               </el-table-column>
               <el-table-column prop="certificationRate" label="AI认证占比" min-width="120" align="center" header-align="center">
