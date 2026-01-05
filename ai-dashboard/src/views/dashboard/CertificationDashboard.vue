@@ -380,12 +380,10 @@ const jobCategoryAppointmentPoints = computed<StaffChartPoint[]>(() => {
   return points
     .filter((item) => item.rate > 0)
     .sort((a, b) => {
-      // 首先按占比从高到低排序
-      if (b.rate !== a.rate) {
-        return b.rate - a.rate
-      }
-      // 占比一致时，按人数从高到低排序
-      return b.count - a.count
+      // 按照指定的职位类顺序排序
+      const orderA = getJobCategoryOrder(a.label)
+      const orderB = getJobCategoryOrder(b.label)
+      return orderA - orderB
     })
 })
 
@@ -395,12 +393,10 @@ const jobCategoryCertificationPoints = computed<StaffChartPoint[]>(() => {
   return points
     .filter((item) => item.rate > 0)
     .sort((a, b) => {
-      // 首先按占比从高到低排序
-      if (b.rate !== a.rate) {
-        return b.rate - a.rate
-      }
-      // 占比一致时，按人数从高到低排序
-      return b.count - a.count
+      // 按照指定的职位类顺序排序
+      const orderA = getJobCategoryOrder(a.label)
+      const orderB = getJobCategoryOrder(b.label)
+      return orderA - orderB
     })
 })
 

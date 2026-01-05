@@ -712,8 +712,16 @@ const consolidateJobCategories = (
     return stats ?? null
   }
 
-  // 需要保留的职位类
+  // 需要保留的职位类（按照指定顺序）
   const allowedCategories = ['软件类', '研究类', '测试类', '系统类', '产品开发项目管理类']
+  // 职位类排序顺序
+  const jobCategoryOrder = ['软件类', '研究类', '测试类', '系统类', '产品开发项目管理类', '其他类']
+  
+  // 获取职位类的排序索引
+  const getJobCategoryOrder = (category: string): number => {
+    const index = jobCategoryOrder.indexOf(category)
+    return index >= 0 ? index : jobCategoryOrder.length // 未定义的职位类排在最后
+  }
   
   // 用于汇总其他类的数据
   let otherQualifiedCount = 0
@@ -753,6 +761,13 @@ const consolidateJobCategories = (
       certRate: otherCertRate,
     })
   }
+  
+  // 按照指定顺序排序职位类数据
+  allowedCategoryStats.sort((a, b) => {
+    const orderA = getJobCategoryOrder(a.competenceCategory)
+    const orderB = getJobCategoryOrder(b.competenceCategory)
+    return orderA - orderB
+  })
   
   return {
     deptCode: stats.deptCode,
