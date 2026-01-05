@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ArrowLeft, QuestionFilled, Download } from '@element-plus/icons-vue'
+import { ArrowLeft, QuestionFilled, Download, ArrowDown, ArrowUp, Search, Close } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
@@ -79,6 +79,17 @@ const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filter
 
 // 待设置的部门路径（用于从部门/职位类柱状图跳转时）
 const pendingDepartmentPath = ref<string[] | null>(null)
+
+// 筛选框状态管理
+const filterInputRef = ref()
+const keywordInputRef = ref()
+const filterWrapperRef = ref()
+const showFieldDropdown = ref(false) // 是否显示字段选择下拉框（第一阶段）
+const showKeywordDropdown = ref(false) // 是否显示关键字输入下拉框（第二阶段）
+const selectedField = ref<'name' | 'employeeId' | null>(null) // 选中的字段类型
+const keywordInput = ref('') // 关键字输入值
+const filterInputValue = ref('') // 筛选值（用于显示标签）
+const isFilterBoxUpdating = ref(false) // 标记筛选框是否正在更新，避免循环更新
 
 // 将EmployeeDetailVO转换为AppointmentAuditRecord
 const convertEmployeeDetailToAppointmentRecord = (employee: EmployeeDetailVO): AppointmentAuditRecord => {
@@ -583,6 +594,12 @@ const resetFilters = () => {
     name: undefined,
     employeeId: undefined,
   }
+  // 重置筛选框状态
+  selectedField.value = null
+  filterInputValue.value = ''
+  keywordInput.value = ''
+  showFieldDropdown.value = false
+  showKeywordDropdown.value = false
 }
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
@@ -660,6 +677,129 @@ const handleTabClick = async () => {
     })
   })
 }
+
+// 筛选框相关函数
+// 点击输入框时，显示字段选择下拉框
+const handleFilterInputFocus = (event: Event) => {
+  // 阻止事件冒泡，避免触发handleClickOutside
+  event.stopPropagation()
+  if (!selectedField.value) {
+    // 如果还没有选择字段，显示字段选择下拉框
+    showFieldDropdown.value = true
+    showKeywordDropdown.value = false
+  } else {
+    // 如果已经选择了字段，显示关键字输入下拉框
+    showFieldDropdown.value = false
+    showKeywordDropdown.value = true
+    keywordInput.value = filters.value[selectedField.value] || ''
+    // 自动聚焦到关键字输入框
+    nextTick(() => {
+      if (keywordInputRef.value && keywordInputRef.value.$el) {
+        const inputEl = keywordInputRef.value.$el.querySelector('input')
+        if (inputEl) {
+          inputEl.focus()
+        }
+      }
+    })
+  }
+}
+
+// 选择字段类型（姓名或工号）
+const handleFieldSelect = (field: 'name' | 'employeeId') => {
+  selectedField.value = field
+  const fieldLabel = field === 'name' ? '姓名' : '工号'
+  filterInputValue.value = fieldLabel
+  showFieldDropdown.value = false
+  // 显示关键字输入下拉框
+  keywordInput.value = filters.value[field] || ''
+  showKeywordDropdown.value = true
+  // 自动聚焦到关键字输入框
+  nextTick(() => {
+    if (keywordInputRef.value && keywordInputRef.value.$el) {
+      const inputEl = keywordInputRef.value.$el.querySelector('input')
+      if (inputEl) {
+        inputEl.focus()
+      }
+    }
+  })
+}
+
+// 确认关键字筛选
+const handleKeywordConfirm = () => {
+  if (!selectedField.value) return
+  
+  const keyword = keywordInput.value.trim()
+  isFilterBoxUpdating.value = true // 标记正在更新
+  if (keyword) {
+    // 更新筛选条件
+    if (selectedField.value === 'name') {
+      filters.value.name = keyword
+      filters.value.employeeId = undefined
+    } else {
+      filters.value.employeeId = keyword
+      filters.value.name = undefined
+    }
+    filterInputValue.value = `${selectedField.value === 'name' ? '姓名' : '工号'}: ${keyword}`
+  } else {
+    // 如果关键字为空，清除筛选
+    filters.value.name = undefined
+    filters.value.employeeId = undefined
+    filterInputValue.value = ''
+    selectedField.value = null
+  }
+  showKeywordDropdown.value = false
+  nextTick(() => {
+    isFilterBoxUpdating.value = false
+  })
+}
+
+// 取消关键字筛选
+const handleKeywordCancel = () => {
+  keywordInput.value = ''
+  showKeywordDropdown.value = false
+}
+
+// 清除筛选
+const handleFilterClear = () => {
+  isFilterBoxUpdating.value = true // 标记正在更新
+  selectedField.value = null
+  filterInputValue.value = ''
+  keywordInput.value = ''
+  filters.value.name = undefined
+  filters.value.employeeId = undefined
+  showFieldDropdown.value = false
+  showKeywordDropdown.value = false
+  nextTick(() => {
+    isFilterBoxUpdating.value = false
+  })
+}
+
+// 监听 filters 的变化，同步筛选框显示（当表单输入框的值变化时）
+watch(
+  () => [filters.value.name, filters.value.employeeId],
+  ([name, employeeId]) => {
+    // 如果筛选框正在更新，不处理（避免循环）
+    if (isFilterBoxUpdating.value) {
+      return
+    }
+    
+    // 根据 filters 的值更新筛选框显示
+    if (name && name.trim()) {
+      filterInputValue.value = `姓名: ${name.trim()}`
+      selectedField.value = 'name'
+    } else if (employeeId && employeeId.trim()) {
+      filterInputValue.value = `工号: ${employeeId.trim()}`
+      selectedField.value = 'employeeId'
+    } else {
+      // 如果两个都为空，清除筛选框显示
+      if (filterInputValue.value) {
+        filterInputValue.value = ''
+        selectedField.value = null
+      }
+    }
+  },
+  { immediate: true }
+)
 
 
 // 过滤认证记录（根据姓名和工号）
@@ -919,7 +1059,18 @@ watch(
   { deep: true, immediate: true }
 )
 
+// 点击外部关闭下拉框
+const handleClickOutside = (event: MouseEvent) => {
+  if (filterWrapperRef.value && !filterWrapperRef.value.contains(event.target as Node)) {
+    showFieldDropdown.value = false
+    showKeywordDropdown.value = false
+  }
+}
+
 onMounted(() => {
+  // 添加点击外部关闭下拉框的事件监听
+  document.addEventListener('click', handleClickOutside)
+  
   initDepartmentTree()
   
   // 从路由参数中更新filters（确保路由参数已准备好）
@@ -970,6 +1121,9 @@ onMounted(() => {
       // 如果没有source参数，默认显示认证tab
       activeTab.value = 'certification'
     }
+  } else {
+    // 默认显示认证tab
+    activeTab.value = 'certification'
   }
   
   fetchDetail()
@@ -1007,7 +1161,8 @@ onActivated(() => {
 })
 
 onBeforeUnmount(() => {
-  // 清理工作（如果需要）
+  // 移除点击外部关闭下拉框的事件监听
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -1147,9 +1302,84 @@ onBeforeUnmount(() => {
         <template #header>
           <div class="card-header">
             <span class="card-title">任职认证盘点</span>
-            <el-button type="primary" :icon="Download" @click="handleExport" :disabled="!detailData || (filteredAppointmentRecords.length === 0 && filteredCertificationRecords.length === 0)">
-              导出数据
-            </el-button>
+            <div class="header-actions">
+              <div class="filter-area">
+                <div class="filter-input-wrapper" ref="filterWrapperRef">
+                  <div class="filter-container">
+                    <div class="filter-icon-wrapper">
+                      <el-icon class="filter-icon">
+                        <Search />
+                      </el-icon>
+                    </div>
+                    <div class="filter-input-area">
+                      <div class="filter-tags" v-if="filterInputValue">
+                        <template v-if="filterInputValue.includes(':')">
+                          <span class="filter-tag">
+                            <span class="filter-tag-field">{{ filterInputValue.split(':')[0] }}</span>
+                            <span class="filter-tag-separator">:</span>
+                            <span class="filter-tag-value">{{ filterInputValue.split(':')[1].trim() }}</span>
+                          </span>
+                        </template>
+                        <span v-else class="filter-tag">
+                          <span class="filter-tag-field">{{ filterInputValue }}</span>
+                        </span>
+                      </div>
+                      <div class="mainInput">
+                        <input
+                          ref="filterInputRef"
+                          value=""
+                          class="filter-input"
+                          placeholder="点击此处添加筛选"
+                          @focus="handleFilterInputFocus"
+                          @click="handleFilterInputFocus"
+                          readonly
+                          @keydown.prevent
+                        />
+                      </div>
+                    </div>
+                    <button
+                      v-if="filterInputValue"
+                      type="button"
+                      class="filter-delete-btn"
+                      @click="handleFilterClear"
+                      title="删除"
+                    >
+                      <el-icon>
+                        <Close />
+                      </el-icon>
+                    </button>
+                  </div>
+                  <!-- 字段选择下拉框（第一阶段） -->
+                  <div v-if="showFieldDropdown" class="filter-dropdown field-dropdown" @click.stop>
+                    <div class="dropdown-item" @click="handleFieldSelect('name')">
+                      <span>姓名</span>
+                    </div>
+                    <div class="dropdown-item" @click="handleFieldSelect('employeeId')">
+                      <span>工号</span>
+                    </div>
+                  </div>
+                  <!-- 关键字输入下拉框（第二阶段） -->
+                  <div v-if="showKeywordDropdown" class="filter-dropdown keyword-dropdown" @click.stop>
+                    <div class="keyword-input-wrapper">
+                      <el-input
+                        v-model="keywordInput"
+                        :placeholder="`请输入${selectedField === 'name' ? '姓名' : '工号'}`"
+                        @keyup.enter="handleKeywordConfirm"
+                        @keyup.esc="handleKeywordCancel"
+                        ref="keywordInputRef"
+                      />
+                    </div>
+                    <div class="dropdown-actions">
+                      <el-button size="small" @click="handleKeywordCancel">取消</el-button>
+                      <el-button type="primary" size="small" @click="handleKeywordConfirm">确认</el-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <el-button type="primary" :icon="Download" @click="handleExport" :disabled="!detailData || (filteredAppointmentRecords.length === 0 && filteredCertificationRecords.length === 0)">
+                导出数据
+              </el-button>
+            </div>
           </div>
         </template>
         <el-tabs v-model="activeTab" stretch class="detail-tabs" @tab-click="handleTabClick">
@@ -1794,6 +2024,193 @@ onBeforeUnmount(() => {
     font-size: 16px;
     font-weight: 600;
     color: $text-main-color;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .filter-area {
+    position: relative;
+  }
+
+  .filter-input-wrapper {
+    position: relative;
+  }
+
+  .filter-container {
+    display: flex;
+    border: 1px solid #d7d8da;
+    border-radius: 5px;
+    align-items: center;
+    background: white;
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+    box-sizing: border-box;
+  }
+
+  .filter-icon-wrapper {
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .filter-icon {
+      font-size: 18px;
+      color: #606266;
+    }
+  }
+
+  .filter-input-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    align-items: center;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+
+    .filter-tags {
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      flex-shrink: 0;
+
+      .filter-tag {
+        display: inline-block;
+        padding: 4px 8px;
+        background: #f0f2f5;
+        border: 1px solid $primary-color;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #606266;
+        margin-right: 8px;
+      }
+
+      .filter-tag-field {
+        color: $primary-color;
+        font-weight: 500;
+      }
+
+      .filter-tag-separator {
+        margin: 0 4px;
+        color: #606266;
+      }
+
+      .filter-tag-value {
+        color: $primary-color;
+        font-weight: 500;
+      }
+    }
+
+    .mainInput {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .filter-input {
+      width: 100%;
+      min-width: 150px;
+      margin-left: 8px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      color: #606266;
+      background: transparent;
+      padding: 8px 0;
+      cursor: pointer;
+
+      &::placeholder {
+        color: #909399;
+      }
+
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+
+  .filter-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #606266;
+    padding: 0;
+    flex-shrink: 0;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #409eff;
+    }
+
+    .el-icon {
+      font-size: 12px;
+    }
+  }
+
+  .filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 280px;
+    width: 280px;
+  }
+
+  .field-dropdown {
+    min-width: 120px;
+    width: 120px;
+
+    .dropdown-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f5f7fa;
+      }
+
+      span {
+        font-size: 14px;
+        color: #606266;
+      }
+    }
+  }
+
+  .keyword-dropdown {
+    padding: 12px;
+    min-width: 280px;
+    width: 280px;
+
+    .keyword-input-wrapper {
+      margin-bottom: 12px;
+    }
+
+    .dropdown-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
   }
 
   :deep(.el-card__body) {
