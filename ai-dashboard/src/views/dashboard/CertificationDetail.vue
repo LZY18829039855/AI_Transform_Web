@@ -1180,32 +1180,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <!-- 第一行：姓名和工号筛选 -->
-    <el-card shadow="hover" class="filter-card">
-      <el-form :inline="true" :model="filters" label-width="90">
-        <el-form-item label="姓　　名">
-          <el-input
-            v-model="filters.name"
-            placeholder="请输入姓名"
-            clearable
-            style="min-width: 260px"
-          />
-        </el-form-item>
-        <el-form-item label="工　号">
-          <el-input
-            v-model="filters.employeeId"
-            placeholder="请输入工号"
-            clearable
-            style="width: 160px"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery">查询</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 第二行：其他筛选条件 -->
+    <!-- 筛选条件 -->
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
         <el-form-item label="部　　门">
