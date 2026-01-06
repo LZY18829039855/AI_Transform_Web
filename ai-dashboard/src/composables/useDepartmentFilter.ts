@@ -113,8 +113,14 @@ export function useDepartmentFilter() {
   const lazyLoadDepartments = async (node: any, resolve: (nodes: DepartmentNode[]) => void) => {
     // 检查节点是否已经有数据，避免重复加载
     const data = node.data || node
-    if (Array.isArray(data.children)) {
+    if (Array.isArray(data.children) && data.children.length > 0) {
       resolve(data.children)
+      return
+    }
+
+    // 检查是否是叶子节点（isLeaf），如果是叶子节点，不需要加载子部门
+    if (data.leaf === true) {
+      resolve([])
       return
     }
 
@@ -138,6 +144,15 @@ export function useDepartmentFilter() {
 
     // 其他层级的部门正常懒加载
     const childNodes = await loadChildDepartments(node.value, node.data || node)
+    
+    // 如果没有子部门，将其标记为叶子节点
+    if (childNodes.length === 0) {
+      if (node.data) {
+        node.data.leaf = true
+      }
+      node.leaf = true
+    }
+    
     resolve(childNodes)
   }
 
@@ -231,4 +246,3 @@ export function useDepartmentFilter() {
     cascaderProps,
   }
 }
-
