@@ -1695,6 +1695,17 @@ const resetFilters = () => {
   }
 }
 
+// 部门筛选组件的 Ref
+const departmentCascaderRef = ref()
+
+// 处理部门筛选变化
+const handleDepartmentChange = () => {
+  // 选中后自动关闭下拉框
+  if (departmentCascaderRef.value) {
+    departmentCascaderRef.value.togglePopperVisible(false)
+  }
+}
+
 // 监听部门路径变化：影响专家、干部、部门和职位类数据
 watch(
   () => filters.value.departmentPath,
@@ -1746,6 +1757,7 @@ onActivated(() => {
       <el-form :inline="true" :model="filters" label-width="92">
         <el-form-item label="部门筛选">
           <el-cascader
+            ref="departmentCascaderRef"
             v-model="filters.departmentPath"
             :options="departmentOptions"
             :props="cascaderProps"
@@ -1753,6 +1765,7 @@ onActivated(() => {
             clearable
             separator=" / "
             style="width: 260px"
+            @change="handleDepartmentChange"
           />
         </el-form-item>
         <el-form-item>
