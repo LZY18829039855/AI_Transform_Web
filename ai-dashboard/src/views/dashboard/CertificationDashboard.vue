@@ -1240,6 +1240,7 @@ const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: s
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
     role: role, // 传递角色视图
+    column: 'appointed', // 任职数据
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
@@ -1306,6 +1307,7 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
     personType: personType,
     queryType: '2', // 默认为2（基线人数）
     role: role, // 传递角色视图
+    column: 'certification', // 认证数据
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
