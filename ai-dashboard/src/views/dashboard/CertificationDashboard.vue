@@ -1382,6 +1382,13 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
     // 岗位成熟度与职位类数据传空，不传递这些参数
   }
   
+  // 根据点击的列类型，添加column参数以区分任职和认证数据
+  if (column === 'appointment') {
+    queryParams.column = 'appointed' // 任职数据
+  } else if (column === 'certification') {
+    queryParams.column = 'certification' // 认证数据
+  }
+  
   // 如果部门路径存在，添加到查询参数中（确保路径不为空）
   if (departmentPath.length > 0) {
     queryParams.departmentPath = departmentPath.join(',')
@@ -1418,6 +1425,7 @@ const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: 
     queryType: '2', // 默认为2（基数人数）
     jobCategory: data.label, // 职位类信息
     role: role, // 传递角色视图
+    column: 'appointed', // 任职数据
     // 岗位成熟度传空，不传递此参数
   }
   
@@ -1457,6 +1465,7 @@ const handleJobCategoryCertificationBarClick = (data: { label: string; deptCode?
     queryType: '2', // 默认为2（基线人数）
     jobCategory: data.label, // 职位类信息
     role: role, // 传递角色视图
+    column: 'certification', // 认证数据
     // 岗位成熟度传空，不传递此参数
   }
   
@@ -1496,6 +1505,13 @@ const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointme
     queryType: '2', // 默认为2（基数人数）
     role: role, // 传递角色视图
     // 岗位成熟度传空，不传递此参数
+  }
+  
+  // 根据点击的列类型，添加column参数以区分任职和认证数据
+  if (column === 'appointment') {
+    queryParams.column = 'appointed' // 任职数据
+  } else if (column === 'certification') {
+    queryParams.column = 'certification' // 认证数据
   }
   
   // 如果是总计行，不传递 jobCategory 参数（表示查询所有职位类）
