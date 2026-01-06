@@ -17,7 +17,6 @@ export function useDepartmentFilter() {
         {
           label: '云核心网产品线',
           value: 'CLOUD_CORE_NETWORK',
-          children: [],
         },
       ],
     },
@@ -33,7 +32,6 @@ export function useDepartmentFilter() {
         {
           label: '云核心网产品线',
           value: 'CLOUD_CORE_NETWORK',
-          children: [],
         },
       ],
     },
@@ -115,7 +113,7 @@ export function useDepartmentFilter() {
   const lazyLoadDepartments = async (node: any, resolve: (nodes: DepartmentNode[]) => void) => {
     // 检查节点是否已经有数据，避免重复加载
     const data = node.data || node
-    if (data.children && data.children.length > 0) {
+    if (Array.isArray(data.children)) {
       resolve(data.children)
       return
     }
