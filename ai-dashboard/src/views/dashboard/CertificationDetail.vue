@@ -1445,7 +1445,7 @@ onBeforeUnmount(() => {
               />
               <el-table-column 
                 prop="professionalCategory" 
-                label="专业任职资格类" 
+                label="专业任职资格族" 
                 width="126" 
                 sortable 
                 align="center"
@@ -1453,7 +1453,7 @@ onBeforeUnmount(() => {
               />
               <el-table-column 
                 prop="expertCategory" 
-                label="专家任职资格类（仅体现AI）" 
+                label="专业任职资格类（仅体现AI）" 
                 min-width="220" 
                 sortable 
                 align="center"
