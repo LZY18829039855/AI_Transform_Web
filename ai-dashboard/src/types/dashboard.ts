@@ -860,6 +860,7 @@ export interface CourseInfo {
   courseName: string // 课程名称
   courseNumber: string // 课程编码
   isCompleted: boolean // 是否已完成
+  bigType?: string // 课程主分类
 }
 
 /**

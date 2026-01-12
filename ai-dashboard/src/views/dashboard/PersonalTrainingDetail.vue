@@ -173,10 +173,21 @@ onActivated(() => {
             </el-select>
           </div>
         </template>
-        <el-table :data="filteredCourses" border stripe style="width: 100%" max-height="600">
+        <el-table 
+          :data="filteredCourses" 
+          border 
+          stripe 
+          style="width: 100%" 
+          max-height="600"
+        >
+          <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
           <el-table-column prop="category" label="训战分类" width="120" align="center" />
-          <el-table-column prop="courseName" label="课程名称" min-width="200" />
-          <el-table-column prop="courseNumber" label="课程编码" width="150" align="center" />
+          <el-table-column prop="courseName" label="课程名称" min-width="200" align="center" />
+          <el-table-column label="是否目标课程" width="140" align="center">
+            <template #default>
+              <el-tag type="success" effect="light">是</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="是否完课" width="120" align="center">
             <template #default="{ row }">
               <el-tag :type="row.isCompleted ? 'success' : 'warning'" effect="light">
@@ -272,6 +283,28 @@ onActivated(() => {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
+    }
+  }
+
+  :deep(.el-table) {
+    .el-table__header-wrapper {
+      .el-table__header {
+        th {
+          text-align: center;
+          font-weight: 700;
+          font-size: 17px;
+          font-family: 'Microsoft YaHei', 'SimHei', Arial, sans-serif;
+          color: #000;
+        }
+      }
+    }
+
+    .el-table__body-wrapper {
+      .el-table__body {
+        td {
+          text-align: center;
+        }
+      }
     }
   }
 }
