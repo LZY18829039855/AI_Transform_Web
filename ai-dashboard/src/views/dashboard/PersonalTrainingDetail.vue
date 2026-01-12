@@ -19,10 +19,33 @@ const categoryOptions = computed(() => {
   return ['全部', ...options]
 })
 
+// 训战分类排序顺序（支持多种名称映射）
+const categoryOrder = ['基础', '进阶', '高阶', '实战']
+const categoryMapping: Record<string, string> = {
+  '初阶': '基础',
+  '中阶': '进阶',
+  'L1': '基础',
+  'L2': '进阶',
+  'L3': '高阶',
+}
+
+// 标准化分类名称
+const normalizeCategory = (category: string): string => {
+  return categoryMapping[category] || category
+}
+
+const getCategoryOrder = (category: string): number => {
+  const normalized = normalizeCategory(category)
+  const index = categoryOrder.indexOf(normalized)
+  return index >= 0 ? index : categoryOrder.length
+}
+
 const filteredCourses = computed(() => {
   if (!detailData.value) {
     return []
   }
+  
+  // 收集所有课程
   const allCourses: Array<CourseInfo & { category: string }> = []
   detailData.value.courseStatistics.forEach((stat) => {
     if (stat.courseList) {
@@ -34,11 +57,109 @@ const filteredCourses = computed(() => {
       })
     }
   })
-  if (selectedCategory.value === '全部') {
-    return allCourses
-  }
-  return allCourses.filter((course) => course.category === selectedCategory.value)
+  
+  // 按筛选条件过滤
+  let filtered = selectedCategory.value === '全部' 
+    ? allCourses 
+    : allCourses.filter((course) => course.category === selectedCategory.value)
+  
+  // 按主分类分组
+  const groupedByBigType = new Map<string, Array<CourseInfo & { category: string }>>()
+  filtered.forEach((course) => {
+    const bigType = course.bigType || '未分类'
+    if (!groupedByBigType.has(bigType)) {
+      groupedByBigType.set(bigType, [])
+    }
+    groupedByBigType.get(bigType)!.push(course)
+  })
+  
+  // 对每个主分类内的课程进行排序和分组
+  const result: Array<CourseInfo & { category: string; bigType: string }> = []
+  
+  // 按主分类名称排序
+  const sortedBigTypes = Array.from(groupedByBigType.keys()).sort()
+  
+  sortedBigTypes.forEach((bigType) => {
+    const courses = groupedByBigType.get(bigType)!
+    
+    // 按训战分类分组
+    const groupedByCategory = new Map<string, Array<CourseInfo & { category: string }>>()
+    courses.forEach((course) => {
+      const category = course.category || '未分类'
+      if (!groupedByCategory.has(category)) {
+        groupedByCategory.set(category, [])
+      }
+      groupedByCategory.get(category)!.push(course)
+    })
+    
+    // 按训战分类排序（基础、进阶、高阶、实战）
+    const sortedCategories = Array.from(groupedByCategory.keys()).sort((a, b) => {
+      return getCategoryOrder(a) - getCategoryOrder(b)
+    })
+    
+    // 对每个训战分类内的课程排序：完课在前，未完课在后
+    sortedCategories.forEach((category) => {
+      const categoryCourses = groupedByCategory.get(category)!
+      categoryCourses.sort((a, b) => {
+        // 完课的在前（true 在前），未完课的在后（false 在后）
+        if (a.isCompleted === b.isCompleted) {
+          return 0
+        }
+        return a.isCompleted ? -1 : 1
+      })
+      
+      // 添加到结果中，并添加 bigType 字段
+      categoryCourses.forEach((course) => {
+        result.push({
+          ...course,
+          bigType: bigType,
+        })
+      })
+    })
+  })
+  
+  return result
 })
+
+// 计算合并单元格的 span-method
+const getSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
+  if (columnIndex === 0) {
+    // 课程主分类列需要合并
+    const currentBigType = row.bigType
+    let rowspan = 1
+    
+    // 向前查找相同主分类的行数
+    let startIndex = rowIndex
+    while (startIndex > 0 && filteredCourses.value[startIndex - 1]?.bigType === currentBigType) {
+      startIndex--
+    }
+    
+    // 向后查找相同主分类的行数
+    let endIndex = rowIndex
+    while (endIndex < filteredCourses.value.length - 1 && filteredCourses.value[endIndex + 1]?.bigType === currentBigType) {
+      endIndex++
+    }
+    
+    // 如果是该主分类的第一行，则合并
+    if (rowIndex === startIndex) {
+      rowspan = endIndex - startIndex + 1
+      return {
+        rowspan: rowspan,
+        colspan: 1,
+      }
+    } else {
+      return {
+        rowspan: 0,
+        colspan: 0,
+      }
+    }
+  }
+  
+  return {
+    rowspan: 1,
+    colspan: 1,
+  }
+}
 
 const fetchDetail = async () => {
   loading.value = true
@@ -179,6 +300,7 @@ onActivated(() => {
           stripe 
           style="width: 100%" 
           max-height="600"
+          :span-method="getSpanMethod"
         >
           <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
           <el-table-column prop="category" label="训战分类" width="120" align="center" />
