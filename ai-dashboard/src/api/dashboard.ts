@@ -26,6 +26,7 @@ import type {
   ExpertAppointmentSummaryRow,
   ExpertCertificationSummaryRow,
   MetricItem,
+  PersonalCourseCompletionResponse,
   PlTmCertStatisticsResponse,
   Result,
   SchoolDashboardData,
@@ -43,6 +44,7 @@ import type {
   TrainingDetailFilters,
   TrainingBattleRecord,
   TrainingCoursePlanRecord,
+  TrainingPersonalOverviewRow,
   TrainingPlanningResource,
   TrainingRole,
   TrainingRoleSummaryRow,
@@ -1153,6 +1155,26 @@ export const fetchTrainingDetail = async (
   }
 }
 
+/**
+ * 获取个人课程完成情况
+ * @returns 个人课程完成情况数据
+ */
+export const fetchPersonalCourseCompletion = async (): Promise<PersonalCourseCompletionResponse | null> => {
+  try {
+    const response = await get<Result<PersonalCourseCompletionResponse>>(
+      '/personal-course/completion'
+    )
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取个人课程完成情况失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取个人课程完成情况异常：', error)
+    return null
+  }
+}
+
 export const fetchTrainingDashboard = async (
   filters?: TrainingDashboardFilters
 ): Promise<TrainingDashboardData> => {
@@ -1160,7 +1182,37 @@ export const fetchTrainingDashboard = async (
   const departmentTree = await fetchDepartmentTree()
   const role: TrainingRole = (filters?.role ?? '0')
 
-  const personalOverview: any[] = []
+  // 获取个人训战总览数据
+  const personalCompletionData = await fetchPersonalCourseCompletion()
+  const personalOverview: TrainingPersonalOverviewRow[] = []
+  
+  if (personalCompletionData?.courseStatistics) {
+    // 转换各分类数据
+    const categoryRows = personalCompletionData.courseStatistics.map((stat) => ({
+      classification: stat.courseLevel ?? '',
+      courseTotal: stat.totalCourses ?? 0,
+      targetCompleted: stat.targetCourses ?? 0,
+      actualCompleted: stat.completedCourses ?? 0,
+      completionRate: stat.completionRate ?? 0,
+    }))
+    
+    // 计算总计行
+    const totalRow: TrainingPersonalOverviewRow = {
+      classification: '总计',
+      courseTotal: categoryRows.reduce((sum, row) => sum + row.courseTotal, 0),
+      targetCompleted: categoryRows.reduce((sum, row) => sum + row.targetCompleted, 0),
+      actualCompleted: categoryRows.reduce((sum, row) => sum + row.actualCompleted, 0),
+      completionRate: 0,
+    }
+    
+    // 计算总计的完课占比
+    if (totalRow.targetCompleted > 0) {
+      totalRow.completionRate = (totalRow.actualCompleted / totalRow.targetCompleted) * 100
+    }
+    
+    // 合并分类数据和总计行
+    personalOverview.push(...categoryRows, totalRow)
+  }
 
   const expertSummary: TrainingRoleSummaryRow[] = []
 

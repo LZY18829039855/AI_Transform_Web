@@ -852,3 +852,23 @@ export interface CadreAiCertificationOverviewResponseVO {
   summary: CadreAiOverviewStatisticsVO
   departmentList: CadreAiOverviewStatisticsVO[]
 }
+
+/**
+ * 课程分类统计数据（对应后端 CourseCategoryStatisticsVO）
+ */
+export interface CourseCategoryStatistics {
+  courseLevel: string // 训战分类（初阶、中阶、高阶、实战）
+  totalCourses: number // 课程总数
+  targetCourses: number // 目标课程数
+  completedCourses: number // 实际完课数
+  completionRate: number // 完课占比（百分比）
+}
+
+/**
+ * 个人课程完成情况响应（对应后端 PersonalCourseCompletionResponseVO）
+ */
+export interface PersonalCourseCompletionResponse {
+  empNum: string // 员工工号
+  empName: string // 员工姓名
+  courseStatistics: CourseCategoryStatistics[] // 各训战分类的课程统计列表
+}
