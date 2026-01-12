@@ -222,30 +222,36 @@ defineExpose({
           <template #header>
             <h3>个人训战总览</h3>
           </template>
-          <el-table :data="dashboardData.personalOverview" border>
-            <el-table-column prop="classification" label="训练分类" width="120" />
-            <el-table-column prop="courseTotal" label="课程总数" width="140">
+          <el-table 
+            :data="dashboardData.personalOverview" 
+            border
+            style="width: 100%"
+            :header-cell-class-name="() => 'personal-overview-header'"
+            :row-class-name="({ row }) => row.classification === '总计' ? 'personal-overview-total-row' : ''"
+          >
+            <el-table-column prop="classification" label="训战分类" min-width="120" align="center" />
+            <el-table-column prop="courseTotal" label="课程总数" min-width="140" align="center">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handlePersonalDrill(row, 'courseTotal')">
                   {{ row.courseTotal }}
                 </el-button>
               </template>
             </el-table-column>
-            <el-table-column prop="targetCompleted" label="目标完成课数" width="160">
+            <el-table-column prop="targetCompleted" label="目标完课数" min-width="140" align="center">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handlePersonalDrill(row, 'targetCompleted')">
                   {{ row.targetCompleted }}
                 </el-button>
               </template>
             </el-table-column>
-            <el-table-column prop="actualCompleted" label="实际完课数" width="140">
+            <el-table-column prop="actualCompleted" label="实际完课数" min-width="140" align="center">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handlePersonalDrill(row, 'actualCompleted')">
                   {{ row.actualCompleted }}
                 </el-button>
               </template>
             </el-table-column>
-            <el-table-column prop="completionRate" label="完课占比">
+            <el-table-column prop="completionRate" label="目标课程完课占比" min-width="180" align="center">
               <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
             </el-table-column>
           </el-table>
@@ -754,6 +760,48 @@ defineExpose({
   &:hover {
     background: transparent;
     text-decoration: underline;
+  }
+}
+
+// 个人训战总览表格样式
+.overview-card {
+  :deep(.el-card__body) {
+    padding: 20px;
+  }
+
+  :deep(.el-table) {
+    width: 100%;
+
+    .el-table__header-wrapper {
+      .el-table__header {
+        width: 100%;
+
+        th {
+          text-align: center;
+          font-weight: 700;
+          font-size: 16px;
+          color: #000;
+        }
+      }
+    }
+
+    .el-table__body-wrapper {
+      .el-table__body {
+        width: 100%;
+
+        td {
+          text-align: center;
+        }
+
+        tr.personal-overview-total-row {
+          td {
+            font-weight: 700;
+            font-size: 16px;
+            color: #000;
+          }
+        }
+      }
+    }
   }
 }
 
