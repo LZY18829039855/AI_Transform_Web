@@ -291,14 +291,17 @@ onActivated(() => {
         <template #header>
           <div class="filter-header">
             <h3>课程列表</h3>
-            <el-select v-model="selectedCategory" placeholder="选择分类" style="width: 180px">
-              <el-option
-                v-for="option in categoryOptions"
-                :key="option"
-                :label="option"
-                :value="option"
-              />
-            </el-select>
+            <div class="filter-controls">
+              <span class="filter-label">训战分类：</span>
+              <el-select v-model="selectedCategory" placeholder="选择分类" style="width: 180px">
+                <el-option
+                  v-for="option in categoryOptions"
+                  :key="option"
+                  :label="option"
+                  :value="option"
+                />
+              </el-select>
+            </div>
           </div>
         </template>
         <el-table 
@@ -425,6 +428,18 @@ onActivated(() => {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
+    }
+
+    .filter-controls {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      .filter-label {
+        font-size: 14px;
+        color: $text-main-color;
+        white-space: nowrap;
+      }
     }
   }
 
