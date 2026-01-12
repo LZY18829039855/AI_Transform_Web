@@ -2,7 +2,7 @@
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { ElAvatar, ElButton, ElCard, ElEmpty, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 
@@ -65,6 +65,40 @@ const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 
+// 根据工号生成头像URL
+const avatarUrl = computed(() => {
+  if (!detailData.value?.empNum) {
+    return null
+  }
+  return `https://w3.huawei.com/w3lab/rest/yellowpage/face/${detailData.value.empNum}/120`
+})
+
+// 计算包含总计行的表格数据
+const tableDataWithTotal = computed(() => {
+  if (!detailData.value?.courseStatistics || detailData.value.courseStatistics.length === 0) {
+    return []
+  }
+  
+  const statistics = detailData.value.courseStatistics
+  
+  // 计算总计行数据
+  const totalRow = {
+    courseLevel: '总计',
+    totalCourses: statistics.reduce((sum, stat) => sum + (stat.totalCourses || 0), 0),
+    targetCourses: statistics.reduce((sum, stat) => sum + (stat.targetCourses || 0), 0),
+    completedCourses: statistics.reduce((sum, stat) => sum + (stat.completedCourses || 0), 0),
+    completionRate: 0,
+  }
+  
+  // 计算总计的完课占比
+  if (totalRow.targetCourses > 0) {
+    totalRow.completionRate = (totalRow.completedCourses / totalRow.targetCourses) * 100
+  }
+  
+  // 合并原始数据和总计行
+  return [...statistics, totalRow]
+})
+
 onMounted(() => {
   fetchDetail()
 })
@@ -81,9 +115,17 @@ onActivated(() => {
         <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回列表页</el-button>
         <div>
           <h2>个人训战课程详情</h2>
-          <p v-if="detailData">
-            工号：{{ detailData.empNum }} | 姓名：{{ detailData.empName || '未获取' }}
-          </p>
+          <div v-if="detailData" class="user-info">
+            <el-avatar 
+              :src="avatarUrl" 
+              :size="40"
+              class="user-avatar"
+            />
+            <span class="user-details">
+              <span class="emp-num">{{ detailData.empNum }}</span>
+              <span class="emp-name">{{ detailData.empName || '未获取' }}</span>
+            </span>
+          </div>
           <p v-else>查看个人训战课程完课情况</p>
         </div>
       </div>
@@ -100,10 +142,11 @@ onActivated(() => {
           <h3>个人训战总览</h3>
         </template>
         <el-table 
-          :data="detailData.courseStatistics" 
+          :data="tableDataWithTotal" 
           border 
           style="width: 100%"
           :header-cell-class-name="() => 'personal-overview-header'"
+          :row-class-name="({ row }) => row.courseLevel === '总计' ? 'personal-overview-total-row' : ''"
         >
           <el-table-column prop="courseLevel" label="训战分类" min-width="120" align="center" />
           <el-table-column prop="totalCourses" label="课程总数" min-width="140" align="center" />
@@ -178,6 +221,33 @@ onActivated(() => {
     max-width: 560px;
     color: #000;
   }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin: $spacing-sm 0 0;
+  }
+
+  .user-avatar {
+    flex-shrink: 0;
+  }
+
+  .user-details {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    color: #000;
+    font-size: 14px;
+  }
+
+  .emp-num {
+    font-weight: 500;
+  }
+
+  .emp-name {
+    font-weight: 500;
+  }
 }
 
 .header-left {
@@ -235,6 +305,14 @@ onActivated(() => {
         td {
           text-align: center;
         }
+      }
+    }
+
+    tr.personal-overview-total-row {
+      td {
+        font-weight: 700;
+        font-size: 16px;
+        color: #000;
       }
     }
   }
