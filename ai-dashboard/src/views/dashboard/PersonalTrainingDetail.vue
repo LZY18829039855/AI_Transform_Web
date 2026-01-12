@@ -2,7 +2,7 @@
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElAvatar, ElButton, ElCard, ElEmpty, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 
@@ -182,7 +182,20 @@ onActivated(() => {
         >
           <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
           <el-table-column prop="category" label="训战分类" width="120" align="center" />
-          <el-table-column prop="courseName" label="课程名称" min-width="200" align="center" />
+          <el-table-column prop="courseName" label="课程名称" min-width="200" align="center">
+            <template #default="{ row }">
+              <el-link
+                v-if="row.courseLink"
+                :href="row.courseLink"
+                target="_blank"
+                type="primary"
+                :underline="false"
+              >
+                {{ row.courseName }}
+              </el-link>
+              <span v-else>{{ row.courseName }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="是否目标课程" width="140" align="center">
             <template #default>
               <el-tag type="success" effect="light">是</el-tag>
