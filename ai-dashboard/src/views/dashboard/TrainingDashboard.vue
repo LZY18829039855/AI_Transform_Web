@@ -101,8 +101,13 @@ const goToDetail = (query: Record<string, string | undefined>) => {
 }
 
 const handlePersonalDrill = (row: TrainingPersonalOverviewRow, field: string) => {
-  // 跳转到个人训战课程详情页
-  router.push({ name: 'PersonalTrainingDetail' })
+  // 跳转到AI训战看板详情页，传递个人训战总览的下钻参数
+  goToDetail({
+    type: 'personal',
+    classification: row.classification === '总计' ? undefined : row.classification,
+    metric: field,
+    role: filters.role,
+  })
 }
 
 const handleRoleSummaryDrill = (

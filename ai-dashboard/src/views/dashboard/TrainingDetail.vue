@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchTrainingDetail } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
@@ -12,13 +12,33 @@ import type {
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
-const filters = ref<TrainingDetailFilters>({
-  role: '0',
-  positionMaturity: '全部',
-  departmentPath: [],
-})
+
+// 从路由参数中解析部门路径
+const parseDepartmentPathFromQuery = (): string[] => {
+  const departmentPathStr = route.query.departmentPath as string | undefined
+  if (departmentPathStr && typeof departmentPathStr === 'string' && departmentPathStr.trim()) {
+    const pathArray = departmentPathStr.split(',').filter((dept) => dept.trim().length > 0)
+    return pathArray
+  }
+  return []
+}
+
+// 从路由参数中初始化筛选条件
+const initFiltersFromQuery = (): TrainingDetailFilters => {
+  return {
+    role: (route.query.role as string) || '0',
+    positionMaturity: (route.query.maturity as string) || '全部',
+    departmentPath: parseDepartmentPathFromQuery(),
+    jobFamily: (route.query.jobFamily as string) || undefined,
+    jobCategory: (route.query.jobCategory as string) || undefined,
+    jobSubCategory: (route.query.jobSubCategory as string) || undefined,
+  }
+}
+
+const filters = ref<TrainingDetailFilters>(initFiltersFromQuery())
 
 const {
   departmentTree: departmentOptions,
@@ -73,11 +93,15 @@ watch(
 
 onMounted(() => {
   initDepartmentTree()
+  // 从路由参数中初始化筛选条件
+  filters.value = initFiltersFromQuery()
   fetchDetail()
 })
 
 onActivated(() => {
   refreshDepartmentTree()
+  // 从路由参数中初始化筛选条件（支持从其他页面返回时更新）
+  filters.value = initFiltersFromQuery()
   fetchDetail()
 })
 </script>
