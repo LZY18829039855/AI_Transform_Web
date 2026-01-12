@@ -76,8 +76,15 @@ const filteredCourses = computed(() => {
   // 对每个主分类内的课程进行排序和分组
   const result: Array<CourseInfo & { category: string; bigType: string }> = []
   
-  // 按主分类名称排序
-  const sortedBigTypes = Array.from(groupedByBigType.keys()).sort()
+  // 按主分类的课程数量排序（数量多的在前），如果数量相同则按名称排序
+  const sortedBigTypes = Array.from(groupedByBigType.keys()).sort((a, b) => {
+    const countA = groupedByBigType.get(a)!.length
+    const countB = groupedByBigType.get(b)!.length
+    if (countA !== countB) {
+      return countB - countA // 数量多的在前
+    }
+    return a.localeCompare(b) // 数量相同时按名称排序
+  })
   
   sortedBigTypes.forEach((bigType) => {
     const courses = groupedByBigType.get(bigType)!
