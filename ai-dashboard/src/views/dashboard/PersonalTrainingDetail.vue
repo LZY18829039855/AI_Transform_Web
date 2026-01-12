@@ -1,34 +1,15 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 
 const router = useRouter()
-const route = useRoute()
 const loading = ref(false)
 const detailData = ref<PersonalCourseCompletionResponse | null>(null)
-
-// 从路由查询参数中获取分类筛选条件
-const getInitialCategory = (): string => {
-  const classification = route.query.classification as string | undefined
-  if (classification) {
-    // 将可能的分类名称映射到标准名称
-    const categoryMapping: Record<string, string> = {
-      '初阶': '基础',
-      '中阶': '进阶',
-      'L1': '基础',
-      'L2': '进阶',
-      'L3': '高阶',
-    }
-    return categoryMapping[classification] || classification
-  }
-  return '全部'
-}
-
-const selectedCategory = ref<string>(getInitialCategory())
+const selectedCategory = ref<string>('全部')
 
 const categoryOptions = computed(() => {
   if (!detailData.value) {
@@ -193,25 +174,6 @@ const fetchDetail = async () => {
     const data = await fetchPersonalCourseCompletion()
     if (data) {
       detailData.value = data
-      // 数据加载完成后，根据查询参数设置分类筛选条件
-      const classificationFromQuery = route.query.classification as string | undefined
-      if (classificationFromQuery) {
-        // 检查查询参数中的分类是否在可选分类中
-        const categoryMapping: Record<string, string> = {
-          '初阶': '基础',
-          '中阶': '进阶',
-          'L1': '基础',
-          'L2': '进阶',
-          'L3': '高阶',
-        }
-        const mappedCategory = categoryMapping[classificationFromQuery] || classificationFromQuery
-        // 检查该分类是否在可选分类列表中
-        if (categoryOptions.value.includes(mappedCategory)) {
-          selectedCategory.value = mappedCategory
-        } else if (categoryOptions.value.includes(classificationFromQuery)) {
-          selectedCategory.value = classificationFromQuery
-        }
-      }
     } else {
       ElMessage.warning('获取个人课程详情失败')
     }

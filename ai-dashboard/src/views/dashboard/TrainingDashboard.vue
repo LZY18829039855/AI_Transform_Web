@@ -101,14 +101,8 @@ const goToDetail = (query: Record<string, string | undefined>) => {
 }
 
 const handlePersonalDrill = (row: TrainingPersonalOverviewRow, field: string) => {
-  // 跳转到个人训战课程详情页，传递下钻参数
-  router.push({
-    name: 'PersonalTrainingDetail',
-    query: {
-      classification: row.classification === '总计' ? undefined : row.classification,
-      metric: field,
-    },
-  })
+  // 跳转到个人训战课程详情页
+  router.push({ name: 'PersonalTrainingDetail' })
 }
 
 const handleRoleSummaryDrill = (
