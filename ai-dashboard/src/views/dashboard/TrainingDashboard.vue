@@ -71,6 +71,9 @@ const fetchData = async () => {
       departmentPath: filters.departmentPath?.length ? [...filters.departmentPath] : undefined,
     }
     dashboardData.value = await fetchTrainingDashboard(payload)
+  } catch (error) {
+    console.error('获取训战看板数据失败：', error)
+    ElMessage.error('获取数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -147,7 +150,13 @@ onMounted(() => {
 })
 
 onActivated(() => {
-  refreshDepartmentTree()
+  // 确保在组件激活时也初始化部门树（如果还未初始化）
+  if (!departmentOptions.value || departmentOptions.value.length === 0) {
+    initDepartmentTree()
+  } else {
+    refreshDepartmentTree()
+  }
+  // 确保每次激活时都重新获取数据
   fetchData()
 })
 

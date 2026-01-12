@@ -1183,7 +1183,9 @@ export const fetchTrainingDashboard = async (
   const role: TrainingRole = (filters?.role ?? '0')
 
   // 获取个人训战总览数据
+  console.log('开始获取个人训战总览数据...')
   const personalCompletionData = await fetchPersonalCourseCompletion()
+  console.log('个人训战总览数据获取结果：', personalCompletionData)
   const personalOverview: TrainingPersonalOverviewRow[] = []
   
   if (personalCompletionData?.courseStatistics) {
