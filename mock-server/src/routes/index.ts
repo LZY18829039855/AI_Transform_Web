@@ -2,6 +2,7 @@ import { Router } from 'express'
 import departmentRouter from './department'
 import expertCertStatisticsRouter from './expertCertStatistics'
 import entryLevelManagerRouter from './entryLevelManager'
+import personalCourseCompletionRouter from './personalCourseCompletion'
 import { successResponse } from '../utils/response'
 
 const router = Router()
@@ -13,5 +14,6 @@ router.get('/health', (_, res) => {
 router.use('/ai_transform_webapi/department-info', departmentRouter)
 router.use('/ai_transform_webapi/expert-cert-statistics', expertCertStatisticsRouter)
 router.use('/ai_transform_webapi/entry-level-manager', entryLevelManagerRouter)
+router.use('/ai_transform_webapi/personal-course', personalCourseCompletionRouter)
 
 export default router

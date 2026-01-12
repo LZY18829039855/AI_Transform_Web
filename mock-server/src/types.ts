@@ -208,3 +208,27 @@ export interface PlTmCertStatisticsResponse {
   summary: PlTmDepartmentStatistics // 研发管理部汇总数据
   departmentList: PlTmDepartmentStatistics[] // 各四级部门统计数据列表
 }
+
+// 课程信息
+export interface CourseInfo {
+  courseName: string // 课程名称
+  courseNumber: string // 课程编码
+  isCompleted: boolean // 是否已完成
+}
+
+// 课程分类统计数据
+export interface CourseCategoryStatistics {
+  courseLevel: string // 训战分类（基础、进阶、高阶、实战）
+  totalCourses: number // 课程总数
+  targetCourses: number // 目标课程数
+  completedCourses: number // 实际完课数
+  completionRate: number // 完课占比（百分比）
+  courseList: CourseInfo[] // 该分类下的所有目标课程列表
+}
+
+// 个人课程完成情况响应
+export interface PersonalCourseCompletionResponse {
+  empNum: string // 员工工号
+  empName: string // 员工姓名
+  courseStatistics: CourseCategoryStatistics[] // 各训战分类的课程统计列表
+}

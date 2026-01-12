@@ -98,12 +98,8 @@ const goToDetail = (query: Record<string, string | undefined>) => {
 }
 
 const handlePersonalDrill = (row: TrainingPersonalOverviewRow, field: string) => {
-  goToDetail({
-    type: 'personal',
-    classification: row.classification,
-    metric: field,
-    role: filters.role,
-  })
+  // 跳转到个人训战课程详情页
+  router.push({ name: 'PersonalTrainingDetail' })
 }
 
 const handleRoleSummaryDrill = (

@@ -854,6 +854,15 @@ export interface CadreAiCertificationOverviewResponseVO {
 }
 
 /**
+ * 课程信息（对应后端 CourseInfoVO）
+ */
+export interface CourseInfo {
+  courseName: string // 课程名称
+  courseNumber: string // 课程编码
+  isCompleted: boolean // 是否已完成
+}
+
+/**
  * 课程分类统计数据（对应后端 CourseCategoryStatisticsVO）
  */
 export interface CourseCategoryStatistics {
@@ -862,6 +871,7 @@ export interface CourseCategoryStatistics {
   targetCourses: number // 目标课程数
   completedCourses: number // 实际完课数
   completionRate: number // 完课占比（百分比）
+  courseList?: CourseInfo[] // 该分类下的所有目标课程列表（包含已完成和未完成的课程）
 }
 
 /**
