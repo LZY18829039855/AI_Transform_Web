@@ -290,7 +290,7 @@ onActivated(() => {
       <el-card shadow="hover" class="filter-card">
         <template #header>
           <div class="filter-header">
-            <h3>课程列表</h3>
+            <h3>目标课程列表</h3>
             <div class="filter-controls">
               <span class="filter-label">训战分类：</span>
               <el-select v-model="selectedCategory" placeholder="选择分类" style="width: 180px">
