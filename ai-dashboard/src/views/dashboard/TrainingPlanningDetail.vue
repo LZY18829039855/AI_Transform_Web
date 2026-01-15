@@ -2,7 +2,7 @@
 import { onMounted, ref, computed } from 'vue'
 import { ArrowLeft, Check } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSkeleton, ElTable, ElTableColumn, ElIcon } from 'element-plus'
+import { ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSkeleton, ElTable, ElTableColumn, ElIcon, ElTooltip } from 'element-plus'
 import { fetchCoursePlanningInfoList } from '@/api/dashboard'
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import type { CoursePlanningInfo, DepartmentSelection } from '@/types/dashboard'
@@ -143,15 +143,20 @@ onMounted(() => {
         <el-table-column prop="courseName" label="课程名称" width="500" align="center" />
         <el-table-column label="课程编码（线上课程涉及）" min-width="300" align="center">
           <template #default="{ row }">
-            <el-link
+            <el-tooltip
               v-if="row.courseLink && row.courseNumber"
-              type="primary"
-              :href="row.courseLink"
-              target="_blank"
-              class="course-link"
+              content="点击进入iLearning课程"
+              placement="top"
             >
-              {{ row.courseNumber }}（点击进入iLearning课程）
-            </el-link>
+              <el-link
+                type="primary"
+                :href="row.courseLink"
+                target="_blank"
+                class="course-link"
+              >
+                {{ row.courseNumber }}
+              </el-link>
+            </el-tooltip>
             <span v-else style="color: #999;">-</span>
           </template>
         </el-table-column>
