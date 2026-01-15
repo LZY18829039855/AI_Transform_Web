@@ -144,13 +144,13 @@ onMounted(() => {
         <el-table-column label="课程编码（线上课程涉及）" min-width="300" align="center">
           <template #default="{ row }">
             <el-link
-              v-if="row.courseLink && row.courseName"
+              v-if="row.courseLink && row.courseNumber"
               type="primary"
               :href="row.courseLink"
               target="_blank"
               class="course-link"
             >
-              {{ row.courseName }}（点击进入iLearning课程）
+              {{ row.courseNumber }}（点击进入iLearning课程）
             </el-link>
             <span v-else style="color: #999;">-</span>
           </template>
