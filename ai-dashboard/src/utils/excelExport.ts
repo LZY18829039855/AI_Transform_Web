@@ -246,6 +246,7 @@ export const exportCoursePlanningToExcel = (
       '训战分类': item.courseLevel || '',
       '课程名称': item.courseName || '',
       '课程编码（线上课程涉及）': item.courseNumber || '',
+      '课程链接': item.courseLink || '',
       '目标人群': 'ALL',
       '学分': item.credit || '',
     }
@@ -254,7 +255,7 @@ export const exportCoursePlanningToExcel = (
     if (departmentColumns && departmentColumns.length > 0) {
       departmentColumns.forEach(dept => {
         const isSelected = item.selectedDepts?.some(selected => selected.deptCode === dept.deptCode)
-        baseData[dept.deptName] = isSelected ? '√' : '-'
+        baseData[dept.deptName] = isSelected ? 'Y' : ''
       })
     }
     
@@ -265,13 +266,17 @@ export const exportCoursePlanningToExcel = (
   const sheet = XLSX.utils.json_to_sheet(excelData)
 
   // 计算每列的最大宽度（根据内容）
-  let columnKeys = ['课程主分类', '训战分类', '课程名称', '课程编码（线上课程涉及）', '目标人群', '学分']
+  let columnKeys = ['课程主分类', '训战分类', '课程名称', '课程编码（线上课程涉及）', '课程链接', '目标人群', '学分']
   if (departmentColumns && departmentColumns.length > 0) {
     columnKeys = [...columnKeys, ...departmentColumns.map(d => d.deptName)]
   }
   
   const columnWidths = columnKeys.map((key) => {
     let maxWidth = key.length // 从表头长度开始
+    
+    // 如果是部门列，宽度增加一倍（为了更清晰地显示部门名称）
+    const isDepartmentCol = departmentColumns && departmentColumns.some(d => d.deptName === key)
+    
     // 遍历所有数据行，找到该列的最大长度
     excelData.forEach((row) => {
       const cellValue = String(row[key as keyof typeof row] || '')
@@ -284,6 +289,12 @@ export const exportCoursePlanningToExcel = (
         maxWidth = width
       }
     })
+    
+    // 如果是部门列，宽度增加一倍
+    if (isDepartmentCol) {
+      return { wch: Math.min(Math.max(maxWidth * 2 + 4, 20), 80) }
+    }
+    
     // 设置列宽，加一些padding（最小宽度为10，最大不超过50，并加2个字符的padding）
     return { wch: Math.min(Math.max(maxWidth + 2, 10), 50) }
   })
