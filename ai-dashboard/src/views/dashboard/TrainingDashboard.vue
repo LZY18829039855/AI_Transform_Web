@@ -14,6 +14,7 @@ import type {
   TrainingExpertCadreSummaryRow,
   TrainingPersonalOverviewRow,
   TrainingRoleSummaryRow,
+  DepartmentSelection,
 } from '@/types/dashboard'
 
 const router = useRouter()
@@ -54,8 +55,25 @@ const handlePlanningClick = async () => {
       ElMessage.warning('暂无数据可下载')
       return
     }
+
+    // 提取所有出现的部门作为表头列
+    const deptMap = new Map<string, string>()
+    planningData.forEach(course => {
+      if (course.selectedDepts && course.selectedDepts.length > 0) {
+        course.selectedDepts.forEach(dept => {
+          deptMap.set(dept.deptCode, dept.deptName)
+        })
+      }
+    })
+    
+    // 转换为数组并排序
+    const departmentColumns: DepartmentSelection[] = Array.from(deptMap.entries()).map(([deptCode, deptName]) => ({
+      deptCode,
+      deptName
+    })).sort((a, b) => a.deptCode.localeCompare(b.deptCode))
+
     // 导出Excel
-    exportCoursePlanningToExcel(planningData, '训战课程规划明细')
+    exportCoursePlanningToExcel(planningData, departmentColumns, '训战课程规划明细')
     ElMessage.success('下载成功')
   } catch (error) {
     console.error('下载课程规划明细失败：', error)
@@ -192,7 +210,7 @@ defineExpose({
       <article class="download-resource-card__item">
         <h4>{{ DOWNLOAD_RESOURCES[0].title }}</h4>
         <p>{{ DOWNLOAD_RESOURCES[0].description }}</p>
-        <el-link type="primary" @click.stop="handlePlanningClick">下载明细</el-link>
+        <el-button type="primary" @click.stop="handlePlanningClick">下载明细</el-button>
       </article>
     </el-card>
 
