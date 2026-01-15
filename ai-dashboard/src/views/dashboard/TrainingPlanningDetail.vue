@@ -280,6 +280,9 @@ onMounted(() => {
     th {
       padding: 10px 0;
       text-align: center;
+      background-color: #eef5fe !important;
+      color: #303133;
+      font-weight: 700;
     }
   }
 
