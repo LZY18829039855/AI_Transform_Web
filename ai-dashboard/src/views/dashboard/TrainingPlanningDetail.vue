@@ -141,7 +141,7 @@ onMounted(() => {
         <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
         <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
         <el-table-column prop="courseName" label="课程名称" width="500" align="center" />
-        <el-table-column label="课程编码（线上课程涉及）" min-width="300" align="center">
+        <el-table-column label="课程编码（线上课程涉及）" min-width="200" align="center">
           <template #default="{ row }">
             <el-tooltip
               v-if="row.courseLink && row.courseNumber"
