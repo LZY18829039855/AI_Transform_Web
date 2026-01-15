@@ -294,6 +294,11 @@ export const exportCoursePlanningToExcel = (
     if (isDepartmentCol) {
       return { wch: Math.min(Math.max(maxWidth * 2 + 4, 20), 80) }
     }
+
+    // 如果是课程编码列，宽度增加两个汉字宽度（4个字符）
+    if (key === '课程编码（线上课程涉及）') {
+      return { wch: Math.min(Math.max(maxWidth + 6, 14), 50) }
+    }
     
     // 设置列宽，加一些padding（最小宽度为10，最大不超过50，并加2个字符的padding）
     return { wch: Math.min(Math.max(maxWidth + 2, 10), 50) }
