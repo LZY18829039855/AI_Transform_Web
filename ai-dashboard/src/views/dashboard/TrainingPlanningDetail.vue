@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { onMounted, ref, computed } from 'vue'
+import { ArrowLeft, Check } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
+import { ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSkeleton, ElTable, ElTableColumn, ElIcon } from 'element-plus'
 import { fetchCoursePlanningInfoList } from '@/api/dashboard'
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
-import type { CoursePlanningInfo } from '@/types/dashboard'
+import type { CoursePlanningInfo, DepartmentSelection } from '@/types/dashboard'
 
 const router = useRouter()
 const loading = ref(false)
 const planningData = ref<CoursePlanningInfo[]>([])
+const departmentColumns = ref<DepartmentSelection[]>([])
 
 const handleBack = () => {
   router.push({ name: 'TrainingDashboard' })
@@ -19,6 +20,23 @@ const fetchData = async () => {
   loading.value = true
   try {
     const data = await fetchCoursePlanningInfoList()
+    
+    // 提取所有出现的部门作为表头列
+    const deptMap = new Map<string, string>()
+    data.forEach(course => {
+      if (course.selectedDepts && course.selectedDepts.length > 0) {
+        course.selectedDepts.forEach(dept => {
+          deptMap.set(dept.deptCode, dept.deptName)
+        })
+      }
+    })
+    
+    // 转换为数组并排序（可选：按部门编码或名称排序）
+    departmentColumns.value = Array.from(deptMap.entries()).map(([deptCode, deptName]) => ({
+      deptCode,
+      deptName
+    })).sort((a, b) => a.deptCode.localeCompare(b.deptCode))
+
     // 先按课程主分类排序，然后在同一分类内按训战分类排序（基础在前，进阶在后）
     planningData.value = data.sort((a, b) => {
       const aType = a.bigType || ''
@@ -43,6 +61,11 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 检查课程是否被某部门选中
+const isSelectedByDept = (row: CoursePlanningInfo, deptCode: string) => {
+  return row.selectedDepts?.some(dept => dept.deptCode === deptCode) || false
 }
 
 // 单元格合并方法
@@ -138,6 +161,20 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="credit" label="学分" width="80" align="center" />
+        
+        <!-- 动态生成的部门列 -->
+        <el-table-column 
+          v-for="dept in departmentColumns" 
+          :key="dept.deptCode" 
+          :label="dept.deptName" 
+          width="120" 
+          align="center"
+        >
+          <template #default="{ row }">
+            <el-icon v-if="isSelectedByDept(row, dept.deptCode)" class="check-icon"><Check /></el-icon>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </section>
@@ -239,6 +276,12 @@ onMounted(() => {
       padding: 10px 0;
       text-align: center;
     }
+  }
+
+  .check-icon {
+    color: #67c23a;
+    font-weight: bold;
+    font-size: 16px;
   }
 }
 

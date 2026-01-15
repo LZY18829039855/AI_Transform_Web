@@ -783,6 +783,11 @@ export interface EmployeeDrillDownResponseVO {
   employeeDetails?: EmployeeDetailVO[]
 }
 
+export interface DepartmentSelection {
+  deptCode: string
+  deptName: string
+}
+
 /**
  * 课程规划明细信息（对应后端 CoursePlanningInfoVO）
  */
@@ -799,6 +804,7 @@ export interface CoursePlanningInfo {
   studyDuration?: string // 学习时长
   courseLevel?: string // 课程级别
   inClassTest?: string // 随堂测试
+  selectedDepts?: DepartmentSelection[] // 已选该课程的部门列表
 }
 
 // AI干部岗位概述表相关接口
