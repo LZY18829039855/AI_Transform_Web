@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx-js-style'
-import type { AppointmentAuditRecord, CertificationAuditRecord, CoursePlanningInfo } from '@/types/dashboard'
+import type { AppointmentAuditRecord, CertificationAuditRecord, CoursePlanningInfo, DepartmentSelection } from '@/types/dashboard'
 
 /**
  * 格式化布尔值为中文
@@ -218,10 +218,12 @@ export const exportCertificationDataToExcel = (
 /**
  * 导出课程规划明细数据到Excel
  * @param planningData 课程规划明细数据
+ * @param departmentColumns 部门列信息
  * @param fileName 文件名（不包含扩展名）
  */
 export const exportCoursePlanningToExcel = (
   planningData: CoursePlanningInfo[],
+  departmentColumns: DepartmentSelection[] = [],
   fileName: string = '训战课程规划明细',
 ) => {
   // 创建工作簿
@@ -238,21 +240,37 @@ export const exportCoursePlanningToExcel = (
   })
 
   // 准备数据
-  const excelData = sortedData.map((item) => ({
-    '课程主分类': item.bigType || '',
-    '训战分类': item.courseLevel || '',
-    '课程名称': item.courseName || '',
-    '课程编码（线上课程涉及）': item.courseLink || '',
-    '目标人群': 'ALL',
-    '学分': item.credit || '',
-  }))
+  const excelData = sortedData.map((item) => {
+    const baseData: Record<string, string> = {
+      '课程主分类': item.bigType || '',
+      '训战分类': item.courseLevel || '',
+      '课程名称': item.courseName || '',
+      '课程编码（线上课程涉及）': item.courseNumber || '',
+      '目标人群': 'ALL',
+      '学分': item.credit || '',
+    }
+
+    // 添加部门列信息
+    if (departmentColumns && departmentColumns.length > 0) {
+      departmentColumns.forEach(dept => {
+        const isSelected = item.selectedDepts?.some(selected => selected.deptCode === dept.deptCode)
+        baseData[dept.deptName] = isSelected ? '√' : '-'
+      })
+    }
+    
+    return baseData
+  })
 
   // 创建工作表
   const sheet = XLSX.utils.json_to_sheet(excelData)
 
   // 计算每列的最大宽度（根据内容）
-  const columnKeys = ['课程主分类', '训战分类', '课程名称', '课程编码（线上课程涉及）', '目标人群', '学分']
-  const columnWidths = columnKeys.map((key, colIndex) => {
+  let columnKeys = ['课程主分类', '训战分类', '课程名称', '课程编码（线上课程涉及）', '目标人群', '学分']
+  if (departmentColumns && departmentColumns.length > 0) {
+    columnKeys = [...columnKeys, ...departmentColumns.map(d => d.deptName)]
+  }
+  
+  const columnWidths = columnKeys.map((key) => {
     let maxWidth = key.length // 从表头长度开始
     // 遍历所有数据行，找到该列的最大长度
     excelData.forEach((row) => {
@@ -315,6 +333,7 @@ export const exportCoursePlanningToExcel = (
     
     for (let i = 1; i < sortedData.length; i++) {
       const item = sortedData[i]
+      if (!item) continue
       const excelRow = i + 1 // Excel行号（索引i对应Excel第i+1行，因为表头占第1行）
       
       if (item.bigType !== currentBigType) {

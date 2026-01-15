@@ -104,7 +104,7 @@ const handleDownload = async () => {
       return
     }
     // 导出Excel
-    exportCoursePlanningToExcel(planningData.value, '训战课程规划明细')
+    exportCoursePlanningToExcel(planningData.value, departmentColumns.value, '训战课程规划明细')
     ElMessage.success('下载成功')
   } catch (error) {
     console.error('下载课程规划明细失败：', error)
