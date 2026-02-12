@@ -2,11 +2,13 @@
 import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElCascader, ElEmpty, ElForm, ElFormItem, ElLink, ElMessage, ElSelect, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
-import { fetchCoursePlanningInfoList, fetchTrainingDashboard } from '@/api/dashboard'
+import { Medal } from '@element-plus/icons-vue'
+import { fetchCoursePlanningInfoList, fetchDepartmentCompletionRate, fetchTrainingDashboard } from '@/api/dashboard'
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import type {
+  DepartmentCourseCompletionRateRow,
   TrainingAllStaffSummaryGroup,
   TrainingAllStaffSummaryRow,
   TrainingDashboardData,
@@ -20,6 +22,9 @@ import type {
 const router = useRouter()
 const loading = ref(false)
 const dashboardData = ref<TrainingDashboardData | null>(null)
+const departmentCompletionList = ref<DepartmentCourseCompletionRateRow[]>([])
+/** 全员训战总览表 - 角色视图，当前仅「全员」对应 personType=0 */
+const departmentCompletionRole = ref('0')
 
 const filters = reactive<TrainingDashboardFilters>({
   departmentPath: [],
@@ -81,6 +86,18 @@ const handlePlanningClick = async () => {
   }
 }
 
+/** 部门筛选框选中的部门 ID，作为全员训战查询接口 /department-completion-rate 的 deptId 参数；未选部门时传 '0' */
+const resolveDeptIdForCompletionRate = (): string => {
+  const path = filters.departmentPath
+  if (!path || path.length === 0) {
+    return '0'
+  }
+  const selectedDeptId = path[path.length - 1]
+  return (selectedDeptId != null && String(selectedDeptId).trim() !== '')
+    ? String(selectedDeptId)
+    : '0'
+}
+
 const fetchData = async () => {
   loading.value = true
   try {
@@ -89,6 +106,10 @@ const fetchData = async () => {
       departmentPath: filters.departmentPath?.length ? [...filters.departmentPath] : undefined,
     }
     dashboardData.value = await fetchTrainingDashboard(payload)
+
+    const deptId = resolveDeptIdForCompletionRate()
+    const personType = parseInt(departmentCompletionRole.value, 10) || 0
+    departmentCompletionList.value = await fetchDepartmentCompletionRate(deptId, personType)
   } catch (error) {
     console.error('获取训战看板数据失败：', error)
     ElMessage.error('获取数据失败，请稍后重试')
@@ -98,7 +119,7 @@ const fetchData = async () => {
 }
 
 watch(
-  () => [filters.role, filters.departmentPath],
+  () => [filters.role, filters.departmentPath, departmentCompletionRole.value],
   () => {
     fetchData()
   },
@@ -181,7 +202,6 @@ onActivated(() => {
 defineExpose({
   filters,
   departmentOptions,
-  roleOptions,
   loading,
   dashboardData,
   fetchData,
@@ -226,11 +246,6 @@ defineExpose({
             separator=" / "
             style="width: 260px"
           />
-        </el-form-item>
-        <el-form-item label="角色视图">
-          <el-select v-model="filters.role" placeholder="全员" style="width: 180px">
-            <el-option v-for="item in roleOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
@@ -278,6 +293,75 @@ defineExpose({
               <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
             </el-table-column>
           </el-table>
+        </el-card>
+
+        <!-- 全员训战总览表：样式参考任职认证看板-全员任职/认证趋势 -->
+        <el-card shadow="hover" class="charts-section">
+          <template #header>
+            <div class="charts-header">
+              <div class="charts-title">
+                <el-icon><Medal /></el-icon>
+                <div>
+                  <h3>全员训战总览表</h3>
+                  <p>聚焦专家、干部与全员的训战执行态势，通过部门与角色筛选快速定位短板，支持关键指标下钻查看详情。</p>
+                </div>
+              </div>
+              <div class="charts-filter">
+                <el-form :inline="true" label-width="80">
+                  <el-form-item label="角色视图">
+                    <el-select v-model="departmentCompletionRole" placeholder="全员" style="width: 200px">
+                      <el-option label="全员" value="0" />
+                    </el-select>
+                  </el-form-item>
+                </el-form>
+              </div>
+            </div>
+          </template>
+          <el-row :gutter="16">
+            <el-col :xs="24" :sm="24" :md="24" :lg="24">
+              <el-card shadow="hover" class="chart-card">
+                <template #header>
+                  <div class="card-header">
+                    <h3>部门训战数据</h3>
+                  </div>
+                </template>
+                <el-table
+                  v-if="departmentCompletionList.length > 0"
+                  :data="departmentCompletionList"
+                  border
+                  stripe
+                  size="small"
+                  :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+                  style="width: 100%"
+                >
+                  <el-table-column prop="deptName" label="部门" min-width="140" align="center" header-align="center" />
+                  <el-table-column prop="baselineCount" label="基线人数" min-width="100" align="center" header-align="center" />
+                  <el-table-column prop="basicCourseCount" label="基础课程数" min-width="120" align="center" header-align="center" />
+                  <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="120" align="center" header-align="center" />
+                  <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="120" align="center" header-align="center" />
+                  <el-table-column prop="basicAvgCompletedCount" label="基础课程平均完课人数" min-width="180" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatNumber(row.basicAvgCompletedCount) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="advancedAvgCompletedCount" label="进阶课程平均完课人数" min-width="180" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatNumber(row.advancedAvgCompletedCount) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="practicalAvgCompletedCount" label="实战课程平均完课人数" min-width="180" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatNumber(row.practicalAvgCompletedCount) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="basicAvgCompletionRate" label="基础课程平均完课率" min-width="160" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatPercent(row.basicAvgCompletionRate) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="advancedAvgCompletionRate" label="进阶课程平均完课率" min-width="160" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatPercent(row.advancedAvgCompletionRate) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="practicalAvgCompletionRate" label="实战课程平均完课率" min-width="160" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatPercent(row.practicalAvgCompletionRate) }}</template>
+                  </el-table-column>
+                </el-table>
+                <el-empty v-else-if="!loading" description="暂无数据" :image-size="80" />
+              </el-card>
+            </el-col>
+          </el-row>
         </el-card>
 
         <el-card shadow="hover" class="summary-card">
@@ -821,6 +905,101 @@ defineExpose({
             font-weight: 700;
             font-size: 16px;
             color: #000;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 全员训战总览表：样式参考任职认证看板-全员任职/认证趋势
+.charts-section {
+  border: none;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.96);
+
+  :deep(.el-card__body) {
+    padding: $spacing-lg;
+  }
+
+  :deep(.el-row) {
+    row-gap: $spacing-lg;
+  }
+
+  .charts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .charts-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-main-color;
+    }
+
+    p {
+      margin: $spacing-xs 0 0;
+      color: $text-secondary-color;
+    }
+  }
+
+  .charts-filter {
+    display: flex;
+    align-items: center;
+
+    :deep(.el-form-item__label) {
+      font-weight: 600;
+      font-size: 16px;
+    }
+  }
+
+  .chart-card {
+    border: none;
+    border-radius: $radius-lg;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: $shadow-card;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: $text-main-color;
+      }
+    }
+
+    .clickable-cell {
+      cursor: pointer;
+    }
+
+    :deep(.el-table) {
+      --el-table-border-color: rgba(47, 59, 82, 0.08);
+      --el-table-row-hover-bg-color: rgba(58, 122, 254, 0.08);
+      width: 100%;
+
+      .summary-row {
+        background-color: rgba(58, 122, 254, 0.1) !important;
+        font-weight: bold !important;
+
+        td {
+          background-color: rgba(58, 122, 254, 0.1) !important;
+          font-weight: bold !important;
+
+          .cell {
+            font-weight: bold !important;
+            font-size: 14px !important;
           }
         }
       }

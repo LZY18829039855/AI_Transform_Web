@@ -45,6 +45,22 @@ export interface TrainingPersonalOverviewRow {
   completionRate: number
 }
 
+/** 部门课程完成率（/department-completion-rate 单条） */
+export interface DepartmentCourseCompletionRateRow {
+  deptId: string
+  deptName: string
+  baselineCount: number
+  basicCourseCount: number
+  advancedCourseCount: number
+  practicalCourseCount: number
+  basicAvgCompletedCount: number
+  advancedAvgCompletedCount: number
+  practicalAvgCompletedCount: number
+  basicAvgCompletionRate: number
+  advancedAvgCompletionRate: number
+  practicalAvgCompletionRate: number
+}
+
 export interface TrainingRoleSummaryRow {
   maturityLevel: string
   personCount: number

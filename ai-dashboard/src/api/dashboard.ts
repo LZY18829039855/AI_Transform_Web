@@ -44,6 +44,7 @@ import type {
   TrainingDetailFilters,
   TrainingBattleRecord,
   TrainingCoursePlanRecord,
+  DepartmentCourseCompletionRateRow,
   TrainingPersonalOverviewRow,
   TrainingPlanningResource,
   TrainingRole,
@@ -1172,6 +1173,28 @@ export const fetchPersonalCourseCompletion = async (): Promise<PersonalCourseCom
   } catch (error) {
     console.error('获取个人课程完成情况异常：', error)
     return null
+  }
+}
+
+/**
+ * 部门课程完成率：根据父部门ID返回下一层级各部门的课程完成率统计
+ * @param deptId 父部门ID（0 或二级部门时返回所有四级部门；三级返回四级子部门；四/五/六级返回下一层级子部门）
+ * @param personType 人员类型，当前仅处理 0
+ */
+export const fetchDepartmentCompletionRate = async (
+  deptId: string,
+  personType: number = 0
+): Promise<DepartmentCourseCompletionRateRow[]> => {
+  try {
+    const url = `/personal-course/department-completion-rate?deptId=${encodeURIComponent(deptId)}&personType=${personType}`
+    const response = await get<Result<DepartmentCourseCompletionRateRow[]>>(url)
+    if (response.code === 200 && Array.isArray(response.data)) {
+      return response.data
+    }
+    return []
+  } catch (error) {
+    console.error('获取部门课程完成率异常：', error)
+    return []
   }
 }
 
