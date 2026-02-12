@@ -23,6 +23,8 @@ const router = useRouter()
 const loading = ref(false)
 const dashboardData = ref<TrainingDashboardData | null>(null)
 const departmentCompletionList = ref<DepartmentCourseCompletionRateRow[]>([])
+/** 职位类训战数据列表（待对接后端接口，目前使用占位数据） */
+const jobCategoryCompletionList = ref<DepartmentCourseCompletionRateRow[]>([])
 /** 全员训战总览表 - 角色视图，当前仅「全员」对应 personType=0 */
 const departmentCompletionRole = ref('0')
 
@@ -335,6 +337,49 @@ defineExpose({
                   style="width: 100%"
                 >
                   <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
+                  <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center" />
+                  <el-table-column prop="basicCourseCount" label="基础课程数" min-width="90" align="center" header-align="center" />
+                  <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="90" align="center" header-align="center" />
+                  <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="90" align="center" header-align="center" />
+                  <el-table-column prop="basicAvgCompletedCount" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatNumber(row.basicAvgCompletedCount) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="advancedAvgCompletedCount" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatNumber(row.advancedAvgCompletedCount) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="practicalAvgCompletedCount" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatNumber(row.practicalAvgCompletedCount) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="basicAvgCompletionRate" label="基础课程平均完课率" min-width="110" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatPercent(row.basicAvgCompletionRate) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="advancedAvgCompletionRate" label="进阶课程平均完课率" min-width="110" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatPercent(row.advancedAvgCompletionRate) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="practicalAvgCompletionRate" label="实战课程平均完课率" min-width="110" align="center" header-align="center">
+                    <template #default="{ row }">{{ formatPercent(row.practicalAvgCompletionRate) }}</template>
+                  </el-table-column>
+                </el-table>
+                <el-empty v-else-if="!loading" description="暂无数据" :image-size="80" />
+              </el-card>
+
+              <!-- 职位类训战数据 -->
+              <el-card shadow="hover" class="chart-card" style="margin-top: 16px;">
+                <template #header>
+                  <div class="card-header">
+                    <h3>职位类训战数据</h3>
+                  </div>
+                </template>
+                <el-table
+                  v-if="jobCategoryCompletionList.length > 0"
+                  :data="jobCategoryCompletionList"
+                  border
+                  stripe
+                  size="small"
+                  :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+                  style="width: 100%"
+                >
+                  <el-table-column prop="deptName" label="职位类" min-width="100" align="center" header-align="center" />
                   <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center" />
                   <el-table-column prop="basicCourseCount" label="基础课程数" min-width="90" align="center" header-align="center" />
                   <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="90" align="center" header-align="center" />
