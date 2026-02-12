@@ -182,6 +182,16 @@ const handleAllStaffDrill = (
   })
 }
 
+/** 部门训战数据 - 基线人数点击跳转到训战看板详情页 */
+const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) => {
+  goToDetail({
+    type: 'department',
+    deptId: row.deptId,
+    deptName: row.deptName,
+    role: filters.role,
+  })
+}
+
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatNumber = (value: number) => (value ?? 0).toFixed(1)
 
@@ -337,7 +347,13 @@ defineExpose({
                   style="width: 100%"
                 >
                   <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
-                  <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center" />
+                  <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center">
+                    <template #default="{ row }">
+                      <el-button link type="primary" class="drill-link" @click="handleDepartmentBaselineDrill(row)">
+                        {{ row.baselineCount }}
+                      </el-button>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="basicCourseCount" label="基础课程数" min-width="90" align="center" header-align="center" />
                   <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="90" align="center" header-align="center" />
                   <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="90" align="center" header-align="center" />
