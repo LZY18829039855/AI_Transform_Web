@@ -109,6 +109,17 @@ const handleCourseClick = (url: string) => {
   window.open(url, '_blank')
 }
 
+/** 跳转到个人训战课程详情页，使用 /completion 接口（account 工号） */
+const goToPersonalDetail = (account: string) => {
+  if (!account || !String(account).trim()) {
+    return
+  }
+  router.push({
+    name: 'PersonalTrainingDetail',
+    query: { account: String(account).trim() },
+  })
+}
+
 watch(
   filters,
   () => {
@@ -251,7 +262,13 @@ onActivated(() => {
           max-height="600"
           highlight-current-row
         >
-          <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" />
+          <el-table-column label="姓名" width="100" fixed="left" align="center" header-align="center">
+            <template #default="{ row }">
+              <el-link type="primary" :underline="false" @click="goToPersonalDetail(row.employeeNumber)">
+                {{ row.name }}
+              </el-link>
+            </template>
+          </el-table-column>
           <el-table-column prop="employeeNumber" label="工号" width="120" align="center" header-align="center" />
           <el-table-column prop="jobCategory" label="职位类" width="100" align="center" header-align="center" />
           <el-table-column prop="jobSubcategory" label="职位子类" width="100" align="center" header-align="center" />
@@ -288,7 +305,13 @@ onActivated(() => {
           max-height="600"
           highlight-current-row
         >
-          <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" />
+          <el-table-column label="姓名" width="100" fixed="left" align="center" header-align="center">
+            <template #default="{ row }">
+              <el-link type="primary" :underline="false" @click="goToPersonalDetail(row.employeeId)">
+                {{ row.name }}
+              </el-link>
+            </template>
+          </el-table-column>
           <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
           <el-table-column prop="jobCategory" label="职位类" width="120" align="center" header-align="center" />
           <el-table-column prop="jobSubCategory" label="职位子类" width="120" align="center" header-align="center" />

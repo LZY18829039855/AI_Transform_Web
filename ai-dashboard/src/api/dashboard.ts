@@ -1158,14 +1158,19 @@ export const fetchTrainingDetail = async (
 }
 
 /**
- * 获取个人课程完成情况
+ * 获取个人课程完成情况（/completion 接口）
+ * @param account 可选，工号；不传时后端从 cookie 获取当前用户
  * @returns 个人课程完成情况数据
  */
-export const fetchPersonalCourseCompletion = async (): Promise<PersonalCourseCompletionResponse | null> => {
+export const fetchPersonalCourseCompletion = async (
+  account?: string
+): Promise<PersonalCourseCompletionResponse | null> => {
   try {
-    const response = await get<Result<PersonalCourseCompletionResponse>>(
-      '/personal-course/completion'
-    )
+    const url =
+      account != null && account.trim() !== ''
+        ? `/personal-course/completion?account=${encodeURIComponent(account.trim())}`
+        : '/personal-course/completion'
+    const response = await get<Result<PersonalCourseCompletionResponse>>(url)
     if (response.code === 200) {
       return response.data
     }

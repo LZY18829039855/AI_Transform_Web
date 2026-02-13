@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const detailData = ref<PersonalCourseCompletionResponse | null>(null)
 const selectedCategory = ref<string>('全部')
@@ -171,7 +172,8 @@ const getSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
 const fetchDetail = async () => {
   loading.value = true
   try {
-    const data = await fetchPersonalCourseCompletion()
+    const account = (route.query.account as string) || undefined
+    const data = await fetchPersonalCourseCompletion(account)
     if (data) {
       detailData.value = data
     } else {
