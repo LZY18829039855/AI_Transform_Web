@@ -2,10 +2,11 @@
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchTrainingDetail } from '@/api/dashboard'
+import { fetchDepartmentEmployeeTrainingOverview, fetchTrainingDetail } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
 import type {
+  DepartmentEmployeeTrainingOverviewRow,
   TrainingDetailData,
   TrainingDetailFilters,
 } from '@/types/dashboard'
@@ -15,6 +16,17 @@ const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
+/** 部门下钻时，从「部门全员训战总览」接口返回的明细列表 */
+const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
+
+/** 是否为 drill-down 页面（路径为 training/detail/drill-down）：该页默认使用「部门全员训战总览」表格列 */
+const isDrillDownPage = computed(() => props.id === 'drill-down')
+/** 是否有部门参数可请求下钻数据（有 deptId 时才调接口） */
+const isDepartmentDrillDown = computed(
+  () => isDrillDownPage.value && !!route.query.deptId
+)
+/** 部门下钻时的部门名称（用于标题展示） */
+const drillDownDeptName = computed(() => (route.query.deptName as string) || '')
 
 // 从路由参数中解析部门路径
 const parseDepartmentPathFromQuery = (): string[] => {
@@ -51,12 +63,23 @@ const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filter
 const fetchDetail = async () => {
   loading.value = true
   try {
-    detailData.value = await fetchTrainingDetail(props.id, {
-      ...filters.value,
-      departmentPath: filters.value.departmentPath?.length
-        ? [...(filters.value.departmentPath ?? [])]
-        : undefined,
-    })
+    if (isDrillDownPage.value) {
+      if (route.query.deptId) {
+        const deptId = route.query.deptId as string
+        const personType = parseInt((route.query.role as string) || '0', 10)
+        drillDownRecords.value = await fetchDepartmentEmployeeTrainingOverview(deptId, personType)
+      } else {
+        drillDownRecords.value = []
+      }
+    } else {
+      detailData.value = await fetchTrainingDetail(props.id, {
+        ...filters.value,
+        departmentPath: filters.value.departmentPath?.length
+          ? [...(filters.value.departmentPath ?? [])]
+          : undefined,
+      })
+      drillDownRecords.value = []
+    }
   } finally {
     loading.value = false
   }
@@ -78,6 +101,9 @@ const resetFilters = () => {
 }
 
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
+/** 完课占比展示（接口已为百分比数值，保留 2 位小数） */
+const formatPercent = (value: number | undefined) =>
+  value != null ? `${Number(value).toFixed(2)}%` : '-'
 
 const handleCourseClick = (url: string) => {
   window.open(url, '_blank')
@@ -122,7 +148,7 @@ onActivated(() => {
       </el-space>
     </header>
 
-    <el-card shadow="hover" class="filter-card">
+    <el-card v-if="!isDrillDownPage" shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
         <el-form-item label="部门筛选">
           <el-cascader
@@ -202,14 +228,58 @@ onActivated(() => {
     </el-card>
 
     <el-skeleton :rows="8" animated v-if="loading" />
-    <template v-else-if="detailData">
-      <!-- AI训战数据明细 -->
+    <template v-else-if="isDrillDownPage || detailData">
+      <!-- AI训战数据明细：drill-down 页默认使用部门全员训战总览列（姓名、工号、职位类…目标课程完课占比） -->
       <el-card shadow="hover" class="detail-block">
         <template #header>
           <h3>AI 训战数据明细</h3>
+          <p v-if="isDepartmentDrillDown && drillDownDeptName" class="drill-down-dept">
+            部门：{{ drillDownDeptName }}
+          </p>
+          <p v-else-if="isDrillDownPage && !route.query.deptId" class="drill-down-dept drill-down-hint">
+            请从训战看板「部门训战数据」表格中点击基线人数进入，以加载该部门全员明细。
+          </p>
         </template>
+        <!-- drill-down 页：始终展示部门全员训战总览表格列 -->
         <el-table
-          :data="detailData.records"
+          v-if="isDrillDownPage"
+          :data="drillDownRecords"
+          border
+          stripe
+          style="width: 100%"
+          max-height="600"
+          highlight-current-row
+        >
+          <el-table-column prop="name" label="姓名" width="100" fixed="left" />
+          <el-table-column prop="employeeNumber" label="工号" width="120" />
+          <el-table-column prop="jobCategory" label="职位类" width="100" />
+          <el-table-column prop="jobSubcategory" label="职位子类" width="100" />
+          <el-table-column prop="firstDept" label="一级部门" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="secondDept" label="二级部门" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="thirdDept" label="三级部门" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="fourthDept" label="四级部门" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="fifthDept" label="五级部门" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="lowestDept" label="最小部门" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="basicTargetCourseCount" label="基础目标课程数" width="120" align="center" />
+          <el-table-column prop="basicCompletedCount" label="基础目标课程完课数" width="140" align="center" />
+          <el-table-column label="基础目标课程完课占比" width="160" align="center">
+            <template #default="{ row }">{{ formatPercent(row.basicCompletionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="advancedTargetCourseCount" label="进阶目标课程数" width="120" align="center" />
+          <el-table-column prop="advancedCompletedCount" label="进阶目标课程完课数" width="140" align="center" />
+          <el-table-column label="进阶目标课程完课占比" width="160" align="center">
+            <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="totalTargetCourseCount" label="总目标课程数" width="120" align="center" />
+          <el-table-column prop="totalCompletedCount" label="目标课程完课数" width="120" align="center" />
+          <el-table-column label="目标课程完课占比" width="140" align="center">
+            <template #default="{ row }">{{ formatPercent(row.totalCompletionRate) }}</template>
+          </el-table-column>
+        </el-table>
+        <!-- 非部门下钻：原有明细表格 -->
+        <el-table
+          v-else
+          :data="detailData!.records"
           border
           stripe
           style="width: 100%"
@@ -265,8 +335,8 @@ onActivated(() => {
         </el-table>
       </el-card>
 
-      <!-- 训战课程规划 -->
-      <el-card shadow="hover" class="detail-block">
+      <!-- 训战课程规划（部门下钻时不展示，因无课程规划数据） -->
+      <el-card v-if="detailData" shadow="hover" class="detail-block">
         <template #header>
           <h3>训战课程规划</h3>
         </template>
@@ -365,6 +435,16 @@ onActivated(() => {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+  }
+
+  .drill-down-dept {
+    margin: $spacing-xs 0 0;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+  }
+  .drill-down-hint {
+    color: rgba(0, 0, 0, 0.55);
+    font-size: 13px;
   }
 }
 

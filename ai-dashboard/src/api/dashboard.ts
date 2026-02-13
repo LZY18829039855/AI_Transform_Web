@@ -45,6 +45,7 @@ import type {
   TrainingBattleRecord,
   TrainingCoursePlanRecord,
   DepartmentCourseCompletionRateRow,
+  DepartmentEmployeeTrainingOverviewRow,
   TrainingPersonalOverviewRow,
   TrainingPlanningResource,
   TrainingRole,
@@ -1194,6 +1195,28 @@ export const fetchDepartmentCompletionRate = async (
     return []
   } catch (error) {
     console.error('获取部门课程完成率异常：', error)
+    return []
+  }
+}
+
+/**
+ * 部门全员训战总览（下钻）：根据部门ID返回该部门下全员训战明细
+ * @param deptId 部门ID（部门编码）
+ * @param personType 人员类型，当前仅处理 0
+ */
+export const fetchDepartmentEmployeeTrainingOverview = async (
+  deptId: string,
+  personType: number = 0
+): Promise<DepartmentEmployeeTrainingOverviewRow[]> => {
+  try {
+    const url = `/personal-course/department-employee-training-overview?deptId=${encodeURIComponent(deptId)}&personType=${personType}`
+    const response = await get<Result<DepartmentEmployeeTrainingOverviewRow[]>>(url)
+    if (response.code === 200 && Array.isArray(response.data)) {
+      return response.data
+    }
+    return []
+  } catch (error) {
+    console.error('获取部门全员训战总览异常：', error)
     return []
   }
 }

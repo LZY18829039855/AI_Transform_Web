@@ -61,6 +61,29 @@ export interface DepartmentCourseCompletionRateRow {
   practicalAvgCompletionRate: number
 }
 
+/** 部门全员训战总览下钻（/department-employee-training-overview 单条） */
+export interface DepartmentEmployeeTrainingOverviewRow {
+  name: string
+  employeeNumber: string
+  jobCategory: string
+  jobSubcategory: string
+  firstDept: string
+  secondDept: string
+  thirdDept: string
+  fourthDept: string
+  fifthDept: string
+  lowestDept: string
+  basicTargetCourseCount: number
+  basicCompletedCount: number
+  basicCompletionRate: number
+  advancedTargetCourseCount: number
+  advancedCompletedCount: number
+  advancedCompletionRate: number
+  totalTargetCourseCount: number
+  totalCompletedCount: number
+  totalCompletionRate: number
+}
+
 export interface TrainingRoleSummaryRow {
   maturityLevel: string
   personCount: number
