@@ -246,33 +246,34 @@ onActivated(() => {
           :data="drillDownRecords"
           border
           stripe
+          size="small"
           style="width: 100%"
           max-height="600"
           highlight-current-row
         >
-          <el-table-column prop="name" label="姓名" width="100" fixed="left" />
-          <el-table-column prop="employeeNumber" label="工号" width="120" />
-          <el-table-column prop="jobCategory" label="职位类" width="100" />
-          <el-table-column prop="jobSubcategory" label="职位子类" width="100" />
-          <el-table-column prop="firstDept" label="一级部门" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="secondDept" label="二级部门" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="thirdDept" label="三级部门" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="fourthDept" label="四级部门" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="fifthDept" label="五级部门" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="lowestDept" label="最小部门" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="basicTargetCourseCount" label="基础目标课程数" width="120" align="center" />
-          <el-table-column prop="basicCompletedCount" label="基础目标课程完课数" width="140" align="center" />
-          <el-table-column label="基础目标课程完课占比" width="160" align="center">
+          <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" />
+          <el-table-column prop="employeeNumber" label="工号" width="120" align="center" header-align="center" />
+          <el-table-column prop="jobCategory" label="职位类" width="100" align="center" header-align="center" />
+          <el-table-column prop="jobSubcategory" label="职位子类" width="100" align="center" header-align="center" />
+          <el-table-column prop="firstDept" label="一级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
+          <el-table-column prop="secondDept" label="二级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
+          <el-table-column prop="thirdDept" label="三级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
+          <el-table-column prop="fourthDept" label="四级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
+          <el-table-column prop="fifthDept" label="五级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
+          <el-table-column prop="lowestDept" label="最小部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
+          <el-table-column prop="basicTargetCourseCount" label="基础目标课程数" width="120" align="center" header-align="center" />
+          <el-table-column prop="basicCompletedCount" label="基础目标课程完课数" width="140" align="center" header-align="center" />
+          <el-table-column label="基础目标课程完课占比" width="160" align="center" header-align="center">
             <template #default="{ row }">{{ formatPercent(row.basicCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="advancedTargetCourseCount" label="进阶目标课程数" width="120" align="center" />
-          <el-table-column prop="advancedCompletedCount" label="进阶目标课程完课数" width="140" align="center" />
-          <el-table-column label="进阶目标课程完课占比" width="160" align="center">
+          <el-table-column prop="advancedTargetCourseCount" label="进阶目标课程数" width="120" align="center" header-align="center" />
+          <el-table-column prop="advancedCompletedCount" label="进阶目标课程完课数" width="140" align="center" header-align="center" />
+          <el-table-column label="进阶目标课程完课占比" width="160" align="center" header-align="center">
             <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="totalTargetCourseCount" label="总目标课程数" width="120" align="center" />
-          <el-table-column prop="totalCompletedCount" label="目标课程完课数" width="120" align="center" />
-          <el-table-column label="目标课程完课占比" width="140" align="center">
+          <el-table-column prop="totalTargetCourseCount" label="总目标课程数" width="120" align="center" header-align="center" />
+          <el-table-column prop="totalCompletedCount" label="目标课程完课数" width="120" align="center" header-align="center" />
+          <el-table-column label="目标课程完课占比" width="140" align="center" header-align="center">
             <template #default="{ row }">{{ formatPercent(row.totalCompletionRate) }}</template>
           </el-table-column>
         </el-table>
@@ -282,56 +283,57 @@ onActivated(() => {
           :data="detailData!.records"
           border
           stripe
+          size="small"
           style="width: 100%"
           max-height="600"
           highlight-current-row
         >
-          <el-table-column prop="name" label="姓名" width="100" fixed="left" />
-          <el-table-column prop="employeeId" label="工号" width="120" />
-          <el-table-column prop="jobCategory" label="职位类" width="120" />
-          <el-table-column prop="jobSubCategory" label="职位子类" width="120" />
-          <el-table-column prop="departmentLevel1" label="一级部门" width="120" />
-          <el-table-column prop="departmentLevel2" label="二级部门" width="120" />
-          <el-table-column prop="departmentLevel3" label="三级部门" width="120" />
-          <el-table-column prop="departmentLevel4" label="四级部门" width="120" />
-          <el-table-column prop="departmentLevel5" label="五级部门" width="120" />
-          <el-table-column prop="minDepartment" label="最小部门" width="150" />
-          <el-table-column prop="trainingCategory" label="训战分类" width="120" />
-          <el-table-column prop="courseCategory" label="课程分类" width="120" />
-          <el-table-column prop="courseName" label="课程名称" width="200" />
-          <el-table-column label="是否目标课程" width="130">
+          <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" />
+          <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" />
+          <el-table-column prop="jobCategory" label="职位类" width="120" align="center" header-align="center" />
+          <el-table-column prop="jobSubCategory" label="职位子类" width="120" align="center" header-align="center" />
+          <el-table-column prop="departmentLevel1" label="一级部门" width="120" align="center" header-align="center" />
+          <el-table-column prop="departmentLevel2" label="二级部门" width="120" align="center" header-align="center" />
+          <el-table-column prop="departmentLevel3" label="三级部门" width="120" align="center" header-align="center" />
+          <el-table-column prop="departmentLevel4" label="四级部门" width="120" align="center" header-align="center" />
+          <el-table-column prop="departmentLevel5" label="五级部门" width="120" align="center" header-align="center" />
+          <el-table-column prop="minDepartment" label="最小部门" width="150" align="center" header-align="center" />
+          <el-table-column prop="trainingCategory" label="训战分类" width="120" align="center" header-align="center" />
+          <el-table-column prop="courseCategory" label="课程分类" width="120" align="center" header-align="center" />
+          <el-table-column prop="courseName" label="课程名称" width="200" align="center" header-align="center" />
+          <el-table-column label="是否目标课程" width="130" align="center" header-align="center">
             <template #default="{ row }">
               <el-tag :type="row.isTargetCourse ? 'success' : 'info'" effect="light">
                 {{ formatBoolean(row.isTargetCourse) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="是否完课" width="100">
+          <el-table-column label="是否完课" width="100" align="center" header-align="center">
             <template #default="{ row }">
               <el-tag :type="row.isCompleted ? 'success' : 'warning'" effect="light">
                 {{ formatBoolean(row.isCompleted) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="completionDate" label="完课日期" width="120" />
-          <el-table-column label="是否干部" width="100">
+          <el-table-column prop="completionDate" label="完课日期" width="120" align="center" header-align="center" />
+          <el-table-column label="是否干部" width="100" align="center" header-align="center">
             <template #default="{ row }">
               {{ formatBoolean(row.isCadre) }}
             </template>
           </el-table-column>
-          <el-table-column prop="cadreType" label="干部类型" width="120" />
-          <el-table-column label="是否专家" width="100">
+          <el-table-column prop="cadreType" label="干部类型" width="120" align="center" header-align="center" />
+          <el-table-column label="是否专家" width="100" align="center" header-align="center">
             <template #default="{ row }">
               {{ formatBoolean(row.isExpert) }}
             </template>
           </el-table-column>
-          <el-table-column label="是否基层主管" width="130">
+          <el-table-column label="是否基层主管" width="130" align="center" header-align="center">
             <template #default="{ row }">
               {{ formatBoolean(row.isFrontlineManager) }}
             </template>
           </el-table-column>
-          <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" />
-          <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" fixed="right" />
+          <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" align="center" header-align="center" />
+          <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" fixed="right" align="center" header-align="center" />
         </el-table>
       </el-card>
 
@@ -340,9 +342,9 @@ onActivated(() => {
         <template #header>
           <h3>训战课程规划</h3>
         </template>
-        <el-table :data="detailData.coursePlans" border stripe style="width: 100%">
-          <el-table-column prop="trainingCategory" label="训战分类" width="120" />
-          <el-table-column prop="courseName" label="课程名称" min-width="200">
+        <el-table :data="detailData.coursePlans" border stripe size="small" style="width: 100%">
+          <el-table-column prop="trainingCategory" label="训战分类" width="120" align="center" header-align="center" />
+          <el-table-column prop="courseName" label="课程名称" min-width="200" align="center" header-align="center">
             <template #default="{ row }">
               <el-link
                 type="primary"
@@ -354,7 +356,7 @@ onActivated(() => {
               </el-link>
             </template>
           </el-table-column>
-          <el-table-column prop="courseCode" label="课程编码" width="120">
+          <el-table-column prop="courseCode" label="课程编码" width="120" align="center" header-align="center">
             <template #default="{ row }">
               <el-link
                 type="primary"
@@ -366,8 +368,8 @@ onActivated(() => {
               </el-link>
             </template>
           </el-table-column>
-          <el-table-column prop="targetAudience" label="目标人群" width="180" />
-          <el-table-column prop="credits" label="学分" width="100" />
+          <el-table-column prop="targetAudience" label="目标人群" width="180" align="center" header-align="center" />
+          <el-table-column prop="credits" label="学分" width="100" align="center" header-align="center" />
         </el-table>
       </el-card>
     </template>
@@ -445,6 +447,26 @@ onActivated(() => {
   .drill-down-hint {
     color: rgba(0, 0, 0, 0.55);
     font-size: 13px;
+  }
+
+  /* 与任职认证明细表格一致：列头与内容字体、对齐统一 */
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+  :deep(.el-table th) {
+    font-size: 12px;
+    white-space: nowrap;
+    text-align: center;
+  }
+  :deep(.el-table th .cell) {
+    text-align: center;
+  }
+  :deep(.el-table td) {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  :deep(.el-table .cell) {
+    white-space: nowrap;
   }
 }
 
