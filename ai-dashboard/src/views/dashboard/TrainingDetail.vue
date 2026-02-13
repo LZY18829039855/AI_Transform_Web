@@ -485,6 +485,7 @@ onBeforeUnmount(() => {
           border
           stripe
           size="small"
+          :header-cell-style="{ fontSize: '14px' }"
           style="width: 100%"
         >
           <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
@@ -1028,13 +1029,14 @@ onBeforeUnmount(() => {
     font-size: 12px;
   }
   :deep(.el-table th) {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     color: #000;
     white-space: nowrap;
     text-align: center;
   }
   :deep(.el-table th .cell) {
+    font-size: 14px;
     font-weight: 700;
     color: #000;
     text-align: center;
