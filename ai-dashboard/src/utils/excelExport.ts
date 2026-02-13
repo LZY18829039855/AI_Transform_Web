@@ -1,5 +1,13 @@
 import * as XLSX from 'xlsx-js-style'
-import type { AppointmentAuditRecord, CertificationAuditRecord, CoursePlanningInfo, DepartmentSelection } from '@/types/dashboard'
+import type {
+  AppointmentAuditRecord,
+  CertificationAuditRecord,
+  CoursePlanningInfo,
+  DepartmentCourseCompletionRateRow,
+  DepartmentEmployeeTrainingOverviewRow,
+  DepartmentSelection,
+  TrainingBattleRecord,
+} from '@/types/dashboard'
 
 /**
  * 格式化布尔值为中文
@@ -391,6 +399,103 @@ export const exportCoursePlanningToExcel = (
   const finalFileName = `${fileName}_${dateStr}.xlsx`
 
   // 导出文件
+  XLSX.writeFile(workbook, finalFileName)
+}
+
+/**
+ * 导出训战看板详情数据到 Excel（两个 sheet：部门训战数据 + AI训战数据明细）
+ * @param departmentRow 部门训战数据单行（下钻时有值），对应第一个 sheet
+ * @param detailRows 明细数据：下钻时为部门全员训战总览，否则为训战明细记录
+ * @param isDrillDown 是否为部门下钻页（决定明细列结构）
+ * @param fileName 文件名（不包含扩展名）
+ */
+export const exportTrainingDetailToExcel = (
+  departmentRow: DepartmentCourseCompletionRateRow | null,
+  detailRows: DepartmentEmployeeTrainingOverviewRow[] | TrainingBattleRecord[],
+  isDrillDown: boolean,
+  fileName: string = 'AI训战看板详情',
+) => {
+  const workbook = XLSX.utils.book_new()
+
+  const numFmt = (v: number | undefined) => (v ?? 0).toFixed(1)
+  const pctFmt = (v: number | undefined) => `${(v ?? 0).toFixed(1)}%`
+
+  // Sheet1：部门训战数据（仅当有部门行时）
+  if (departmentRow) {
+    const deptData: Record<string, string>[] = [
+      {
+        '部门': departmentRow.deptName || '',
+        '基线人数': String(departmentRow.baselineCount ?? 0),
+        '基础课程数': String(departmentRow.basicCourseCount ?? 0),
+        '进阶课程数': String(departmentRow.advancedCourseCount ?? 0),
+        '实战课程数': String(departmentRow.practicalCourseCount ?? 0),
+        '基础课程平均完课人数': numFmt(departmentRow.basicAvgCompletedCount),
+        '进阶课程平均完课人数': numFmt(departmentRow.advancedAvgCompletedCount),
+        '实战课程平均完课人数': numFmt(departmentRow.practicalAvgCompletedCount),
+        '基础课程平均完课率': pctFmt(departmentRow.basicAvgCompletionRate),
+        '进阶课程平均完课率': pctFmt(departmentRow.advancedAvgCompletionRate),
+        '实战课程平均完课率': pctFmt(departmentRow.practicalAvgCompletionRate),
+      },
+    ]
+    const deptSheet = XLSX.utils.json_to_sheet(deptData)
+    const sheetName1 = ((departmentRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_') + '训战数据').slice(0, 31)
+    XLSX.utils.book_append_sheet(workbook, deptSheet, sheetName1)
+  }
+
+  // Sheet2：AI训战数据明细
+  const detailData: Record<string, string>[] = isDrillDown
+    ? (detailRows as DepartmentEmployeeTrainingOverviewRow[]).map((row) => ({
+        '姓名': row.name || '',
+        '工号': row.employeeNumber || '',
+        '职位类': row.jobCategory || '',
+        '职位子类': row.jobSubcategory || '',
+        '一级部门': row.firstDept || '',
+        '二级部门': row.secondDept || '',
+        '三级部门': row.thirdDept || '',
+        '四级部门': row.fourthDept || '',
+        '五级部门': row.fifthDept || '',
+        '最小部门': row.lowestDept || '',
+        '基础目标课程数': String(row.basicTargetCourseCount ?? 0),
+        '基础目标课程完课数': String(row.basicCompletedCount ?? 0),
+        '基础目标课程完课占比': pctFmt(row.basicCompletionRate),
+        '进阶目标课程数': String(row.advancedTargetCourseCount ?? 0),
+        '进阶目标课程完课数': String(row.advancedCompletedCount ?? 0),
+        '进阶目标课程完课占比': pctFmt(row.advancedCompletionRate),
+        '总目标课程数': String(row.totalTargetCourseCount ?? 0),
+        '目标课程完课数': String(row.totalCompletedCount ?? 0),
+        '目标课程完课占比': pctFmt(row.totalCompletionRate),
+      }))
+    : (detailRows as TrainingBattleRecord[]).map((row) => ({
+        '姓名': row.name || '',
+        '工号': row.employeeId || '',
+        '职位类': row.jobCategory || '',
+        '职位子类': row.jobSubCategory || '',
+        '一级部门': row.departmentLevel1 || '',
+        '二级部门': row.departmentLevel2 || '',
+        '三级部门': row.departmentLevel3 || '',
+        '四级部门': row.departmentLevel4 || '',
+        '五级部门': row.departmentLevel5 || '',
+        '最小部门': row.minDepartment || '',
+        '训战分类': row.trainingCategory || '',
+        '课程分类': row.courseCategory || '',
+        '课程名称': row.courseName || '',
+        '是否目标课程': row.isTargetCourse ? '是' : '否',
+        '是否完课': row.isCompleted ? '是' : '否',
+        '完课日期': row.completionDate || '',
+        '是否干部': row.isCadre ? '是' : '否',
+        '干部类型': row.cadreType || '',
+        '是否专家': row.isExpert ? '是' : '否',
+        '是否基层主管': row.isFrontlineManager ? '是' : '否',
+        '组织AI成熟度': row.organizationMaturity || '',
+        '岗位AI成熟度': row.positionMaturity || '',
+      }))
+
+  const detailSheet = XLSX.utils.json_to_sheet(detailData)
+  XLSX.utils.book_append_sheet(workbook, detailSheet, 'AI训战数据明细')
+
+  const date = new Date()
+  const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
+  const finalFileName = `${fileName}_${dateStr}.xlsx`
   XLSX.writeFile(workbook, finalFileName)
 }
 

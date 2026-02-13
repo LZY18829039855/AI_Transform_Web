@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { ArrowLeft, Refresh, Search, Close } from '@element-plus/icons-vue'
+import { ArrowLeft, Refresh, Search, Close, Download } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchDepartmentEmployeeTrainingOverview, fetchTrainingDetail } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
+import { exportTrainingDetailToExcel } from '@/utils/excelExport'
 import type {
   DepartmentCourseCompletionRateRow,
   DepartmentEmployeeTrainingOverviewRow,
@@ -137,6 +139,28 @@ const loadDrillDownDepartmentRow = () => {
 
 const handleCourseClick = (url: string) => {
   window.open(url, '_blank')
+}
+
+/** 导出数据：部门训战数据（下钻时有）+ AI训战数据明细，两个 sheet */
+const handleExport = () => {
+  const isDrill = isDrillDownPage.value
+  const deptRow = isDrill ? drillDownDepartmentRow.value : null
+  const detailList = isDrill ? filteredDrillDownRecords.value : filteredDetailRecords.value
+
+  if (detailList.length === 0 && !deptRow) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
+  try {
+    const fileName = deptRow?.deptName
+      ? `${(deptRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_')}_训战看板详情`
+      : 'AI训战看板详情'
+    exportTrainingDetailToExcel(deptRow, detailList, isDrill, fileName)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请稍后重试')
+  }
 }
 
 /** 跳转到个人训战课程详情页，使用 /completion 接口（account 工号） */
@@ -359,7 +383,14 @@ onBeforeUnmount(() => {
       </div>
       <el-space>
         <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
-        <el-button type="primary">导出报表</el-button>
+        <el-button
+          type="primary"
+          :icon="Download"
+          :disabled="isDrillDownPage ? (filteredDrillDownRecords.length === 0 && !drillDownDepartmentRow) : filteredDetailRecords.length === 0"
+          @click="handleExport"
+        >
+          导出数据
+        </el-button>
       </el-space>
     </header>
 
@@ -447,7 +478,7 @@ onBeforeUnmount(() => {
       <!-- 部门下钻时：本部门训战数据（与部门训战数据表列一致，数据由看板传入） -->
       <el-card v-if="isDrillDownPage && drillDownDepartmentRow" shadow="hover" class="detail-block dept-summary-card">
         <template #header>
-          <h3>部门训战数据</h3>
+          <h3>{{ (drillDownDepartmentRow?.deptName ?? '部门') }}训战数据</h3>
         </template>
         <el-table
           :data="[drillDownDepartmentRow]"
