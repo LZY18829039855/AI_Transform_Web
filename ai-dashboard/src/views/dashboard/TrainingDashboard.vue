@@ -353,7 +353,7 @@ defineExpose({
                   border
                   stripe
                   size="small"
-                  :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '14px' }"
+                  :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px' }"
                   style="width: 100%"
                 >
                   <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
