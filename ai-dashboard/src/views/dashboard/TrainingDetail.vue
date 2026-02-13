@@ -455,10 +455,14 @@ onActivated(() => {
   }
   :deep(.el-table th) {
     font-size: 12px;
+    font-weight: 700;
+    color: #000;
     white-space: nowrap;
     text-align: center;
   }
   :deep(.el-table th .cell) {
+    font-weight: 700;
+    color: #000;
     text-align: center;
   }
   :deep(.el-table td) {
