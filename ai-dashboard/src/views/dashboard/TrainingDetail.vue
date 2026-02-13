@@ -6,6 +6,7 @@ import { fetchDepartmentEmployeeTrainingOverview, fetchTrainingDetail } from '@/
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
 import type {
+  DepartmentCourseCompletionRateRow,
   DepartmentEmployeeTrainingOverviewRow,
   TrainingDetailData,
   TrainingDetailFilters,
@@ -18,6 +19,8 @@ const loading = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
 /** 部门下钻时，从「部门全员训战总览」接口返回的明细列表 */
 const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
+/** 部门下钻时，从看板传入的本部门训战数据行（用于展示部门训战数据表，不请求后端） */
+const drillDownDepartmentRow = ref<DepartmentCourseCompletionRateRow | null>(null)
 
 /** 是否为 drill-down 页面（路径为 training/detail/drill-down）：该页默认使用「部门全员训战总览」表格列 */
 const isDrillDownPage = computed(() => props.id === 'drill-down')
@@ -104,6 +107,33 @@ const formatBoolean = (value: boolean) => (value ? '是' : '否')
 /** 完课占比展示（接口已为百分比数值，保留 2 位小数） */
 const formatPercent = (value: number | undefined) =>
   value != null ? `${Number(value).toFixed(2)}%` : '-'
+/** 部门训战数据表数字展示（与看板一致） */
+const formatDeptNumber = (value: number | undefined) => (value ?? 0).toFixed(1)
+/** 部门训战数据表百分比展示（与看板一致，一位小数） */
+const formatDeptPercent = (value: number | undefined) => `${(value ?? 0).toFixed(1)}%`
+
+const loadDrillDownDepartmentRow = () => {
+  if (props.id !== 'drill-down') {
+    return
+  }
+  // 优先从路由 state 取（点击基线人数时 router.push 传入），其次从 sessionStorage 取（兼容刷新等）
+  const routeState = route.state as { departmentRow?: DepartmentCourseCompletionRateRow } | undefined
+  if (routeState?.departmentRow && routeState.departmentRow.deptId != null) {
+    drillDownDepartmentRow.value = routeState.departmentRow
+    return
+  }
+  try {
+    const raw = sessionStorage.getItem('training_drill_department_row')
+    if (raw) {
+      const row = JSON.parse(raw) as DepartmentCourseCompletionRateRow
+      drillDownDepartmentRow.value = row
+    } else {
+      drillDownDepartmentRow.value = null
+    }
+  } catch (_) {
+    drillDownDepartmentRow.value = null
+  }
+}
 
 const handleCourseClick = (url: string) => {
   window.open(url, '_blank')
@@ -287,6 +317,9 @@ watch(
 onMounted(() => {
   initDepartmentTree()
   filters.value = initFiltersFromQuery()
+  nextTick(() => {
+    loadDrillDownDepartmentRow()
+  })
   fetchDetail()
   document.addEventListener('click', handleClickOutside)
 })
@@ -294,8 +327,20 @@ onMounted(() => {
 onActivated(() => {
   refreshDepartmentTree()
   filters.value = initFiltersFromQuery()
+  nextTick(() => {
+    loadDrillDownDepartmentRow()
+  })
   fetchDetail()
 })
+
+watch(
+  () => [props.id, route.query.deptId],
+  () => {
+    if (props.id === 'drill-down') {
+      nextTick(loadDrillDownDepartmentRow)
+    }
+  }
+)
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
@@ -399,6 +444,43 @@ onBeforeUnmount(() => {
 
     <el-skeleton :rows="8" animated v-if="loading" />
     <template v-else-if="isDrillDownPage || detailData">
+      <!-- 部门下钻时：本部门训战数据（与部门训战数据表列一致，数据由看板传入） -->
+      <el-card v-if="isDrillDownPage && drillDownDepartmentRow" shadow="hover" class="detail-block dept-summary-card">
+        <template #header>
+          <h3>部门训战数据</h3>
+        </template>
+        <el-table
+          :data="[drillDownDepartmentRow]"
+          border
+          stripe
+          size="small"
+          style="width: 100%"
+        >
+          <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
+          <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center" />
+          <el-table-column prop="basicCourseCount" label="基础课程数" min-width="90" align="center" header-align="center" />
+          <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="90" align="center" header-align="center" />
+          <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="90" align="center" header-align="center" />
+          <el-table-column prop="basicAvgCompletedCount" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptNumber(row.basicAvgCompletedCount) }}</template>
+          </el-table-column>
+          <el-table-column prop="advancedAvgCompletedCount" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptNumber(row.advancedAvgCompletedCount) }}</template>
+          </el-table-column>
+          <el-table-column prop="practicalAvgCompletedCount" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptNumber(row.practicalAvgCompletedCount) }}</template>
+          </el-table-column>
+          <el-table-column prop="basicAvgCompletionRate" label="基础课程平均完课率" min-width="110" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptPercent(row.basicAvgCompletionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="advancedAvgCompletionRate" label="进阶课程平均完课率" min-width="110" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptPercent(row.advancedAvgCompletionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="practicalAvgCompletionRate" label="实战课程平均完课率" min-width="110" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptPercent(row.practicalAvgCompletionRate) }}</template>
+          </el-table-column>
+        </el-table>
+      </el-card>
       <!-- AI训战数据明细：drill-down 页默认使用部门全员训战总览列（姓名、工号、职位类…目标课程完课占比） -->
       <el-card shadow="hover" class="detail-block">
         <template #header>

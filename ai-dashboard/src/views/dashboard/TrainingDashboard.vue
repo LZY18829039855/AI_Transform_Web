@@ -182,13 +182,23 @@ const handleAllStaffDrill = (
   })
 }
 
-/** 部门训战数据 - 基线人数点击跳转到训战看板详情页 */
+/** 部门训战数据 - 基线人数点击跳转到训战看板详情页，将当前部门行数据传入详情页用于展示本部门训战数据 */
 const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) => {
-  goToDetail({
-    type: 'department',
-    deptId: row.deptId,
-    deptName: row.deptName,
-    role: filters.role,
+  try {
+    sessionStorage.setItem('training_drill_department_row', JSON.stringify(row))
+  } catch (_) {
+    // 忽略存储失败（如隐私模式）
+  }
+  router.push({
+    name: 'TrainingDetail',
+    params: { id: 'drill-down' },
+    query: {
+      type: 'department',
+      deptId: row.deptId,
+      deptName: row.deptName,
+      role: filters.role,
+    },
+    state: { departmentRow: row },
   })
 }
 
