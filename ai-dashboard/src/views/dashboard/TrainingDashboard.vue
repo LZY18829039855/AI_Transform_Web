@@ -22,7 +22,7 @@ const router = useRouter()
 const loading = ref(false)
 const dashboardData = ref<TrainingDashboardData | null>(null)
 const departmentCompletionList = ref<DepartmentCourseCompletionRateRow[]>([])
-/** 全员训战总览表 - 角色视图，当前仅「全员」对应 personType=0 */
+/** 全员训战总览表 - 角色视图：全员 personType=0，干部=1，专家=2 */
 const departmentCompletionRole = ref('0')
 
 const filters = reactive<TrainingDashboardFilters>({
@@ -329,8 +329,10 @@ defineExpose({
               <div class="charts-filter">
                 <el-form :inline="true" label-width="80">
                   <el-form-item label="角色视图">
-                    <el-select v-model="departmentCompletionRole" placeholder="全员" style="width: 200px">
+                    <el-select v-model="departmentCompletionRole" placeholder="请选择" style="width: 200px">
                       <el-option label="全员" value="0" />
+                      <el-option label="干部" value="1" />
+                      <el-option label="专家" value="2" />
                     </el-select>
                   </el-form-item>
                 </el-form>
