@@ -460,11 +460,11 @@ defineExpose({
             <el-table-column
               prop="maturityLevel"
               label="专家岗位成熟度等级"
-              min-width="100"
+              min-width="112"
               align="center"
               header-align="center"
             />
-            <el-table-column prop="personCount" label="专家人数" min-width="80" align="center" header-align="center">
+            <el-table-column prop="personCount" label="专家人数" min-width="68" align="center" header-align="center">
               <template #default="{ row }">
                 <el-button link type="primary" class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'personCount')">
                   {{ row.personCount }}
@@ -513,11 +513,11 @@ defineExpose({
             <el-table-column
               prop="maturityLevel"
               label="干部岗位成熟度等级"
-              min-width="100"
+              min-width="112"
               align="center"
               header-align="center"
             />
-            <el-table-column prop="personCount" label="干部人数" min-width="80" align="center" header-align="center">
+            <el-table-column prop="personCount" label="干部人数" min-width="68" align="center" header-align="center">
               <template #default="{ row }">
                 <el-button link type="primary" class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'personCount')">
                   {{ row.personCount }}
