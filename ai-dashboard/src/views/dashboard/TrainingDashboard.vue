@@ -194,6 +194,8 @@ const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) =
       deptId: row.deptId,
       deptName: row.deptName,
       role: filters.role,
+      /** 与全员训战总览表「角色视图」一致：0 全员 / 1 干部 / 2 专家，供下钻接口 personType */
+      personType: departmentCompletionRole.value,
     },
     state: { departmentRow: row },
   })

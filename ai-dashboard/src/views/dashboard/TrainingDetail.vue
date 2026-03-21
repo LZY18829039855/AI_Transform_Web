@@ -43,6 +43,22 @@ const parseDepartmentPathFromQuery = (): string[] => {
   return []
 }
 
+/** 部门下钻等场景：人员类型 0 全员 / 1 干部 / 2 专家（优先 query.personType，兼容曾误用 role 传递） */
+const parsePersonTypeFromRouteQuery = (): number => {
+  const raw = route.query.personType as string | undefined
+  if (raw != null && String(raw).trim() !== '') {
+    const n = parseInt(String(raw), 10)
+    if (!Number.isNaN(n) && (n === 0 || n === 1 || n === 2)) {
+      return n
+    }
+  }
+  const legacy = parseInt((route.query.role as string) || '0', 10)
+  if (!Number.isNaN(legacy) && (legacy === 0 || legacy === 1 || legacy === 2)) {
+    return legacy
+  }
+  return 0
+}
+
 // 从路由参数中初始化筛选条件
 const initFiltersFromQuery = (): TrainingDetailFilters => {
   return {
@@ -71,7 +87,7 @@ const fetchDetail = async () => {
     if (isDrillDownPage.value) {
       if (route.query.deptId) {
         const deptId = route.query.deptId as string
-        const personType = parseInt((route.query.role as string) || '0', 10)
+        const personType = parsePersonTypeFromRouteQuery()
         drillDownRecords.value = await fetchDepartmentEmployeeTrainingOverview(deptId, personType)
       } else {
         drillDownRecords.value = []
