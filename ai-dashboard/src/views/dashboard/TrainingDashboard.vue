@@ -278,6 +278,7 @@ defineExpose({
   handleAllStaffDrill,
   formatPercent,
   formatNumber,
+  formatAvgLearnersInteger,
 })
 </script>
 
@@ -472,28 +473,21 @@ defineExpose({
             </el-table-column>
             <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
             <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="advancedCourses" label="高阶课程数" min-width="76" align="center" header-align="center" />
             <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
             <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.beginnerAvgLearners) }}</template>
+              <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
             </el-table-column>
             <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.intermediateAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="advancedAvgLearners" label="高阶课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.advancedAvgLearners) }}</template>
+              <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
             </el-table-column>
             <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.practiceAvgLearners) }}</template>
+              <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
             </el-table-column>
             <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
               <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
             </el-table-column>
             <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
               <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="advancedCompletionRate" label="高阶课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
             </el-table-column>
             <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
               <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
@@ -532,28 +526,21 @@ defineExpose({
             </el-table-column>
             <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
             <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="advancedCourses" label="高阶课程数" min-width="76" align="center" header-align="center" />
             <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
             <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.beginnerAvgLearners) }}</template>
+              <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
             </el-table-column>
             <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.intermediateAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="advancedAvgLearners" label="高阶课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.advancedAvgLearners) }}</template>
+              <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
             </el-table-column>
             <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatNumber(row.practiceAvgLearners) }}</template>
+              <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
             </el-table-column>
             <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
               <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
             </el-table-column>
             <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
               <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="advancedCompletionRate" label="高阶课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
             </el-table-column>
             <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
               <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
