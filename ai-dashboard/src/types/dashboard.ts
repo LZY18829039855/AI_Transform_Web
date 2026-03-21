@@ -107,6 +107,22 @@ export interface TrainingRoleSummaryRow {
   practiceCompletionRate: number
 }
 
+/** GET /trainning-courses/maturity-trainning-courses 单条（与后端 PositionAiMaturityCourseCompletionRateVO 一致） */
+export interface PositionAiMaturityCourseCompletionRateVO {
+  positionAiMaturity?: string
+  personType?: number
+  baselineCount?: number
+  basicCourseCount?: number
+  advancedCourseCount?: number
+  practicalCourseCount?: number
+  basicAvgCompletedCount?: number
+  advancedAvgCompletedCount?: number
+  practicalAvgCompletedCount?: number
+  basicAvgCompletionRate?: number
+  advancedAvgCompletionRate?: number
+  practicalAvgCompletionRate?: number
+}
+
 export interface TrainingExpertCadreSummaryRow {
   dimension: string
   personCount: number

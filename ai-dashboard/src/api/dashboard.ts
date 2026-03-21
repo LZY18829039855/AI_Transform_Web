@@ -46,6 +46,7 @@ import type {
   TrainingCoursePlanRecord,
   DepartmentCourseCompletionRateRow,
   DepartmentEmployeeTrainingOverviewRow,
+  PositionAiMaturityCourseCompletionRateVO,
   TrainingPersonalOverviewRow,
   TrainingPlanningResource,
   TrainingRole,
@@ -1222,6 +1223,72 @@ export const fetchDepartmentEmployeeTrainingOverview = async (
     return []
   } catch (error) {
     console.error('获取部门全员训战总览异常：', error)
+    return []
+  }
+}
+
+const MATURITY_LEVEL_ORDER = ['L1', 'L2', 'L3']
+
+const sortMaturityTrainingRows = (rows: TrainingRoleSummaryRow[]): TrainingRoleSummaryRow[] => {
+  return [...rows].sort((a, b) => {
+    const ka = String(a.maturityLevel ?? '')
+      .trim()
+      .toUpperCase()
+    const kb = String(b.maturityLevel ?? '')
+      .trim()
+      .toUpperCase()
+    const ia = MATURITY_LEVEL_ORDER.indexOf(ka)
+    const ib = MATURITY_LEVEL_ORDER.indexOf(kb)
+    const va = ia === -1 ? 999 : ia
+    const vb = ib === -1 ? 999 : ib
+    return va - vb
+  })
+}
+
+/**
+ * 后端为基础/进阶/实战三档；表格「高阶」列无对应字段，置 0。
+ */
+export const mapPositionAiMaturityToTrainingRoleSummaryRow = (
+  row: PositionAiMaturityCourseCompletionRateVO
+): TrainingRoleSummaryRow => {
+  const n = (v: number | undefined | null) =>
+    v != null && !Number.isNaN(Number(v)) ? Number(v) : 0
+  return {
+    maturityLevel: row.positionAiMaturity ?? '',
+    personCount: n(row.baselineCount),
+    beginnerCourses: n(row.basicCourseCount),
+    intermediateCourses: n(row.advancedCourseCount),
+    advancedCourses: 0,
+    practiceCourses: n(row.practicalCourseCount),
+    beginnerAvgLearners: n(row.basicAvgCompletedCount),
+    intermediateAvgLearners: n(row.advancedAvgCompletedCount),
+    advancedAvgLearners: 0,
+    practiceAvgLearners: n(row.practicalAvgCompletedCount),
+    beginnerCompletionRate: n(row.basicAvgCompletionRate),
+    intermediateCompletionRate: n(row.advancedAvgCompletionRate),
+    advancedCompletionRate: 0,
+    practiceCompletionRate: n(row.practicalAvgCompletionRate),
+  }
+}
+
+/**
+ * 专家/干部训战：按岗位 AI 成熟度汇总（personType 仅 1 干部、2 专家）
+ * @param deptId 部门编码，未选部门时传 0
+ */
+export const fetchMaturityTrainingCourses = async (
+  deptId: string,
+  personType: 1 | 2
+): Promise<TrainingRoleSummaryRow[]> => {
+  try {
+    const url = `/trainning-courses/maturity-trainning-courses?deptId=${encodeURIComponent(deptId)}&personType=${personType}`
+    const response = await get<Result<PositionAiMaturityCourseCompletionRateVO[]>>(url)
+    if (response.code === 200 && Array.isArray(response.data)) {
+      const mapped = response.data.map(mapPositionAiMaturityToTrainingRoleSummaryRow)
+      return sortMaturityTrainingRows(mapped)
+    }
+    return []
+  } catch (error) {
+    console.error('获取岗位AI成熟度训战统计异常：', error)
     return []
   }
 }

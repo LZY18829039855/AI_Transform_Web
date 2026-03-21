@@ -3,7 +3,12 @@ import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElCascader, ElEmpty, ElForm, ElFormItem, ElLink, ElMessage, ElSelect, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
 import { Medal } from '@element-plus/icons-vue'
-import { fetchCoursePlanningInfoList, fetchDepartmentCompletionRate, fetchTrainingDashboard } from '@/api/dashboard'
+import {
+  fetchCoursePlanningInfoList,
+  fetchDepartmentCompletionRate,
+  fetchMaturityTrainingCourses,
+  fetchTrainingDashboard,
+} from '@/api/dashboard'
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -24,6 +29,10 @@ const loading = ref(false)
 const departmentCompletionLoading = ref(false)
 const dashboardData = ref<TrainingDashboardData | null>(null)
 const departmentCompletionList = ref<DepartmentCourseCompletionRateRow[]>([])
+/** 专家训战总览：GET /trainning-courses/maturity-trainning-courses，personType=2 */
+const expertSummaryRows = ref<TrainingRoleSummaryRow[]>([])
+/** 干部训战总览：同上，personType=1 */
+const cadreSummaryRows = ref<TrainingRoleSummaryRow[]>([])
 /** 全员训战总览表 - 角色视图：全员 personType=0，干部=1，专家=2 */
 const departmentCompletionRole = ref('0')
 
@@ -119,7 +128,14 @@ const fetchData = async () => {
 
     const deptId = resolveDeptIdForCompletionRate()
     const personType = parseInt(departmentCompletionRole.value, 10) || 0
-    departmentCompletionList.value = await fetchDepartmentCompletionRate(deptId, personType)
+    const [deptCompletion, expertRows, cadreRows] = await Promise.all([
+      fetchDepartmentCompletionRate(deptId, personType),
+      fetchMaturityTrainingCourses(deptId, 2),
+      fetchMaturityTrainingCourses(deptId, 1),
+    ])
+    departmentCompletionList.value = deptCompletion
+    expertSummaryRows.value = expertRows
+    cadreSummaryRows.value = cadreRows
   } catch (error) {
     console.error('获取训战看板数据失败：', error)
     ElMessage.error('获取数据失败，请稍后重试')
@@ -254,6 +270,8 @@ defineExpose({
   loading,
   departmentCompletionLoading,
   dashboardData,
+  expertSummaryRows,
+  cadreSummaryRows,
   fetchData,
   fetchDepartmentCompletionOnly,
   resetFilters,
@@ -431,7 +449,7 @@ defineExpose({
             <h3>专家训战总览</h3>
           </template>
           <el-table
-            :data="dashboardData.expertSummary"
+            :data="expertSummaryRows"
             border
             :header-cell-style="roleSummaryTableHeaderStyle"
           >
@@ -519,7 +537,7 @@ defineExpose({
             <h3>干部训战总览</h3>
           </template>
           <el-table
-            :data="dashboardData.cadreSummary"
+            :data="cadreSummaryRows"
             border
             :header-cell-style="roleSummaryTableHeaderStyle"
           >
