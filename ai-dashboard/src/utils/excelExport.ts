@@ -7,6 +7,7 @@ import type {
   DepartmentEmployeeTrainingOverviewRow,
   DepartmentSelection,
   TrainingBattleRecord,
+  TrainingRoleSummaryRow,
 } from '@/types/dashboard'
 
 /**
@@ -403,22 +404,27 @@ export const exportCoursePlanningToExcel = (
 }
 
 /**
- * 导出训战看板详情数据到 Excel（两个 sheet：部门训战数据 + AI训战数据明细）
+ * 导出训战看板详情数据到 Excel（两个 sheet：部门或专家/干部总览 + AI训战数据明细）
  * @param departmentRow 部门训战数据单行（下钻时有值），对应第一个 sheet
  * @param detailRows 明细数据：下钻时为部门全员训战总览，否则为训战明细记录
  * @param isDrillDown 是否为部门下钻页（决定明细列结构）
  * @param fileName 文件名（不包含扩展名）
+ * @param roleSummaryRow 专家/干部训战总览单行（人数下钻时有值），与 departmentRow 二选一
+ * @param roleType 专家或干部
  */
 export const exportTrainingDetailToExcel = (
   departmentRow: DepartmentCourseCompletionRateRow | null,
   detailRows: DepartmentEmployeeTrainingOverviewRow[] | TrainingBattleRecord[],
   isDrillDown: boolean,
   fileName: string = 'AI训战看板详情',
+  roleSummaryRow?: TrainingRoleSummaryRow | null,
+  roleType?: 'expert' | 'cadre' | null,
 ) => {
   const workbook = XLSX.utils.book_new()
 
   const numFmt = (v: number | undefined) => (v ?? 0).toFixed(1)
   const pctFmt = (v: number | undefined) => `${(v ?? 0).toFixed(1)}%`
+  const intFmt = (v: number | undefined) => String(Math.round(v ?? 0))
 
   // Sheet1：部门训战数据（仅当有部门行时）
   if (departmentRow) {
@@ -440,6 +446,29 @@ export const exportTrainingDetailToExcel = (
     const deptSheet = XLSX.utils.json_to_sheet(deptData)
     const sheetName1 = ((departmentRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_') + '训战数据').slice(0, 31)
     XLSX.utils.book_append_sheet(workbook, deptSheet, sheetName1)
+  } else if (roleSummaryRow && roleType) {
+    const isExpert = roleType === 'expert'
+    const maturityKey = isExpert ? '专家岗位成熟度等级' : '干部岗位成熟度等级'
+    const countKey = isExpert ? '专家人数' : '干部人数'
+    const roleData: Record<string, string>[] = [
+      {
+        [maturityKey]: roleSummaryRow.maturityLevel || '',
+        [countKey]: String(roleSummaryRow.personCount ?? 0),
+        '基础课程数': String(roleSummaryRow.beginnerCourses ?? 0),
+        '进阶课程数': String(roleSummaryRow.intermediateCourses ?? 0),
+        '实战课程数': String(roleSummaryRow.practiceCourses ?? 0),
+        '基础课程平均完课人数': intFmt(roleSummaryRow.beginnerAvgLearners),
+        '进阶课程平均完课人数': intFmt(roleSummaryRow.intermediateAvgLearners),
+        '实战课程平均完课人数': intFmt(roleSummaryRow.practiceAvgLearners),
+        '基础课程平均完课率': pctFmt(roleSummaryRow.beginnerCompletionRate),
+        '进阶课程平均完课率': pctFmt(roleSummaryRow.intermediateCompletionRate),
+        '实战课程平均完课率': pctFmt(roleSummaryRow.practiceCompletionRate),
+      },
+    ]
+    const roleSheet = XLSX.utils.json_to_sheet(roleData)
+    const label = isExpert ? '专家' : '干部'
+    const sheetName1 = `${(roleSummaryRow.maturityLevel || label).replace(/[/\\*?\[\]:]/g, '_')}_${label}训战总览`.slice(0, 31)
+    XLSX.utils.book_append_sheet(workbook, roleSheet, sheetName1)
   }
 
   // Sheet2：AI训战数据明细

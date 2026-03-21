@@ -204,14 +204,29 @@ const handleRoleSummaryDrill = (
   const aiMaturity =
     raw && /^L[123]$/i.test(raw) ? raw.toUpperCase() : raw || undefined
 
-  goToDetail({
-    type: roleType,
-    maturityLevel: row.maturityLevel,
-    metric: field,
-    role: filters.role,
-    deptId,
-    personType,
-    ...(aiMaturity ? { ai_maturity: aiMaturity } : {}),
+  try {
+    sessionStorage.removeItem('training_drill_department_row')
+    sessionStorage.setItem(
+      'training_drill_role_summary',
+      JSON.stringify({ roleType, row })
+    )
+  } catch (_) {
+    // 忽略存储失败
+  }
+
+  router.push({
+    name: 'TrainingDetail',
+    params: { id: 'drill-down' },
+    query: {
+      type: roleType,
+      maturityLevel: row.maturityLevel,
+      metric: field,
+      role: filters.role,
+      deptId,
+      personType,
+      ...(aiMaturity ? { ai_maturity: aiMaturity } : {}),
+    },
+    state: { roleSummaryRow: row, roleType },
   })
 }
 
@@ -232,6 +247,7 @@ const handleAllStaffDrill = (
 /** 部门训战数据 - 基线人数点击跳转到训战看板详情页，将当前部门行数据传入详情页用于展示本部门训战数据 */
 const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) => {
   try {
+    sessionStorage.removeItem('training_drill_role_summary')
     sessionStorage.setItem('training_drill_department_row', JSON.stringify(row))
   } catch (_) {
     // 忽略存储失败（如隐私模式）

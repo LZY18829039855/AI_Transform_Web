@@ -12,6 +12,7 @@ import type {
   DepartmentEmployeeTrainingOverviewRow,
   TrainingDetailData,
   TrainingDetailFilters,
+  TrainingRoleSummaryRow,
 } from '@/types/dashboard'
 
 const props = defineProps<{ id: string }>()
@@ -23,6 +24,9 @@ const detailData = ref<TrainingDetailData | null>(null)
 const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
 /** 部门下钻时，从看板传入的本部门训战数据行（用于展示部门训战数据表，不请求后端） */
 const drillDownDepartmentRow = ref<DepartmentCourseCompletionRateRow | null>(null)
+/** 专家/干部人数下钻时，从看板传入的当前行（与训战看板专家/干部总览表列一致） */
+const drillDownRoleSummaryRow = ref<TrainingRoleSummaryRow | null>(null)
+const drillDownRoleType = ref<'expert' | 'cadre' | null>(null)
 
 /** 是否为 drill-down 页面（路径为 training/detail/drill-down）：该页默认使用「部门全员训战总览」表格列 */
 const isDrillDownPage = computed(() => props.id === 'drill-down')
@@ -90,6 +94,26 @@ const {
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
+/** 与训战看板专家/干部表表头一致 */
+const roleSummaryTableHeaderStyle = {
+  background: 'rgba(58, 122, 254, 0.06)',
+  color: '#2f3b52',
+  fontSize: '12px',
+} as const
+
+const roleSummaryCardTitle = computed(() => {
+  const row = drillDownRoleSummaryRow.value
+  const rt = drillDownRoleType.value
+  if (!row || !rt) {
+    return ''
+  }
+  const lvl = row.maturityLevel?.trim() || ''
+  const label = rt === 'expert' ? '专家' : '干部'
+  return lvl ? `${lvl} ${label}训战总览` : `${label}训战总览`
+})
+
+const formatAvgLearnersInteger = (value: number) => String(Math.round(value ?? 0))
+
 const fetchDetail = async () => {
   loading.value = true
   try {
@@ -148,6 +172,11 @@ const loadDrillDownDepartmentRow = () => {
   if (props.id !== 'drill-down') {
     return
   }
+  // 仅「部门训战数据」基线人数下钻展示部门表；专家/干部下钻不展示该表
+  if (route.query.type !== 'department') {
+    drillDownDepartmentRow.value = null
+    return
+  }
   // 优先从路由 state 取（点击基线人数时 router.push 传入），其次从 sessionStorage 取（兼容刷新等）
   const routeState = route.state as { departmentRow?: DepartmentCourseCompletionRateRow } | undefined
   if (routeState?.departmentRow && routeState.departmentRow.deptId != null) {
@@ -167,6 +196,44 @@ const loadDrillDownDepartmentRow = () => {
   }
 }
 
+const loadDrillDownRoleSummaryRow = () => {
+  if (props.id !== 'drill-down') {
+    return
+  }
+  const t = route.query.type as string | undefined
+  if (t !== 'expert' && t !== 'cadre') {
+    drillDownRoleSummaryRow.value = null
+    drillDownRoleType.value = null
+    return
+  }
+  const routeState = route.state as
+    | { roleSummaryRow?: TrainingRoleSummaryRow; roleType?: 'expert' | 'cadre' }
+    | undefined
+  if (routeState?.roleSummaryRow && (routeState.roleType === 'expert' || routeState.roleType === 'cadre')) {
+    drillDownRoleSummaryRow.value = routeState.roleSummaryRow
+    drillDownRoleType.value = routeState.roleType
+    return
+  }
+  try {
+    const raw = sessionStorage.getItem('training_drill_role_summary')
+    if (raw) {
+      const parsed = JSON.parse(raw) as {
+        roleType?: 'expert' | 'cadre'
+        row?: TrainingRoleSummaryRow
+      }
+      if (parsed?.row && (parsed.roleType === 'expert' || parsed.roleType === 'cadre')) {
+        drillDownRoleSummaryRow.value = parsed.row
+        drillDownRoleType.value = parsed.roleType
+        return
+      }
+    }
+  } catch (_) {
+    // ignore
+  }
+  drillDownRoleSummaryRow.value = null
+  drillDownRoleType.value = null
+}
+
 const handleCourseClick = (url: string) => {
   window.open(url, '_blank')
 }
@@ -175,17 +242,24 @@ const handleCourseClick = (url: string) => {
 const handleExport = () => {
   const isDrill = isDrillDownPage.value
   const deptRow = isDrill ? drillDownDepartmentRow.value : null
+  const roleRow = isDrill ? drillDownRoleSummaryRow.value : null
+  const roleType = isDrill ? drillDownRoleType.value : null
   const detailList = isDrill ? filteredDrillDownRecords.value : filteredDetailRecords.value
 
-  if (detailList.length === 0 && !deptRow) {
+  if (detailList.length === 0 && !deptRow && !(roleRow && roleType)) {
     ElMessage.warning('暂无数据可导出')
     return
   }
   try {
-    const fileName = deptRow?.deptName
-      ? `${(deptRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_')}_训战看板详情`
-      : 'AI训战看板详情'
-    exportTrainingDetailToExcel(deptRow, detailList, isDrill, fileName)
+    let fileName = 'AI训战看板详情'
+    if (deptRow?.deptName) {
+      fileName = `${(deptRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_')}_训战看板详情`
+    } else if (roleRow && roleType) {
+      const lvl = (roleRow.maturityLevel || '').replace(/[/\\*?\[\]:]/g, '_')
+      const label = roleType === 'expert' ? '专家' : '干部'
+      fileName = `${lvl || label}_${label}_训战看板详情`
+    }
+    exportTrainingDetailToExcel(deptRow, detailList, isDrill, fileName, roleRow, roleType)
     ElMessage.success('导出成功')
   } catch (error) {
     console.error('导出失败:', error)
@@ -376,6 +450,7 @@ watch(
     nextTick(() => {
       if (props.id === 'drill-down') {
         loadDrillDownDepartmentRow()
+        loadDrillDownRoleSummaryRow()
       }
     })
   },
@@ -392,6 +467,7 @@ onActivated(() => {
   nextTick(() => {
     if (props.id === 'drill-down') {
       loadDrillDownDepartmentRow()
+      loadDrillDownRoleSummaryRow()
     }
   })
 })
@@ -416,7 +492,7 @@ onBeforeUnmount(() => {
         <el-button
           type="primary"
           :icon="Download"
-          :disabled="isDrillDownPage ? (filteredDrillDownRecords.length === 0 && !drillDownDepartmentRow) : filteredDetailRecords.length === 0"
+          :disabled="isDrillDownPage ? (filteredDrillDownRecords.length === 0 && !drillDownDepartmentRow && !drillDownRoleSummaryRow) : filteredDetailRecords.length === 0"
           @click="handleExport"
         >
           导出数据
@@ -506,7 +582,11 @@ onBeforeUnmount(() => {
     <el-skeleton :rows="8" animated v-if="loading" />
     <template v-else-if="isDrillDownPage || detailData">
       <!-- 部门下钻时：本部门训战数据（与部门训战数据表列一致，数据由看板传入） -->
-      <el-card v-if="isDrillDownPage && drillDownDepartmentRow" shadow="hover" class="detail-block dept-summary-card">
+      <el-card
+        v-if="isDrillDownPage && drillDownDepartmentRow && route.query.type === 'department'"
+        shadow="hover"
+        class="detail-block dept-summary-card"
+      >
         <template #header>
           <h3>{{ (drillDownDepartmentRow?.deptName ?? '部门') }}训战数据</h3>
         </template>
@@ -543,6 +623,61 @@ onBeforeUnmount(() => {
           </el-table-column>
         </el-table>
       </el-card>
+      <!-- 专家/干部人数下钻：与训战看板「专家训战总览」「干部训战总览」单行一致 -->
+      <el-card
+        v-if="isDrillDownPage && drillDownRoleSummaryRow && drillDownRoleType && (route.query.type === 'expert' || route.query.type === 'cadre')"
+        shadow="hover"
+        class="detail-block role-summary-card"
+      >
+        <template #header>
+          <h3>{{ roleSummaryCardTitle }}</h3>
+        </template>
+        <el-table
+          :data="[drillDownRoleSummaryRow]"
+          border
+          stripe
+          size="small"
+          :header-cell-style="roleSummaryTableHeaderStyle"
+          :cell-style="{ textAlign: 'center' }"
+          style="width: 100%"
+        >
+          <el-table-column
+            prop="maturityLevel"
+            :label="drillDownRoleType === 'expert' ? '专家岗位成熟度等级' : '干部岗位成熟度等级'"
+            min-width="112"
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="personCount"
+            :label="drillDownRoleType === 'expert' ? '专家人数' : '干部人数'"
+            min-width="68"
+            align="center"
+            header-align="center"
+          />
+          <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
+          <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
+          <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
+          <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+            <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
+          </el-table-column>
+          <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+            <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
+          </el-table-column>
+          <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+            <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
+          </el-table-column>
+          <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptPercent(row.beginnerCompletionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptPercent(row.intermediateCompletionRate) }}</template>
+          </el-table-column>
+          <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
+            <template #default="{ row }">{{ formatDeptPercent(row.practiceCompletionRate) }}</template>
+          </el-table-column>
+        </el-table>
+      </el-card>
       <!-- AI训战数据明细：drill-down 页默认使用部门全员训战总览列（姓名、工号、职位类…目标课程完课占比） -->
       <el-card shadow="hover" class="detail-block">
         <template #header>
@@ -552,7 +687,16 @@ onBeforeUnmount(() => {
               <p v-if="isDepartmentDrillDown && drillDownDeptName" class="drill-down-dept">
                 部门：{{ drillDownDeptName }}
               </p>
-              <p v-else-if="isDrillDownPage && !route.query.deptId" class="drill-down-dept drill-down-hint">
+              <p
+                v-else-if="isDrillDownPage && drillDownRoleSummaryRow && drillDownRoleType && route.query.deptId"
+                class="drill-down-dept"
+              >
+                {{ drillDownRoleType === 'expert' ? '专家' : '干部' }} · 岗位成熟度 {{ drillDownRoleSummaryRow.maturityLevel }}
+              </p>
+              <p
+                v-else-if="isDrillDownPage && !route.query.deptId && !drillDownRoleSummaryRow"
+                class="drill-down-dept drill-down-hint"
+              >
                 请从训战看板「部门训战数据」表格中点击基线人数进入，以加载该部门全员明细。
               </p>
             </div>
