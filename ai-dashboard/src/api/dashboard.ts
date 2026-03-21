@@ -1208,14 +1208,23 @@ export const fetchDepartmentCompletionRate = async (
 /**
  * 部门全员训战总览（下钻）：根据部门ID返回该部门下全员训战明细
  * @param deptId 部门ID（部门编码）
- * @param personType 人员类型，当前仅处理 0
+ * @param personType 0 全员；1 干部；2 专家
+ * @param aiMaturity 岗位 AI 成熟度（可选）：L1、L2、L3；仅 personType 为 1 或 2 时生效
  */
 export const fetchDepartmentEmployeeTrainingOverview = async (
   deptId: string,
-  personType: number = 0
+  personType: number = 0,
+  aiMaturity?: string
 ): Promise<DepartmentEmployeeTrainingOverviewRow[]> => {
   try {
-    const url = `/personal-course/department-employee-training-overview?deptId=${encodeURIComponent(deptId)}&personType=${personType}`
+    const params = new URLSearchParams({
+      deptId,
+      personType: String(personType),
+    })
+    if (aiMaturity != null && String(aiMaturity).trim() !== '') {
+      params.set('ai_maturity', String(aiMaturity).trim())
+    }
+    const url = `/personal-course/department-employee-training-overview?${params.toString()}`
     const response = await get<Result<DepartmentEmployeeTrainingOverviewRow[]>>(url)
     if (response.code === 200 && Array.isArray(response.data)) {
       return response.data

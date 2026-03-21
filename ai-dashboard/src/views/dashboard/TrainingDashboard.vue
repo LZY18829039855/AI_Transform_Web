@@ -198,11 +198,20 @@ const handleRoleSummaryDrill = (
   roleType: 'expert' | 'cadre',
   field: string
 ) => {
+  const deptId = resolveDeptIdForCompletionRate()
+  const personType = roleType === 'expert' ? '2' : '1'
+  const raw = String(row.maturityLevel ?? '').trim()
+  const aiMaturity =
+    raw && /^L[123]$/i.test(raw) ? raw.toUpperCase() : raw || undefined
+
   goToDetail({
     type: roleType,
     maturityLevel: row.maturityLevel,
     metric: field,
     role: filters.role,
+    deptId,
+    personType,
+    ...(aiMaturity ? { ai_maturity: aiMaturity } : {}),
   })
 }
 

@@ -59,6 +59,15 @@ const parsePersonTypeFromRouteQuery = (): number => {
   return 0
 }
 
+/** 专家/干部下钻：岗位 AI 成熟度 L1/L2/L3（query.ai_maturity，与后端一致） */
+const parseAiMaturityFromRouteQuery = (): string | undefined => {
+  const raw = route.query.ai_maturity as string | undefined
+  if (raw != null && String(raw).trim() !== '') {
+    return String(raw).trim().toUpperCase()
+  }
+  return undefined
+}
+
 // 从路由参数中初始化筛选条件
 const initFiltersFromQuery = (): TrainingDetailFilters => {
   return {
@@ -88,7 +97,12 @@ const fetchDetail = async () => {
       if (route.query.deptId) {
         const deptId = route.query.deptId as string
         const personType = parsePersonTypeFromRouteQuery()
-        drillDownRecords.value = await fetchDepartmentEmployeeTrainingOverview(deptId, personType)
+        const aiMaturity = parseAiMaturityFromRouteQuery()
+        drillDownRecords.value = await fetchDepartmentEmployeeTrainingOverview(
+          deptId,
+          personType,
+          aiMaturity
+        )
       } else {
         drillDownRecords.value = []
       }
