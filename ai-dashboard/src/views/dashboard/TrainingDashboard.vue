@@ -20,6 +20,8 @@ import type {
 
 const router = useRouter()
 const loading = ref(false)
+/** 仅「部门训战数据」表刷新（切换角色视图时），不触发整页骨架屏 */
+const departmentCompletionLoading = ref(false)
 const dashboardData = ref<TrainingDashboardData | null>(null)
 const departmentCompletionList = ref<DepartmentCourseCompletionRateRow[]>([])
 /** 全员训战总览表 - 角色视图：全员 personType=0，干部=1，专家=2 */
@@ -117,12 +119,37 @@ const fetchData = async () => {
   }
 }
 
+/** 仅刷新部门训战数据表（与全员训战总览表「角色视图」联动），不重新请求整页看板数据 */
+const fetchDepartmentCompletionOnly = async () => {
+  if (!dashboardData.value) {
+    return
+  }
+  departmentCompletionLoading.value = true
+  try {
+    const deptId = resolveDeptIdForCompletionRate()
+    const personType = parseInt(departmentCompletionRole.value, 10) || 0
+    departmentCompletionList.value = await fetchDepartmentCompletionRate(deptId, personType)
+  } catch (error) {
+    console.error('获取部门训战数据失败：', error)
+    ElMessage.error('获取部门训战数据失败，请稍后重试')
+  } finally {
+    departmentCompletionLoading.value = false
+  }
+}
+
 watch(
-  () => [filters.role, filters.departmentPath, departmentCompletionRole.value],
+  () => [filters.role, filters.departmentPath],
   () => {
     fetchData()
   },
   { deep: true }
+)
+
+watch(
+  () => departmentCompletionRole.value,
+  () => {
+    void fetchDepartmentCompletionOnly()
+  }
 )
 
 const resetFilters = () => {
@@ -225,8 +252,10 @@ defineExpose({
   filters,
   departmentOptions,
   loading,
+  departmentCompletionLoading,
   dashboardData,
   fetchData,
+  fetchDepartmentCompletionOnly,
   resetFilters,
   handlePersonalDrill,
   handleRoleSummaryDrill,
@@ -343,7 +372,7 @@ defineExpose({
           </template>
           <el-row :gutter="16">
             <el-col :xs="24" :sm="24" :md="24" :lg="24">
-              <el-card shadow="hover" class="chart-card">
+              <el-card shadow="hover" class="chart-card" v-loading="departmentCompletionLoading">
                 <template #header>
                   <div class="card-header">
                     <h3>部门训战数据</h3>
@@ -388,7 +417,11 @@ defineExpose({
                     <template #default="{ row }">{{ formatPercent(row.practicalAvgCompletionRate) }}</template>
                   </el-table-column>
                 </el-table>
-                <el-empty v-else-if="!loading" description="暂无数据" :image-size="80" />
+                <el-empty
+                  v-else-if="!loading && !departmentCompletionLoading"
+                  description="暂无数据"
+                  :image-size="80"
+                />
               </el-card>
             </el-col>
           </el-row>
