@@ -13,7 +13,6 @@ import type {
   TrainingAllStaffSummaryRow,
   TrainingDashboardData,
   TrainingDashboardFilters,
-  TrainingExpertCadreSummaryRow,
   TrainingPersonalOverviewRow,
   TrainingRoleSummaryRow,
   DepartmentSelection,

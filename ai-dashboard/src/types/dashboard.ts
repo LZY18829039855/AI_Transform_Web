@@ -79,6 +79,12 @@ export interface DepartmentEmployeeTrainingOverviewRow {
   advancedTargetCourseCount: number
   advancedCompletedCount: number
   advancedCompletionRate: number
+  /** 实战目标课程数（/department-employee-training-overview） */
+  practicalTargetCourseCount?: number
+  /** 实战目标课程完课数 */
+  practicalCompletedCount?: number
+  /** 实战目标课程完课占比（百分比数值） */
+  practicalCompletionRate?: number
   totalTargetCourseCount: number
   totalCompletedCount: number
   totalCompletionRate: number

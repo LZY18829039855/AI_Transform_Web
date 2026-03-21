@@ -638,6 +638,11 @@ onBeforeUnmount(() => {
           <el-table-column label="进阶目标课程完课占比" width="160" align="center" header-align="center">
             <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
           </el-table-column>
+          <el-table-column prop="practicalTargetCourseCount" label="实战目标课程数" width="120" align="center" header-align="center" />
+          <el-table-column prop="practicalCompletedCount" label="实战目标课程完课数" width="140" align="center" header-align="center" />
+          <el-table-column label="实战目标课程完课占比" width="160" align="center" header-align="center">
+            <template #default="{ row }">{{ formatPercent(row.practicalCompletionRate) }}</template>
+          </el-table-column>
           <el-table-column prop="totalTargetCourseCount" label="总目标课程数" width="120" align="center" header-align="center" />
           <el-table-column prop="totalCompletedCount" label="目标课程完课数" width="120" align="center" header-align="center" />
           <el-table-column label="目标课程完课占比" width="140" align="center" header-align="center">
