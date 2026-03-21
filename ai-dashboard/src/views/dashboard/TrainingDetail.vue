@@ -338,33 +338,33 @@ watch(
   { deep: true }
 )
 
+/** 路由变化时同步筛选条件并加载下钻部门行；由 filters 的 watch 统一拉取详情，避免与 onMounted/onActivated 重复请求 */
+watch(
+  () => route.fullPath,
+  () => {
+    filters.value = initFiltersFromQuery()
+    nextTick(() => {
+      if (props.id === 'drill-down') {
+        loadDrillDownDepartmentRow()
+      }
+    })
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   initDepartmentTree()
-  filters.value = initFiltersFromQuery()
-  nextTick(() => {
-    loadDrillDownDepartmentRow()
-  })
-  fetchDetail()
   document.addEventListener('click', handleClickOutside)
 })
 
 onActivated(() => {
   refreshDepartmentTree()
-  filters.value = initFiltersFromQuery()
   nextTick(() => {
-    loadDrillDownDepartmentRow()
-  })
-  fetchDetail()
-})
-
-watch(
-  () => [props.id, route.query.deptId],
-  () => {
     if (props.id === 'drill-down') {
-      nextTick(loadDrillDownDepartmentRow)
+      loadDrillDownDepartmentRow()
     }
-  }
-)
+  })
+})
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
