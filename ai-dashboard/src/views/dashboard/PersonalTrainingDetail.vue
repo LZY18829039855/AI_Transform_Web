@@ -464,6 +464,10 @@ onActivated(() => {
         td {
           text-align: center;
         }
+        // 课程名称列内容左对齐
+        tr td:nth-child(3) {
+          text-align: left;
+        }
       }
     }
   }

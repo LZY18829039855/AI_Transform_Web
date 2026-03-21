@@ -204,6 +204,7 @@ const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) =
 
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatNumber = (value: number) => (value ?? 0).toFixed(1)
+const formatAvgLearnersInteger = (value: number) => String(Math.round(value ?? 0))
 
 onMounted(() => {
   initDepartmentTree()
@@ -736,28 +737,28 @@ defineExpose({
             <el-table-column prop="beginnerAvgLearners" label="初阶平均完课人数" width="160">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'beginnerAvgLearners')">
-                  {{ formatNumber(row.beginnerAvgLearners) }}
+                  {{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}
                 </el-button>
               </template>
             </el-table-column>
             <el-table-column prop="intermediateAvgLearners" label="中阶平均完课人数" width="160">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'intermediateAvgLearners')">
-                  {{ formatNumber(row.intermediateAvgLearners) }}
+                  {{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}
                 </el-button>
               </template>
             </el-table-column>
             <el-table-column prop="advancedAvgLearners" label="高阶平均完课人数" width="160">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'advancedAvgLearners')">
-                  {{ formatNumber(row.advancedAvgLearners) }}
+                  {{ formatAvgLearnersInteger(row.advancedAvgLearners) }}
                 </el-button>
               </template>
             </el-table-column>
             <el-table-column prop="practiceAvgLearners" label="实战平均完课人数" width="160">
               <template #default="{ row }">
                 <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'practiceAvgLearners')">
-                  {{ formatNumber(row.practiceAvgLearners) }}
+                  {{ formatAvgLearnersInteger(row.practiceAvgLearners) }}
                 </el-button>
               </template>
             </el-table-column>
