@@ -177,11 +177,30 @@ const loadDrillDownDepartmentRow = () => {
     drillDownDepartmentRow.value = null
     return
   }
-  // 优先从路由 state 取（点击基线人数时 router.push 传入），其次从 sessionStorage 取（兼容刷新等）
+  // 优先从路由 state 取（同页 router.push 传入）；新标签页用 query.drillStorageKey + localStorage；再 sessionStorage（刷新等）
   const routeState = route.state as { departmentRow?: DepartmentCourseCompletionRateRow } | undefined
   if (routeState?.departmentRow && routeState.departmentRow.deptId != null) {
     drillDownDepartmentRow.value = routeState.departmentRow
     return
+  }
+  const drillKey = route.query.drillStorageKey as string | undefined
+  if (drillKey != null && String(drillKey).trim() !== '') {
+    try {
+      const raw = localStorage.getItem(drillKey)
+      if (raw) {
+        const row = JSON.parse(raw) as DepartmentCourseCompletionRateRow
+        drillDownDepartmentRow.value = row
+        localStorage.removeItem(drillKey)
+        try {
+          sessionStorage.setItem('training_drill_department_row', JSON.stringify(row))
+        } catch (_) {
+          // ignore
+        }
+        return
+      }
+    } catch (_) {
+      // 解析失败则继续尝试 sessionStorage
+    }
   }
   try {
     const raw = sessionStorage.getItem('training_drill_department_row')
@@ -213,6 +232,38 @@ const loadDrillDownRoleSummaryRow = () => {
     drillDownRoleSummaryRow.value = routeState.roleSummaryRow
     drillDownRoleType.value = routeState.roleType
     return
+  }
+  const roleDrillKey = route.query.drillStorageKey as string | undefined
+  if (roleDrillKey != null && String(roleDrillKey).trim() !== '' && roleDrillKey.startsWith('training_drill_role_')) {
+    try {
+      const raw = localStorage.getItem(roleDrillKey)
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          roleType?: 'expert' | 'cadre'
+          row?: TrainingRoleSummaryRow
+        }
+        if (
+          parsed?.row &&
+          (parsed.roleType === 'expert' || parsed.roleType === 'cadre') &&
+          parsed.roleType === t
+        ) {
+          drillDownRoleSummaryRow.value = parsed.row
+          drillDownRoleType.value = parsed.roleType
+          localStorage.removeItem(roleDrillKey)
+          try {
+            sessionStorage.setItem(
+              'training_drill_role_summary',
+              JSON.stringify({ roleType: parsed.roleType, row: parsed.row })
+            )
+          } catch (_) {
+            // ignore
+          }
+          return
+        }
+      }
+    } catch (_) {
+      // 解析失败则继续尝试 sessionStorage
+    }
   }
   try {
     const raw = sessionStorage.getItem('training_drill_role_summary')

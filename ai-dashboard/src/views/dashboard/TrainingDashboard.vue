@@ -207,15 +207,18 @@ const handleRoleSummaryDrill = (
 
   try {
     sessionStorage.removeItem('training_drill_department_row')
-    sessionStorage.setItem(
-      'training_drill_role_summary',
-      JSON.stringify({ roleType, row })
-    )
   } catch (_) {
     // 忽略存储失败
   }
 
-  router.push({
+  const drillKey = `training_drill_role_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+  try {
+    localStorage.setItem(drillKey, JSON.stringify({ roleType, row }))
+  } catch (_) {
+    // 忽略配额/隐私模式
+  }
+
+  const resolved = router.resolve({
     name: 'TrainingDetail',
     params: { id: 'drill-down' },
     query: {
@@ -225,10 +228,11 @@ const handleRoleSummaryDrill = (
       role: filters.role,
       deptId,
       personType,
+      drillStorageKey: drillKey,
       ...(aiMaturity ? { ai_maturity: aiMaturity } : {}),
     },
-    state: { roleSummaryRow: row, roleType },
   })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 const handleAllStaffDrill = (
@@ -245,15 +249,20 @@ const handleAllStaffDrill = (
   })
 }
 
-/** 部门训战数据 - 基线人数点击跳转到训战看板详情页，将当前部门行数据传入详情页用于展示本部门训战数据 */
+/** 部门训战数据 - 基线人数在新标签页打开训战看板详情；行数据经 localStorage + drillStorageKey 传递（新标签无 router.state、sessionStorage 不跨标签） */
 const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) => {
   try {
     sessionStorage.removeItem('training_drill_role_summary')
-    sessionStorage.setItem('training_drill_department_row', JSON.stringify(row))
   } catch (_) {
     // 忽略存储失败（如隐私模式）
   }
-  router.push({
+  const drillKey = `training_drill_dept_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+  try {
+    localStorage.setItem(drillKey, JSON.stringify(row))
+  } catch (_) {
+    // 忽略配额/隐私模式；详情页仍可依赖 query 拉取下钻列表
+  }
+  const resolved = router.resolve({
     name: 'TrainingDetail',
     params: { id: 'drill-down' },
     query: {
@@ -263,9 +272,10 @@ const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) =
       role: filters.role,
       /** 与全员训战总览表「角色视图」一致：0 全员 / 1 干部 / 2 专家，供下钻接口 personType */
       personType: departmentCompletionRole.value,
+      drillStorageKey: drillKey,
     },
-    state: { departmentRow: row },
   })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
