@@ -1132,10 +1132,11 @@ const handleCadreCertCellClick = (row: Record<string, unknown>, column: string) 
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理干部任职数据表格的点击事件
@@ -1181,10 +1182,11 @@ const handleCadreQualifiedCellClick = (row: Record<string, unknown>, column: str
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理部门任职柱状图点击事件
