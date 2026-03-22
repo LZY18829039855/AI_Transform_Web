@@ -1249,10 +1249,11 @@ const handleDepartmentAppointmentBarClick = (data: { label: string; deptCode?: s
     queryParams.departmentPath = departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理部门认证柱状图点击事件
@@ -1316,10 +1317,11 @@ const handleDepartmentCertificationBarClick = (data: { label: string; deptCode?:
     queryParams.departmentPath = departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理部门表格点击事件（任职人数或认证人数）
@@ -1437,10 +1439,11 @@ const handleJobCategoryAppointmentBarClick = (data: { label: string; deptCode?: 
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理职位类认证柱状图点击事件
@@ -1477,10 +1480,11 @@ const handleJobCategoryCertificationBarClick = (data: { label: string; deptCode?
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理职位类表格点击事件（任职人数或认证人数）
