@@ -1034,10 +1034,11 @@ const handleExpertQualifiedCellClick = (row: Record<string, unknown>, column: st
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理专家认证数据表格的点击事件
@@ -1083,10 +1084,11 @@ const handleExpertCertCellClick = (row: Record<string, unknown>, column: string)
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理干部认证数据表格的点击事件
