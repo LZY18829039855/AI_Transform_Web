@@ -188,9 +188,9 @@ const goToDetail = (query: Record<string, string | undefined>) => {
   })
 }
 
-const handlePersonalDrill = (row: TrainingPersonalOverviewRow, field: string) => {
-  // 跳转到个人训战课程详情页
-  router.push({ name: 'PersonalTrainingDetail' })
+const handlePersonalDrill = (_row: TrainingPersonalOverviewRow, _field: string) => {
+  const resolved = router.resolve({ name: 'PersonalTrainingDetail' })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 const handleRoleSummaryDrill = (
