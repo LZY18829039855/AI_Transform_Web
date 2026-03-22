@@ -495,10 +495,6 @@ const mergedJobCategoryTableData = computed<MergedTableRow[]>(() => {
   return mergeAppointmentAndCertification(jobCategoryAppointmentPoints.value, jobCategoryCertificationPoints.value)
 })
 
-const mergedOrganizationTableData = computed<MergedTableRow[]>(() => {
-  return mergeAppointmentAndCertification(organizationAppointmentPoints.value, organizationCertificationPoints.value)
-})
-
 // 渐进式加载各个数据块
 const loadExpertData = async () => {
   loadingExpert.value = true
@@ -1400,10 +1396,11 @@ const handleDepartmentTableCellClick = (row: MergedTableRow, column: 'appointmen
     queryParams.departmentPath = departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 // 处理职位类任职柱状图点击事件
@@ -1531,10 +1528,11 @@ const handleJobCategoryTableCellClick = (row: MergedTableRow, column: 'appointme
     queryParams.departmentPath = filters.value.departmentPath.join(',')
   }
   
-  router.push({
+  const resolved = router.resolve({
     path: '/dashboard/certification/detail/detail',
     query: queryParams,
   })
+  window.open(resolved.href, '_blank')
 }
 
 const formatNumber = (value: number) => {
@@ -2929,7 +2927,7 @@ onActivated(() => {
             <el-empty v-else description="待提供数据" :image-size="80" />
           </el-card>
         </el-col>
-        <!-- 组织AI成熟度数据：图表视图显示两个图表，表格视图显示一个合并表格 -->
+        <!-- 组织AI成熟度数据：图表视图显示任职、认证两个图表 -->
         <template v-if="allChartsViewMode === 'chart'">
           <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
@@ -2995,73 +2993,6 @@ onActivated(() => {
             </BarLineChart>
           </el-col>
         </template>
-        <!-- 表格视图：合并的组织AI成熟度任职/认证数据表格 -->
-        <el-col v-else-if="dashboardData && allChartsViewMode === 'table'" :xs="24" :sm="24" :md="24" :lg="24">
-          <el-skeleton :rows="3" animated v-if="loadingAllStaffTrends" />
-          <el-card v-else shadow="hover" class="chart-card">
-            <template #header>
-              <div class="card-header">
-                <h3>
-                  组织AI成熟度任职/认证数据
-                  <el-tooltip
-                    placement="top"
-                    effect="dark"
-                  >
-                    <template #content>
-                      <div style="line-height: 1.8;">
-                        <div style="font-weight: 500; margin-bottom: 4px;">AI任职方向包括：</div>
-                        <div>数据科学与AI工程（ICT）</div>
-                        <div>AI算法及应用（ICT）</div>
-                        <div>AI软件工程与工具（ICT）</div>
-                        <div>AI系统测试（ICT）</div>
-                        <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
-                        <div>AI算法技术</div>
-                        <div>AI决策推理</div>
-                        <div>AI图像语言语义</div>
-                      </div>
-                    </template>
-                    <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
-                      <QuestionFilled />
-                    </el-icon>
-                  </el-tooltip>
-                </h3>
-              </div>
-            </template>
-            <el-table
-              v-if="mergedOrganizationTableData.length > 0"
-              :data="[...mergedOrganizationTableData, calculateMergedTableTotal(organizationAppointmentPoints, organizationCertificationPoints)]"
-              border
-              stripe
-              size="small"
-              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
-              :row-class-name="({ rowIndex }) => rowIndex === mergedOrganizationTableData.length ? 'summary-row' : ''"
-              style="width: 100%"
-            >
-              <el-table-column prop="label" label="组织AI成熟度" min-width="180" align="center" header-align="center" />
-              <el-table-column prop="appointmentCount" label="AI任职人数" min-width="140" align="center" header-align="center">
-                <template #default="{ row }">
-                  {{ formatNumber(row.appointmentCount) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="appointmentRate" label="AI任职占比" min-width="120" align="center" header-align="center">
-                <template #default="{ row }">
-                  {{ formatPercent(row.appointmentRate) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="certificationCount" label="AI认证人数" min-width="140" align="center" header-align="center">
-                <template #default="{ row }">
-                  {{ formatNumber(row.certificationCount) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="certificationRate" label="AI认证占比" min-width="120" align="center" header-align="center">
-                <template #default="{ row }">
-                  {{ formatPercent(row.certificationRate) }}
-                </template>
-              </el-table-column>
-            </el-table>
-            <el-empty v-else description="待提供数据" :image-size="80" />
-          </el-card>
-        </el-col>
       </el-row>
     </el-card>
   </section>
