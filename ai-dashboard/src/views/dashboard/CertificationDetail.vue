@@ -1176,7 +1176,8 @@ onBeforeUnmount(() => {
         <div>
           <h2>{{ detailData?.summary?.name ?? 'AI任职认证详情' }}</h2>
           <p>
-            支持六级部门级联、职位族与成熟度多维筛选，结合盘点明细掌握人才任职与认证达标情况。
+            结合盘点明细掌握人才任职与认证达标情况。
+            <!-- 后期恢复：支持六级部门级联、职位族与成熟度多维筛选 -->
           </p>
         </div>
       </div>
@@ -1185,6 +1186,8 @@ onBeforeUnmount(() => {
     <!-- 筛选条件 -->
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
+        <!-- 以下筛选（部门、职位族、职位类、职位子类、成熟度）暂不展示，后期可能恢复 -->
+        <!--
         <el-form-item label="部　　门">
           <el-cascader
             v-model="filters.departmentPath"
@@ -1237,11 +1240,6 @@ onBeforeUnmount(() => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="角色视图">
-          <el-select v-model="filters.role" placeholder="全员" style="min-width: 260px">
-            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="成熟度">
           <el-select v-model="filters.maturity" placeholder="全部" style="width: 160px">
             <el-option
@@ -1250,6 +1248,12 @@ onBeforeUnmount(() => {
               :label="opt.label"
               :value="opt.value"
             />
+          </el-select>
+        </el-form-item>
+        -->
+        <el-form-item label="角色视图">
+          <el-select v-model="filters.role" placeholder="全员" style="min-width: 260px">
+            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
           </el-select>
         </el-form-item>
         <el-form-item>
