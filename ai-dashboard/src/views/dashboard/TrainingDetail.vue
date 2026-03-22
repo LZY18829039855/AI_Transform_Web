@@ -650,27 +650,104 @@ onBeforeUnmount(() => {
           :header-cell-style="{ fontSize: '14px' }"
           style="width: 100%"
         >
-          <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
-          <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center" />
-          <el-table-column prop="basicCourseCount" label="基础课程数" min-width="76" align="center" header-align="center" />
-          <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="76" align="center" header-align="center" />
-          <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="76" align="center" header-align="center" />
-          <el-table-column prop="basicAvgCompletedCount" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+          <el-table-column
+            prop="deptName"
+            label="部门"
+            min-width="100"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="baselineCount"
+            label="基线人数"
+            min-width="80"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="basicCourseCount"
+            label="基础课程数"
+            min-width="76"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="advancedCourseCount"
+            label="进阶课程数"
+            min-width="76"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="practicalCourseCount"
+            label="实战课程数"
+            min-width="76"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="basicAvgCompletedCount"
+            label="基础课程平均完课人数"
+            min-width="130"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptNumber(row.basicAvgCompletedCount) }}</template>
           </el-table-column>
-          <el-table-column prop="advancedAvgCompletedCount" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+          <el-table-column
+            prop="advancedAvgCompletedCount"
+            label="进阶课程平均完课人数"
+            min-width="130"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptNumber(row.advancedAvgCompletedCount) }}</template>
           </el-table-column>
-          <el-table-column prop="practicalAvgCompletedCount" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+          <el-table-column
+            prop="practicalAvgCompletedCount"
+            label="实战课程平均完课人数"
+            min-width="130"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptNumber(row.practicalAvgCompletedCount) }}</template>
           </el-table-column>
-          <el-table-column prop="basicAvgCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
+          <el-table-column
+            prop="basicAvgCompletionRate"
+            label="基础课程平均完课率"
+            min-width="124"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptPercent(row.basicAvgCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="advancedAvgCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
+          <el-table-column
+            prop="advancedAvgCompletionRate"
+            label="进阶课程平均完课率"
+            min-width="124"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptPercent(row.advancedAvgCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="practicalAvgCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
+          <el-table-column
+            prop="practicalAvgCompletionRate"
+            label="实战课程平均完课率"
+            min-width="124"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptPercent(row.practicalAvgCompletionRate) }}</template>
           </el-table-column>
         </el-table>
@@ -697,6 +774,7 @@ onBeforeUnmount(() => {
             prop="maturityLevel"
             :label="drillDownRoleType === 'expert' ? '专家岗位成熟度等级' : '干部岗位成熟度等级'"
             min-width="112"
+            show-overflow-tooltip
             align="center"
             header-align="center"
           />
@@ -704,28 +782,92 @@ onBeforeUnmount(() => {
             prop="personCount"
             :label="drillDownRoleType === 'expert' ? '专家人数' : '干部人数'"
             min-width="68"
+            show-overflow-tooltip
             align="center"
             header-align="center"
           />
-          <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
-          <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
-          <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
-          <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+          <el-table-column
+            prop="beginnerCourses"
+            label="基础课程数"
+            min-width="76"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="intermediateCourses"
+            label="进阶课程数"
+            min-width="76"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="practiceCourses"
+            label="实战课程数"
+            min-width="76"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          />
+          <el-table-column
+            prop="beginnerAvgLearners"
+            label="基础课程平均完课人数"
+            min-width="130"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
           </el-table-column>
-          <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+          <el-table-column
+            prop="intermediateAvgLearners"
+            label="进阶课程平均完课人数"
+            min-width="130"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
           </el-table-column>
-          <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+          <el-table-column
+            prop="practiceAvgLearners"
+            label="实战课程平均完课人数"
+            min-width="130"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
           </el-table-column>
-          <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
+          <el-table-column
+            prop="beginnerCompletionRate"
+            label="基础课程平均完课率"
+            min-width="124"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptPercent(row.beginnerCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
+          <el-table-column
+            prop="intermediateCompletionRate"
+            label="进阶课程平均完课率"
+            min-width="124"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptPercent(row.intermediateCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
+          <el-table-column
+            prop="practiceCompletionRate"
+            label="实战课程平均完课率"
+            min-width="124"
+            show-overflow-tooltip
+            align="center"
+            header-align="center"
+          >
             <template #default="{ row }">{{ formatDeptPercent(row.practiceCompletionRate) }}</template>
           </el-table-column>
         </el-table>
