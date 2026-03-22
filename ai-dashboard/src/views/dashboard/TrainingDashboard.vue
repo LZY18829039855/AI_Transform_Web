@@ -188,7 +188,7 @@ const goToDetail = (query: Record<string, string | undefined>) => {
   })
 }
 
-const handlePersonalDrill = (_row: TrainingPersonalOverviewRow, _field: string) => {
+const handlePersonalDrill = (row: TrainingPersonalOverviewRow, field: string) => {
   const resolved = router.resolve({ name: 'PersonalTrainingDetail' })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
