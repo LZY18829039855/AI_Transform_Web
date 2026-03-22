@@ -153,8 +153,9 @@ const fetchDetail = async () => {
       const deptCode = deptCodeFromRoute
       const personType = Number(personTypeFromRoute)
       const queryType = Number(queryTypeFromRoute)
-      // 专家数据时，成熟度传参为L6（查询所有成熟度L1、L2、L3）
-      const maturityParam: string | undefined = personType === 2 ? 'L6' : undefined // 专家传L6，其他传空
+      // 柱状图下钻未带成熟度时传空；后端专家任职侧会默认按 L2/L3 过滤，认证侧不按成熟度过滤块处理
+      // 不再对专家固定传 L6（L6 表示含 L1 的「全部岗位成熟度」，会覆盖看板表格下钻传入的 L2/L3/L5）
+      const maturityParam: string | undefined = undefined
       const jobCategory: string | undefined = jobCategoryFromRoute || undefined // 从路由参数中读取职位类
       
       // 并行加载任职和认证数据
@@ -325,48 +326,41 @@ const fetchDetail = async () => {
       // personType: 0-全员，1-干部，2-专家
       const personType = currentRole === '0' ? 0 : (currentRole === '1' ? 1 : 2)
       
-      // 处理成熟度参数：
-      // 专家数据时，成熟度传参为L6（查询所有成熟度L1、L2、L3）
-      // 1. 如果用户点击查询按钮（isUserQuery为true），使用筛选条件中的值
-      // 2. 如果是首次加载（从看板跳转），优先检查路由参数中是否有L5
+      // 处理成熟度参数（与后端 ExpertCertStatisticsService 约定：L5=L2+L3；L2/L3=精确；L6=含 L1 的全量岗位成熟度）
+      // 专家下钻必须与干部共用同一套解析逻辑，否则看板传入的 maturity（L2/L3/L5）会被忽略（此前错误地固定传 L6）
       let maturityParam: string | undefined = undefined
-      
-      // 专家数据时，直接传L6
-      if (personType === 2) {
-        maturityParam = 'L6'
-      } else {
-        const maturityFromRoute = route.query.maturity as string | undefined
-        const aiMaturity = filters.value.maturity
-        
-        if (isUserQuery.value) {
-          // 用户点击查询按钮，使用筛选条件中的值
-          if (aiMaturity === '全部' || !aiMaturity) {
-            maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
-          } else {
-            const maturityStr = aiMaturity as string
-            if (maturityStr === 'L5') {
-              maturityParam = 'L5' // L5代表查询L2和L3的数据
-            } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
-              maturityParam = 'L5' // 总计行转换为L5
-            } else {
-              maturityParam = maturityStr
-            }
-          }
+
+      const maturityFromRoute = route.query.maturity as string | undefined
+      const aiMaturity = filters.value.maturity
+
+      if (isUserQuery.value) {
+        // 用户点击查询按钮，使用筛选条件中的值
+        if (aiMaturity === '全部' || !aiMaturity) {
+          maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
         } else {
-          // 首次加载（从看板跳转），优先检查路由参数
-          if (maturityFromRoute === 'L5') {
+          const maturityStr = aiMaturity as string
+          if (maturityStr === 'L5') {
             maturityParam = 'L5' // L5代表查询L2和L3的数据
-          } else if (aiMaturity === '全部' || !aiMaturity) {
-            maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+          } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
           } else {
-            const maturityStr = aiMaturity as string
-            if (maturityStr === 'L5') {
-              maturityParam = 'L5' // L5代表查询L2和L3的数据
-            } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
-              maturityParam = 'L5' // 总计行转换为L5
-            } else {
-              maturityParam = maturityStr
-            }
+            maturityParam = maturityStr
+          }
+        }
+      } else {
+        // 首次加载（从看板跳转），优先检查路由参数
+        if (maturityFromRoute === 'L5') {
+          maturityParam = 'L5' // L5代表查询L2和L3的数据
+        } else if (aiMaturity === '全部' || !aiMaturity) {
+          maturityParam = 'L5' // 全部代表查询L2和L3的数据，传L5；如果未选择也默认传L5
+        } else {
+          const maturityStr = aiMaturity as string
+          if (maturityStr === 'L5') {
+            maturityParam = 'L5' // L5代表查询L2和L3的数据
+          } else if (maturityStr === '总计' || maturityStr === 'Total' || maturityStr === 'total') {
+            maturityParam = 'L5' // 总计行转换为L5
+          } else {
+            maturityParam = maturityStr
           }
         }
       }

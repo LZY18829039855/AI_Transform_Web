@@ -917,7 +917,7 @@ const handleExpertQualifiedCellClick = (row: Record<string, unknown>, column: st
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
       const prevRow = sortedExpertAppointmentData.value[i]
-      if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
+      if (prevRow && prevRow.isMaturityRow && prevRow.maturityLevel) {
         maturityLevel = (prevRow.maturityLevel as string) || ''
         break
       }
@@ -967,7 +967,7 @@ const handleExpertCertCellClick = (row: Record<string, unknown>, column: string)
     // 向上查找最近的成熟度行
     for (let i = currentIndex - 1; i >= 0; i--) {
       const prevRow = sortedExpertCertificationData.value[i]
-      if (prevRow && (prevRow.isMaturityRow || prevRow.maturityLevel)) {
+      if (prevRow && prevRow.isMaturityRow && prevRow.maturityLevel) {
         maturityLevel = (prevRow.maturityLevel as string) || ''
         break
       }
