@@ -245,9 +245,6 @@ const handleAllStaffDrill = (
   })
 }
 
-/** 新标签页无法继承 history.state，sessionStorage 一般不跨标签共享，故用 localStorage + deptDrillKey 传部门行 */
-const TRAINING_DRILL_DEPT_TAB_PREFIX = 'training_drill_dept_tab_'
-
 /** 部门训战数据 - 基线人数点击跳转到训战看板详情页，将当前部门行数据传入详情页用于展示本部门训战数据 */
 const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) => {
   try {
@@ -256,16 +253,7 @@ const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) =
   } catch (_) {
     // 忽略存储失败（如隐私模式）
   }
-  const deptDrillKey =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
-  try {
-    localStorage.setItem(`${TRAINING_DRILL_DEPT_TAB_PREFIX}${deptDrillKey}`, JSON.stringify(row))
-  } catch (_) {
-    // 忽略（如无 localStorage）
-  }
-  const resolved = router.resolve({
+  router.push({
     name: 'TrainingDetail',
     params: { id: 'drill-down' },
     query: {
@@ -275,10 +263,9 @@ const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) =
       role: filters.role,
       /** 与全员训战总览表「角色视图」一致：0 全员 / 1 干部 / 2 专家，供下钻接口 personType */
       personType: departmentCompletionRole.value,
-      deptDrillKey,
     },
+    state: { departmentRow: row },
   })
-  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`

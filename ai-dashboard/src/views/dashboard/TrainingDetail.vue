@@ -168,9 +168,6 @@ const formatDeptNumber = (value: number | undefined) => (value ?? 0).toFixed(1)
 /** 部门训战数据表百分比展示（与看板一致，一位小数） */
 const formatDeptPercent = (value: number | undefined) => `${(value ?? 0).toFixed(1)}%`
 
-/** 与训战看板 handleDepartmentBaselineDrill 中 localStorage 键前缀一致（新标签打开详情时传部门行） */
-const TRAINING_DRILL_DEPT_TAB_PREFIX = 'training_drill_dept_tab_'
-
 const loadDrillDownDepartmentRow = () => {
   if (props.id !== 'drill-down') {
     return
@@ -180,30 +177,11 @@ const loadDrillDownDepartmentRow = () => {
     drillDownDepartmentRow.value = null
     return
   }
-  // 优先从路由 state 取（同页 router.push 传入），其次从新标签页 query.deptDrillKey + localStorage，再从 sessionStorage（刷新等）
+  // 优先从路由 state 取（点击基线人数时 router.push 传入），其次从 sessionStorage 取（兼容刷新等）
   const routeState = route.state as { departmentRow?: DepartmentCourseCompletionRateRow } | undefined
   if (routeState?.departmentRow && routeState.departmentRow.deptId != null) {
     drillDownDepartmentRow.value = routeState.departmentRow
     return
-  }
-  const deptDrillKey = route.query.deptDrillKey as string | undefined
-  if (deptDrillKey != null && String(deptDrillKey).trim() !== '') {
-    try {
-      const raw = localStorage.getItem(`${TRAINING_DRILL_DEPT_TAB_PREFIX}${deptDrillKey}`)
-      if (raw) {
-        const row = JSON.parse(raw) as DepartmentCourseCompletionRateRow
-        drillDownDepartmentRow.value = row
-        try {
-          sessionStorage.setItem('training_drill_department_row', raw)
-        } catch (_) {
-          // ignore
-        }
-        localStorage.removeItem(`${TRAINING_DRILL_DEPT_TAB_PREFIX}${deptDrillKey}`)
-        return
-      }
-    } catch (_) {
-      // ignore
-    }
   }
   try {
     const raw = sessionStorage.getItem('training_drill_department_row')
