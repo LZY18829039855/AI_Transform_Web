@@ -318,15 +318,16 @@ const handleExport = () => {
   }
 }
 
-/** 跳转到个人训战课程详情页，使用 /completion 接口（account 工号） */
+/** 在新标签页打开个人训战课程详情，使用 /completion 接口（account 工号） */
 const goToPersonalDetail = (account: string) => {
   if (!account || !String(account).trim()) {
     return
   }
-  router.push({
+  const resolved = router.resolve({
     name: 'PersonalTrainingDetail',
     query: { account: String(account).trim() },
   })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 // 表格筛选框状态（姓名/工号，仅前端过滤当前表格数据）
