@@ -1183,11 +1183,9 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <!-- 筛选条件 -->
+    <!-- 筛选区域（含表单与查询/重置按钮）暂不展示，后期恢复
     <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="90">
-        <!-- 以下筛选（部门、职位族、职位类、职位子类、成熟度）暂不展示，后期可能恢复 -->
-        <!--
         <el-form-item label="部　　门">
           <el-cascader
             v-model="filters.departmentPath"
@@ -1250,7 +1248,6 @@ onBeforeUnmount(() => {
             />
           </el-select>
         </el-form-item>
-        -->
         <el-form-item label="角色视图">
           <el-select v-model="filters.role" placeholder="全员" style="min-width: 260px">
             <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
@@ -1262,6 +1259,7 @@ onBeforeUnmount(() => {
         </el-form-item>
       </el-form>
     </el-card>
+    -->
 
     <el-skeleton :rows="8" animated v-if="loading" />
     <template v-else-if="detailData">
