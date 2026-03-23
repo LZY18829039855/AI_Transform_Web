@@ -928,6 +928,7 @@ export interface CourseInfo {
   courseName: string // 课程名称
   courseNumber: string // 课程编码
   isCompleted: boolean // 是否已完成
+  isTargetCourse?: boolean // 是否目标课程
   bigType?: string // 课程主分类
   courseLink?: string // 课程链接
 }

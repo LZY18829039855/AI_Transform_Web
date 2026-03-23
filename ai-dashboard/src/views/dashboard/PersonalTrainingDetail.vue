@@ -51,10 +51,12 @@ const filteredCourses = computed(() => {
   detailData.value.courseStatistics.forEach((stat) => {
     if (stat.courseList) {
       stat.courseList.forEach((course) => {
-        allCourses.push({
-          ...course,
-          category: stat.courseLevel,
-        })
+        if (course.isTargetCourse) {
+          allCourses.push({
+            ...course,
+            category: stat.courseLevel,
+          })
+        }
       })
     }
   })
@@ -329,11 +331,6 @@ onActivated(() => {
                 {{ row.courseName }}
               </el-link>
               <span v-else>{{ row.courseName }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="是否目标课程" width="140" align="center">
-            <template #default>
-              <el-tag type="success" effect="light">是</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="是否完课" width="120" align="center">
