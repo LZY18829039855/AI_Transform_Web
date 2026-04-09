@@ -316,8 +316,17 @@ function handleBatchDelete() {
             placeholder="筛选工号或姓名"
             @clear="handleFilterClear"
             @keyup.enter="handleFilterSearch"
-          />
-          <el-button type="primary" :icon="Search" circle title="查询" @click="handleFilterSearch" />
+          >
+            <template #suffix>
+              <el-icon
+                class="credit-toolbar__filter-search-icon"
+                title="查询"
+                @click.stop="handleFilterSearch"
+              >
+                <Search />
+              </el-icon>
+            </template>
+          </el-input>
           <el-tooltip content="批量删除" placement="top">
             <span class="credit-toolbar__batch-icon-wrap">
               <el-button
@@ -573,6 +582,22 @@ function handleBatchDelete() {
 .credit-toolbar__filter {
   width: 220px;
   max-width: min(220px, 100%);
+}
+
+.credit-toolbar__filter-search-icon {
+  cursor: pointer;
+  color: var(--el-color-primary);
+  font-size: 18px;
+  vertical-align: middle;
+  outline: none;
+
+  &:hover {
+    color: var(--el-color-primary-light-3);
+  }
+
+  &:active {
+    color: var(--el-color-primary-dark-2);
+  }
 }
 
 .credit-toolbar__batch-icon-wrap {
