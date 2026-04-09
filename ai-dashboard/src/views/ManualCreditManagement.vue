@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Delete, DocumentAdd, Download, EditPen, Upload } from '@element-plus/icons-vue'
+import { Delete, DocumentAdd, Download, EditPen, Search, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { ManualEnterCreditRecord } from '@/types/manualCredit'
@@ -25,6 +25,9 @@ const pageNum = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const pageSizeOptions = [10, 20, 50, 100, 200] as const
+
+/** 表格筛选：无汉字按工号查，有汉字按姓名查；汉字与数字不可同现 */
+const filterKeyword = ref('')
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
@@ -56,12 +59,37 @@ function emptyRecord(): ManualEnterCreditRecord {
   }
 }
 
+/** 常见汉字区间（含扩展），用于区分「姓名」与「工号」 */
+function hasChineseChars(s: string): boolean {
+  return /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(s)
+}
+
+/** 半角 0-9 与全角 ０-９ */
+function hasDigitChar(s: string): boolean {
+  return /[\d\uFF10-\uFF19]/.test(s)
+}
+
+function isFilterKeywordMixedInvalid(keyword: string): boolean {
+  const t = keyword.trim()
+  if (!t) {
+    return false
+  }
+  return hasChineseChars(t) && hasDigitChar(t)
+}
+
 async function loadList() {
+  const kw = filterKeyword.value.trim()
+  if (isFilterKeywordMixedInvalid(filterKeyword.value)) {
+    ElMessage.warning('请仅填写工号或仅填写姓名，勿在同一筛选框内同时包含汉字与数字。')
+    return
+  }
   loading.value = true
   try {
     const page = await fetchManualEnterCreditList({
       pageNum: pageNum.value,
       pageSize: pageSize.value,
+      ...(kw && !hasChineseChars(kw) ? { employeeNumber: kw } : {}),
+      ...(kw && hasChineseChars(kw) ? { employeeName: kw } : {}),
     })
     tableData.value = page.rows
     total.value = page.total
@@ -74,6 +102,20 @@ async function loadList() {
 }
 
 function handlePageSizeChange() {
+  pageNum.value = 1
+  loadList()
+}
+
+function handleFilterSearch() {
+  if (isFilterKeywordMixedInvalid(filterKeyword.value)) {
+    ElMessage.warning('请仅填写工号或仅填写姓名，勿在同一筛选框内同时包含汉字与数字。')
+    return
+  }
+  pageNum.value = 1
+  loadList()
+}
+
+function handleFilterClear() {
   pageNum.value = 1
   loadList()
 }
@@ -267,6 +309,15 @@ function handleBatchDelete() {
           <el-button type="primary" :icon="Upload" @click="triggerImport">导入学分</el-button>
         </div>
         <div class="credit-toolbar__right">
+          <el-input
+            v-model="filterKeyword"
+            class="credit-toolbar__filter"
+            clearable
+            placeholder="筛选工号或姓名"
+            @clear="handleFilterClear"
+            @keyup.enter="handleFilterSearch"
+          />
+          <el-button type="primary" :icon="Search" circle title="查询" @click="handleFilterSearch" />
           <el-tooltip content="批量删除" placement="top">
             <span class="credit-toolbar__batch-icon-wrap">
               <el-button
@@ -514,6 +565,14 @@ function handleBatchDelete() {
 
 .credit-toolbar__right {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.credit-toolbar__filter {
+  width: 220px;
+  max-width: min(220px, 100%);
 }
 
 .credit-toolbar__batch-icon-wrap {
@@ -562,6 +621,16 @@ function handleBatchDelete() {
   font-family: inherit;
   font-variant-numeric: normal;
   letter-spacing: normal;
+}
+
+.credit-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  width: 100%;
 }
 
 .import-progress-wrap {
