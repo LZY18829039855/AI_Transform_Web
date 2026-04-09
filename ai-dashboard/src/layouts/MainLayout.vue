@@ -20,7 +20,8 @@ const handleGoHome = () => {
 }
 
 const handleGoCreditManagement = () => {
-  router.push({ name: 'ManualCreditManagement' })
+  const resolved = router.resolve({ name: 'ManualCreditManagement' })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 const handlePermissionManagement = () => {

@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx'
+import * as XLSXStyle from 'xlsx-js-style'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import type { ManualCreditImportRow, ManualEnterCreditRecord } from '@/types/manualCredit'
@@ -231,10 +232,43 @@ const TEMPLATE_HEADERS = [
   '附件URL',
 ]
 
-/** 下载导入模板（.xlsx） */
+const HEADER_CELL_STYLE = {
+  font: { bold: true, color: { rgb: '000000' } },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+}
+
+/** 工号列预置空行数量：这些行的 A 列设为「文本」格式，避免输入长数字被 Excel 当成数值 */
+const TEXT_FORMAT_PREFILL_ROWS = 200
+
+/** 下载导入模板（.xlsx）：表头居中加粗黑色；工号列（A）为文本格式 */
 export function downloadManualCreditTemplate(fileName = '学分录入导入模板') {
-  const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS])
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, '学分录入')
-  XLSX.writeFile(wb, `${fileName}.xlsx`)
+  const ws = XLSXStyle.utils.aoa_to_sheet([TEMPLATE_HEADERS])
+  const colCount = TEMPLATE_HEADERS.length
+
+  for (let c = 0; c < colCount; c++) {
+    const addr = XLSXStyle.utils.encode_cell({ r: 0, c })
+    const cell = ws[addr] as { t?: string; v?: unknown; s?: unknown }
+    if (cell) {
+      cell.s = HEADER_CELL_STYLE
+    }
+  }
+
+  for (let r = 1; r <= TEXT_FORMAT_PREFILL_ROWS; r++) {
+    const addr = XLSXStyle.utils.encode_cell({ r, c: 0 })
+    ws[addr] = {
+      t: 's',
+      v: '',
+      s: { numFmt: '@' },
+    }
+  }
+
+  ws['!ref'] = XLSXStyle.utils.encode_range({
+    s: { r: 0, c: 0 },
+    e: { r: TEXT_FORMAT_PREFILL_ROWS, c: colCount - 1 },
+  })
+  ws['!cols'] = TEMPLATE_HEADERS.map((_, i) => ({ wch: i === 0 ? 18 : 16 }))
+
+  const wb = XLSXStyle.utils.book_new()
+  XLSXStyle.utils.book_append_sheet(wb, ws, '学分录入')
+  XLSXStyle.writeFile(wb, `${fileName}.xlsx`)
 }

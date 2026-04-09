@@ -74,6 +74,14 @@ const rules: FormRules = {
 
 const hasSelection = computed(() => selectedRows.value.length > 0)
 
+/** 表格中以文本展示工号，避免被当成数字（去科学计数、保前导零观感） */
+function formatTextCell(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) {
+    return ''
+  }
+  return String(v).trim()
+}
+
 function triggerImport() {
   fileInputRef.value?.click()
 }
@@ -217,17 +225,17 @@ function handleBatchDelete() {
 
 <template>
   <div class="credit-page" v-loading="loading">
-    <el-card class="credit-card" shadow="never">
-      <div class="credit-header">
-        <div>
-          <h2 class="credit-title">学分管理</h2>
-          <p class="credit-desc">
-            Excel 需包含工号、获得学分（必填）。导入时将按批提交后端；修改人工号由服务端根据 Cookie
-            <code>account</code> 写入。请确保已登录且浏览器携带该 Cookie。
+    <section class="credit-dashboard">
+      <header class="dashboard__header glass-card">
+        <div class="header-info">
+          <h2>学分管理</h2>
+          <p>
+            在此统一维护与 AI 转型相关的多元化学分方案：既可覆盖培训、赛事、技术分享、认证与主题活动等多类型场景，也可记录活动主题、时间、学分、说明与证明材料等维度信息，支持表格批量导入与单条补录，便于沉淀个人在 AI 能力提升路径上的完整画像。
           </p>
         </div>
-      </div>
+      </header>
 
+      <el-card class="credit-card" shadow="never">
       <div class="credit-toolbar">
         <input
           ref="fileInputRef"
@@ -257,6 +265,7 @@ function handleBatchDelete() {
       </div>
 
       <el-table
+        class="credit-table"
         :data="tableData"
         border
         stripe
@@ -264,19 +273,79 @@ function handleBatchDelete() {
         max-height="560"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="48" fixed />
-        <el-table-column prop="employee_number" label="工号" min-width="110" fixed show-overflow-tooltip />
-        <el-table-column prop="employee_name" label="姓名" min-width="100" show-overflow-tooltip />
-        <el-table-column prop="credit_type" label="学分类型" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="activity_name" label="活动名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="activity_date" label="活动日期" min-width="170" show-overflow-tooltip />
-        <el-table-column prop="credits" label="获得学分" width="100" />
-        <el-table-column prop="description" label="详细描述" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="attachment_url" label="附件URL" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="Modifier__number" label="修改人工号" width="120" show-overflow-tooltip />
-        <el-table-column prop="create_time" label="创建时间" width="170" />
-        <el-table-column prop="update_time" label="更新时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column type="selection" width="48" fixed header-align="center" align="center" />
+        <el-table-column
+          label="工号"
+          min-width="110"
+          fixed
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            <span class="credit-table__text-cell">{{ formatTextCell(row.employee_number) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="employee_name"
+          label="姓名"
+          min-width="100"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="credit_type"
+          label="学分类型"
+          min-width="120"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="activity_name"
+          label="活动名称"
+          min-width="160"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="activity_date"
+          label="活动日期"
+          min-width="170"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column prop="credits" label="获得学分" width="100" header-align="center" align="center" />
+        <el-table-column
+          prop="description"
+          label="详细描述"
+          min-width="180"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="attachment_url"
+          label="附件URL"
+          min-width="160"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="Modifier__number"
+          label="修改人工号"
+          width="120"
+          header-align="center"
+          align="center"
+          show-overflow-tooltip
+        />
+        <el-table-column prop="create_time" label="创建时间" width="170" header-align="center" align="center" />
+        <el-table-column prop="update_time" label="更新时间" width="170" header-align="center" align="center" />
+        <el-table-column label="操作" width="160" fixed="right" header-align="center" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="EditPen" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
@@ -286,7 +355,8 @@ function handleBatchDelete() {
           <el-empty description="暂无数据，请导入学分或点击「新增记录」" />
         </template>
       </el-table>
-    </el-card>
+      </el-card>
+    </section>
 
     <el-dialog
       v-model="importDialogVisible"
@@ -354,34 +424,53 @@ function handleBatchDelete() {
   padding-bottom: $spacing-xl;
 }
 
-.credit-card {
-  border-radius: $radius-md;
-  border: 1px solid $border-color;
+/** 与 AI 训战看板顶部「玻璃卡」文案区一致 */
+.credit-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
 }
 
-.credit-header {
-  margin-bottom: $spacing-md;
-}
+.dashboard__header.glass-card {
+  border-radius: $radius-lg;
+  background: linear-gradient(135deg, rgba(58, 122, 254, 0.18), rgba(14, 170, 194, 0.16));
+  box-shadow: 0 18px 45px rgba(58, 122, 254, 0.12);
+  padding: $spacing-lg;
+  color: #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-lg;
 
-.credit-title {
-  margin: 0 0 $spacing-xs;
-  font-size: 20px;
-  font-weight: 600;
-  color: $text-main-color;
-}
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #000;
+  }
 
-.credit-desc {
-  margin: 0;
-  color: $text-secondary-color;
-  font-size: $font-size-small;
-  line-height: 1.6;
+  p {
+    margin: $spacing-sm 0 0;
+    color: #000;
+    line-height: 1.6;
+    white-space: normal;
+  }
 
   code {
     font-size: 12px;
     padding: 0 4px;
-    background: $background-light;
+    background: rgba(255, 255, 255, 0.65);
     border-radius: 4px;
   }
+}
+
+.header-info {
+  max-width: 100%;
+}
+
+.credit-card {
+  border-radius: $radius-md;
+  border: 1px solid $border-color;
 }
 
 .credit-toolbar {
@@ -413,6 +502,26 @@ function handleBatchDelete() {
 
 .file-input {
   display: none;
+}
+
+.credit-table {
+  :deep(.el-table__header-wrapper th) {
+    font-weight: 700;
+    color: #000;
+    text-align: center !important;
+  }
+
+  :deep(.el-table__header .cell) {
+    font-weight: 700;
+    color: #000;
+    justify-content: center;
+  }
+}
+
+.credit-table__text-cell {
+  font-family: inherit;
+  font-variant-numeric: normal;
+  letter-spacing: normal;
 }
 
 .import-progress-wrap {
