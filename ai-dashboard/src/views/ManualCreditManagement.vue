@@ -36,6 +36,7 @@ const dialogTitle = ref('编辑学分记录')
 const formRef = ref<FormInstance>()
 const formModel = ref<ManualEnterCreditRecord>(emptyRecord())
 const saving = ref(false)
+const isEditMode = computed(() => Boolean(formModel.value?.id))
 
 const importDialogVisible = ref(false)
 const importPercent = ref(0)
@@ -137,6 +138,21 @@ function formatTextCell(v: string | number | null | undefined): string {
     return ''
   }
   return String(v).trim()
+}
+
+function formatYmd(v: string | Date | null | undefined): string {
+  if (!v) {
+    return ''
+  }
+  // 后端常见返回：'YYYY-MM-DD HH:mm:ss' 或 ISO 字符串；这里统一裁剪到 YYYY-MM-DD
+  if (typeof v === 'string') {
+    return v.trim().slice(0, 10)
+  }
+  // Date: 本地时区展示
+  const yyyy = v.getFullYear()
+  const mm = String(v.getMonth() + 1).padStart(2, '0')
+  const dd = String(v.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
 }
 
 function triggerImport() {
@@ -304,7 +320,7 @@ function handleBatchDelete() {
           @change="onFileChange"
         />
         <div class="credit-toolbar__start">
-          <el-button type="success" :icon="DocumentAdd" @click="handleAdd">新增记录</el-button>
+          <el-button type="primary" :icon="DocumentAdd" @click="handleAdd">新增记录</el-button>
           <el-button type="primary" :icon="Download" @click="handleTemplate">下载导入模板</el-button>
           <el-button type="primary" :icon="Upload" @click="triggerImport">导入学分</el-button>
         </div>
@@ -393,7 +409,11 @@ function handleBatchDelete() {
           header-align="center"
           align="center"
           show-overflow-tooltip
-        />
+        >
+          <template #default="{ row }">
+            {{ formatYmd(row.activity_date) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="credits" label="获得学分" min-width="88" header-align="center" align="center" />
         <el-table-column
           prop="description"
@@ -457,10 +477,10 @@ function handleBatchDelete() {
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" destroy-on-close>
       <el-form ref="formRef" :model="formModel" :rules="rules" label-width="110px" v-loading="saving">
         <el-form-item label="工号" prop="employee_number">
-          <el-input v-model="formModel.employee_number" placeholder="员工工号" clearable />
+          <el-input v-model="formModel.employee_number" placeholder="员工工号" :disabled="isEditMode" clearable />
         </el-form-item>
         <el-form-item label="姓名" prop="employee_name">
-          <el-input v-model="formModel.employee_name" placeholder="员工姓名" clearable />
+          <el-input v-model="formModel.employee_name" placeholder="员工姓名" :disabled="isEditMode" clearable />
         </el-form-item>
         <el-form-item label="学分类型" prop="credit_type">
           <el-input v-model="formModel.credit_type" placeholder="如：培训、比赛、分享" clearable />
@@ -471,9 +491,9 @@ function handleBatchDelete() {
         <el-form-item label="活动日期" prop="activity_date">
           <el-date-picker
             v-model="formModel.activity_date"
-            type="datetime"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            placeholder="选择日期时间"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="选择日期"
             style="width: 100%"
             clearable
           />
