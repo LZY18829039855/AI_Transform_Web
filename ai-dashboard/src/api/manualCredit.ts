@@ -54,11 +54,30 @@ function recordToApiPayload(m: ManualEnterCreditRecord) {
   }
 }
 
-export async function fetchManualEnterCreditList(pageNum = 1, pageSize = 500): Promise<PageResult<ManualEnterCreditRecord>> {
+/** 与后端 ManualEnterCreditController 一致：pageNum、pageSize；可选工号/姓名模糊查询 */
+export interface FetchManualEnterCreditListParams {
+  pageNum?: number
+  pageSize?: number
+  employeeNumber?: string
+  employeeName?: string
+}
+
+/** 后端默认 pageSize=20，单页最大 200 */
+export async function fetchManualEnterCreditList(
+  params: FetchManualEnterCreditListParams = {},
+): Promise<PageResult<ManualEnterCreditRecord>> {
+  const pageNum = params.pageNum ?? 1
+  const pageSize = params.pageSize ?? 20
   const q = new URLSearchParams({
     pageNum: String(pageNum),
     pageSize: String(pageSize),
   })
+  if (params.employeeNumber?.trim()) {
+    q.set('employeeNumber', params.employeeNumber.trim())
+  }
+  if (params.employeeName?.trim()) {
+    q.set('employeeName', params.employeeName.trim())
+  }
   const res = await get<Result<PageResult<ManualEnterCreditApi>>>(`/manual-enter-credit/list?${q.toString()}`)
   if (res.code !== 200 || !res.data) {
     throw new Error(res.message || '查询失败')

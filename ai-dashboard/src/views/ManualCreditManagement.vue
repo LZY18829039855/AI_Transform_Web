@@ -20,6 +20,12 @@ const loading = ref(false)
 const tableData = ref<ManualEnterCreditRecord[]>([])
 const selectedRows = ref<ManualEnterCreditRecord[]>([])
 
+/** 与后端分页一致：默认每页 20，单页最大 200 */
+const pageNum = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
+const pageSizeOptions = [10, 20, 50, 100, 200] as const
+
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const dialogVisible = ref(false)
@@ -53,14 +59,23 @@ function emptyRecord(): ManualEnterCreditRecord {
 async function loadList() {
   loading.value = true
   try {
-    const page = await fetchManualEnterCreditList(1, 500)
+    const page = await fetchManualEnterCreditList({
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+    })
     tableData.value = page.rows
+    total.value = page.total
   } catch (e) {
     console.error(e)
     ElMessage.error(e instanceof Error ? e.message : '加载列表失败')
   } finally {
     loading.value = false
   }
+}
+
+function handlePageSizeChange() {
+  pageNum.value = 1
+  loadList()
 }
 
 onMounted(() => {
@@ -125,6 +140,7 @@ async function onFileChange(ev: Event) {
       '导入结果',
       { type: 'success', confirmButtonText: '知道了' },
     )
+    pageNum.value = 1
     await loadList()
   } catch (e) {
     console.error(e)
@@ -174,6 +190,7 @@ async function handleSubmit() {
       await createManualEnterCredit(m)
       ElMessage.success('新增成功')
       dialogVisible.value = false
+      pageNum.value = 1
       await loadList()
     } else {
       await updateManualEnterCredit(m.id, m)
@@ -196,8 +213,8 @@ function handleDelete(row: ManualEnterCreditRecord) {
   })
     .then(async () => {
       await deleteManualEnterCredit(row.id)
-      tableData.value = tableData.value.filter((r) => r.id !== row.id)
       ElMessage.success('已删除')
+      await loadList()
     })
     .catch(() => {})
 }
@@ -216,8 +233,8 @@ function handleBatchDelete() {
       for (const id of ids) {
         await deleteManualEnterCredit(id)
       }
-      tableData.value = tableData.value.filter((r) => !ids.includes(r.id))
       ElMessage.success('已删除')
+      await loadList()
     })
     .catch(() => {})
 }
@@ -273,11 +290,10 @@ function handleBatchDelete() {
         max-height="560"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="48" fixed header-align="center" align="center" />
+        <el-table-column type="selection" width="48" header-align="center" align="center" />
         <el-table-column
           label="工号"
-          min-width="110"
-          fixed
+          min-width="96"
           header-align="center"
           align="center"
           show-overflow-tooltip
@@ -289,7 +305,7 @@ function handleBatchDelete() {
         <el-table-column
           prop="employee_name"
           label="姓名"
-          min-width="100"
+          min-width="88"
           header-align="center"
           align="center"
           show-overflow-tooltip
@@ -297,7 +313,7 @@ function handleBatchDelete() {
         <el-table-column
           prop="credit_type"
           label="学分类型"
-          min-width="120"
+          min-width="96"
           header-align="center"
           align="center"
           show-overflow-tooltip
@@ -305,7 +321,7 @@ function handleBatchDelete() {
         <el-table-column
           prop="activity_name"
           label="活动名称"
-          min-width="160"
+          min-width="120"
           header-align="center"
           align="center"
           show-overflow-tooltip
@@ -313,16 +329,16 @@ function handleBatchDelete() {
         <el-table-column
           prop="activity_date"
           label="活动日期"
-          min-width="170"
+          min-width="150"
           header-align="center"
           align="center"
           show-overflow-tooltip
         />
-        <el-table-column prop="credits" label="获得学分" width="100" header-align="center" align="center" />
+        <el-table-column prop="credits" label="获得学分" min-width="88" header-align="center" align="center" />
         <el-table-column
           prop="description"
           label="详细描述"
-          min-width="180"
+          min-width="140"
           header-align="center"
           align="center"
           show-overflow-tooltip
@@ -330,22 +346,14 @@ function handleBatchDelete() {
         <el-table-column
           prop="attachment_url"
           label="附件URL"
-          min-width="160"
+          min-width="120"
           header-align="center"
           align="center"
           show-overflow-tooltip
         />
-        <el-table-column
-          prop="Modifier__number"
-          label="修改人工号"
-          width="120"
-          header-align="center"
-          align="center"
-          show-overflow-tooltip
-        />
-        <el-table-column prop="create_time" label="创建时间" width="170" header-align="center" align="center" />
-        <el-table-column prop="update_time" label="更新时间" width="170" header-align="center" align="center" />
-        <el-table-column label="操作" width="160" fixed="right" header-align="center" align="center">
+        <el-table-column prop="update_time" label="更新时间" min-width="150" header-align="center" align="center" />
+        <!-- 不设置 width：由 Element Plus 将剩余宽度分配给最后一列，整表在 width:100% 下铺满容器 -->
+        <el-table-column label="操作" min-width="140" header-align="center" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="EditPen" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
@@ -355,6 +363,19 @@ function handleBatchDelete() {
           <el-empty description="暂无数据，请导入学分或点击「新增记录」" />
         </template>
       </el-table>
+
+      <div class="credit-pagination">
+        <el-pagination
+          v-model:current-page="pageNum"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[...pageSizeOptions]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @size-change="handlePageSizeChange"
+          @current-change="loadList"
+        />
+      </div>
       </el-card>
     </section>
 
@@ -505,6 +526,25 @@ function handleBatchDelete() {
 }
 
 .credit-table {
+  width: 100%;
+
+  /**
+   * 让内层 table 始终占满卡片宽度，避免列宽按「内容宽度」收缩后整表挤在左侧。
+   * 最后一列未设 width，由 Element Plus 吃掉剩余宽度。
+   */
+  :deep(.el-table__inner-wrapper) {
+    width: 100% !important;
+  }
+
+  :deep(.el-scrollbar__wrap) {
+    width: 100% !important;
+  }
+
+  :deep(.el-table__header table),
+  :deep(.el-table__body table) {
+    width: 100% !important;
+  }
+
   :deep(.el-table__header-wrapper th) {
     font-weight: 700;
     color: #000;
