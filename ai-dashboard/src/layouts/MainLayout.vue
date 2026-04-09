@@ -19,6 +19,10 @@ const handleGoHome = () => {
   router.push({ name: 'Home' })
 }
 
+const handleGoCreditManagement = () => {
+  router.push({ name: 'ManualCreditManagement' })
+}
+
 const handlePermissionManagement = () => {
   ElMessage.info('页面开发中')
 }
@@ -53,6 +57,7 @@ const handlePermissionManagement = () => {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="handleGoHome">返回首页</el-dropdown-item>
+                <el-dropdown-item @click="handleGoCreditManagement">学分管理</el-dropdown-item>
                 <el-dropdown-item divided @click="handlePermissionManagement">权限管理</el-dropdown-item>
               </el-dropdown-menu>
             </template>

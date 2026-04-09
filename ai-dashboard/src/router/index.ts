@@ -13,6 +13,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/credit-management',
+    name: 'ManualCreditManagement',
+    component: () => import('@/views/ManualCreditManagement.vue'),
+    meta: {
+      title: '学分管理',
+      requiresAuth: true,
+      keepAlive: false,
+    },
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     redirect: '/dashboard/maturity',
@@ -113,7 +123,6 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           keepAlive: false,
         },
-        props: true,
       },
     ],
   },

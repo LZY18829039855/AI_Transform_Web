@@ -41,6 +41,7 @@ class Request {
         ...restOptions,
         headers,
         signal: controller.signal,
+        credentials: 'include',
       })
 
       window.clearTimeout(timeoutId)
