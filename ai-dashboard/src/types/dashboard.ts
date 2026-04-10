@@ -283,6 +283,7 @@ export interface ExpertCertificationSummaryRow {
   baseline: number
   certified: number
   certificationRate: number
+  isMaturityRow?: boolean
 }
 
 export interface ExpertAppointmentSummaryRow {
@@ -294,6 +295,7 @@ export interface ExpertAppointmentSummaryRow {
   appointmentRate: number
   certificationCompliance: number
   baselineCountByRequirement?: number
+  isMaturityRow?: boolean
 }
 
 export interface CadreCertificationSummaryRow {
@@ -305,7 +307,9 @@ export interface CadreCertificationSummaryRow {
   certificateRate: number
   subjectTwoRate: number
   certStandardCount?: number
-  complianceRate: number
+  complianceRate: number | null
+  isMaturityRow?: boolean
+  actualMaturityLevel?: string
 }
 
 export interface CadreAppointmentSummaryRow {
@@ -316,6 +320,8 @@ export interface CadreAppointmentSummaryRow {
   appointedByRequirement: number
   appointmentRate: number
   certificationCompliance: number
+  isMaturityRow?: boolean
+  actualMaturityLevel?: string
 }
 
 export type CertificationRole = RoleValue
@@ -725,6 +731,8 @@ export interface SchoolDetailData {
 
 export interface SchoolDetailFilters {
   departmentPath?: string[]
+  deptCode?: string
+  deptLevel?: number
   jobFamily?: string
   jobCategory?: string
   jobSubCategory?: string
@@ -952,4 +960,85 @@ export interface PersonalCourseCompletionResponse {
   empNum: string // 员工工号
   empName: string // 员工姓名
   courseStatistics: CourseCategoryStatistics[] // 各训战分类的课程统计列表
+}
+
+// 个人学分
+export interface PersonalCredit {
+  id: string
+  employeeNumber: string
+  lastName: string
+  lowestDeptNumber: string
+  lowestDept: string
+  targetCredit: number
+  currentCredit: number
+  personalCreditCompletionRate: number
+  deptBenchmarkCompletionRate: number
+  creditCompletionDate?: string
+  createTime?: string
+  updateTime?: string
+}
+
+export interface CreditOverviewVO {
+  categoryName: string
+  baselineHeadcount: number
+  maxScore: number
+  minScore: number
+  averageCurrentCredit: number
+  averageTargetCredit: number
+  achievementRate: number
+  timeProgress: number
+  isWarning: boolean
+}
+
+export interface CreditStatisticsResponseVO {
+  deptCode: string
+  deptName: string
+  statistics: CreditOverviewVO[]
+  totalStatistics: CreditOverviewVO
+}
+
+/**
+ * AI School学分数据明细查询响应VO
+ */
+export interface SchoolCreditDetailResponseVO {
+  records: SchoolCreditRecord[]
+  total: number
+  pageNum: number
+  pageSize: number
+  pages: number
+}
+
+/**
+ * AI School学分数据明细查询请求参数
+ */
+export interface SchoolCreditDetailRequest {
+  deptCode: string
+  deptLevel?: number
+  roleType?: number
+  jobFamily?: string
+  jobCategory?: string
+  jobSubCategory?: string
+  organizationMaturity?: string
+  positionMaturity?: string
+  queryType?: string
+  pageNum?: number
+  pageSize?: number
+}
+
+export interface SchoolRoleSummaryVO {
+  maturityLevel: string
+  baseline: number
+  maxCredits: number
+  minCredits: number
+  averageCredits: number
+  targetCredits: number
+  completionRate: number
+  scheduleTarget: number
+  status: string
+  statusType: 'success' | 'warning' | 'danger' | 'info'
+}
+
+export interface SchoolRoleSummaryResponseVO {
+  expertSummary: SchoolRoleSummaryVO[]
+  cadreSummary: SchoolRoleSummaryVO[]
 }

@@ -16,6 +16,7 @@ import type {
   CertificationDetailFilters,
   CertificationItem,
   CertificationRole,
+  CompetenceCategoryCertStatistics,
   CompetenceCategoryCertStatisticsResponse,
   CourseItem,
   CoursePlanningInfo,
@@ -27,12 +28,15 @@ import type {
   ExpertCertificationSummaryRow,
   MetricItem,
   PersonalCourseCompletionResponse,
+  PersonalCredit,
   PlTmCertStatisticsResponse,
   Result,
   SchoolDashboardData,
   SchoolDashboardFilters,
   SchoolDetailData,
   SchoolDetailFilters,
+  SchoolCreditRecord,
+  SchoolCreditDetailResponseVO,
   SelectOption,
   StaffChartPoint,
   TrendPoint,
@@ -52,6 +56,7 @@ import type {
   TrainingRole,
   TrainingRoleSummaryRow,
   TrainingTask,
+  CreditOverviewVO,
 } from '../types/dashboard'
 import { get } from '../utils/request'
 
@@ -915,6 +920,7 @@ export const fetchCertificationDashboard = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
+          certStandardCount: maturity.certStandardCount ?? 0,
           complianceRate: null, // 按要求持证率数据暂无，直接置为null
           isMaturityRow: true, // 标记为成熟度行
         })
@@ -929,6 +935,7 @@ export const fetchCertificationDashboard = async (
             subjectTwoPassed: jobCategory.subject2PassCount,
             certificateRate: Number(jobCategory.certRate),
             subjectTwoRate: Number(jobCategory.subject2PassRate),
+            certStandardCount: jobCategory.certStandardCount ?? 0,
             complianceRate: null, // 按要求持证率数据暂无，直接置为null
             isMaturityRow: false, // 标记为职位类行
           })
@@ -943,6 +950,7 @@ export const fetchCertificationDashboard = async (
           subjectTwoPassed: maturity.subject2PassCount,
           certificateRate: Number(maturity.certRate),
           subjectTwoRate: Number(maturity.subject2PassRate),
+          certStandardCount: maturity.certStandardCount ?? 0,
           complianceRate: null, // 按要求持证率数据暂无，直接置为null
           isMaturityRow: true, // 标记为成熟度行
         })
@@ -959,6 +967,7 @@ export const fetchCertificationDashboard = async (
         subjectTwoPassed: stats.totalStatistics.subject2PassCount,
         certificateRate: Number(stats.totalStatistics.certRate),
         subjectTwoRate: Number(stats.totalStatistics.subject2PassRate),
+        certStandardCount: stats.totalStatistics.certStandardCount ?? 0,
         complianceRate: null, // 按要求持证率数据暂无，直接置为null
         isMaturityRow: true, // 标记为成熟度行
       })
@@ -1081,7 +1090,36 @@ export const fetchCertificationDashboard = async (
 export const fetchCertificationDetailData = async (
   id: string,
   _filters?: CertificationDetailFilters
-): Promise<CertificationDetailData> => {
+): Promise<{
+  summary: {
+    id: string;
+    name: string;
+    level: string;
+    participants: number;
+    passRate: number;
+    status: string;
+    updatedAt: string
+  };
+  certificationRecords: CertificationAuditRecord[];
+  appointmentRecords: AppointmentAuditRecord[];
+  filters: {
+    departmentTree: Awaited<{
+      certificateAudits: CertificationAuditRecord[];
+      appointmentAudits: AppointmentAuditRecord[]
+    }>;
+    jobFamilies: string[];
+    jobCategories: string[];
+    jobSubCategories: string[];
+    roles: ({ label: string; value: string } | { label: string; value: string } | { label: string; value: string } | {
+      label: string;
+      value: string
+    })[];
+    maturityOptions: ({ label: string; value: string } | { label: string; value: string } | {
+      label: string;
+      value: string
+    } | { label: string; value: string })[]
+  }
+}> => {
   await delay()
   const [auditData, deptTree] = await Promise.all([fetchCertificationAuditRecords(), fetchDepartmentTree()])
 
@@ -1455,22 +1493,72 @@ export const fetchCertificationAuditRecords = async (): Promise<{
   }
 }
 
+/**
+ * 获取个人学分概览数据
+ * @returns 个人学分概览数据
+ */
+export const fetchPersonalCreditOverview = async (): Promise<PersonalCredit | null> => {
+  try {
+    const response = await get<Result<PersonalCredit>>('/api/personal-credit/overview')
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取个人学分概览失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取个人学分概览异常：', error)
+    return null
+  }
+}
+
 export const fetchSchoolDashboard = async (
   _filters?: SchoolDashboardFilters
 ): Promise<SchoolDashboardData> => {
   await delay()
-  const [deptTree] = await Promise.all([fetchDepartmentTree()])
+  const [deptTree, personalCredit] = await Promise.all([
+    fetchDepartmentTree(),
+    fetchPersonalCreditOverview()
+  ])
+
+  // 计算时间进度学分目标和预警状态
+  let scheduleTarget = 0
+  let status: '正常' | '轻度预警' | '滞后预警' = '正常'
+  let statusType: 'success' | 'warning' | 'danger' = 'success'
+  
+  if (personalCredit) {
+    const now = new Date()
+    const startOfYear = new Date(now.getFullYear(), 0, 1)
+    const endOfYear = new Date(now.getFullYear(), 11, 31)
+    const totalDays = (endOfYear.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)
+    const passedDays = (now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)
+    
+    // 时间进度学分目标 = 当前已过去时间/一年总时间 * 目标学分
+    if (personalCredit.targetCredit > 0) {
+      scheduleTarget = Number(((passedDays / totalDays) * personalCredit.targetCredit).toFixed(1))
+    }
+    
+    // 学分预警状态：当前学分和时间进度学分目标比大小
+    if (personalCredit.currentCredit >= scheduleTarget) {
+      status = '正常'
+      statusType = 'success'
+    } else {
+      // 简单预警逻辑：小于进度目标即为滞后，可根据差距程度细分轻度/滞后
+      status = '滞后预警'
+      statusType = 'danger'
+    }
+  }
 
   return {
     personalOverview: {
-      targetCredits: 0,
-      currentCredits: 0,
-      completionRate: 0,
-      benchmarkRate: 0,
-      scheduleTarget: 0,
-      expectedCompletionDate: '',
-      status: '',
-      statusType: 'success',
+      targetCredits: personalCredit?.targetCredit ?? 0,
+      currentCredits: personalCredit?.currentCredit ?? 0,
+      completionRate: personalCredit?.personalCreditCompletionRate ?? 0,
+      benchmarkRate: personalCredit?.deptBenchmarkCompletionRate ?? 0,
+      scheduleTarget,
+      expectedCompletionDate: personalCredit?.creditCompletionDate ?? '-', // 如果未达成，显示 -
+      status,
+      statusType,
+      ...personalCredit
     },
     expertSummary: [],
     cadreSummary: [],
@@ -1492,19 +1580,66 @@ export const fetchSchoolDashboard = async (
 
 export const fetchSchoolDetailData = async (
   _id: string,
-  _filters?: SchoolDetailFilters
+  filters?: SchoolDetailFilters
 ): Promise<SchoolDetailData> => {
-  await delay()
   const [deptTree] = await Promise.all([fetchDepartmentTree()])
 
+  // 构建查询参数：优先使用直接传入的 deptCode/deptLevel，否则从 departmentPath 推导
+  const deptCode: string = filters?.deptCode
+    || (filters?.departmentPath?.length
+      ? filters.departmentPath[filters.departmentPath.length - 1]
+      : undefined)
+    || '0'
+  const deptLevel = filters?.deptLevel ?? (filters?.departmentPath?.length || 0)
+
+  // 调用后端接口获取学分明细数据
+  const query = new URLSearchParams()
+  query.append('deptCode', deptCode)
+  query.append('deptLevel', String(deptLevel))
+  if (filters?.role && filters.role !== '0') {
+    query.append('roleType', filters.role)
+  }
+  if (filters?.jobFamily) {
+    query.append('jobFamily', filters.jobFamily)
+  }
+  if (filters?.jobCategory) {
+    query.append('jobCategory', filters.jobCategory)
+  }
+  if (filters?.jobSubCategory) {
+    query.append('jobSubCategory', filters.jobSubCategory)
+  }
+  if (filters?.positionMaturity && filters.positionMaturity !== '全部') {
+    query.append('positionMaturity', filters.positionMaturity)
+  }
+  query.append('pageNum', '1')
+  query.append('pageSize', '100')
+
+  let records: SchoolCreditRecord[] = []
+  let jobFamilies: string[] = []
+  let jobCategories: string[] = []
+  let jobSubCategories: string[] = []
+  try {
+    const response = await get<Result<SchoolCreditDetailResponseVO>>(
+      `/api/school-credit-detail/list?${query.toString()}`
+    )
+    if (response.code === 200 && response.data) {
+      records = response.data.records
+      jobFamilies = response.data.jobFamilies ?? []
+      jobCategories = response.data.jobCategories ?? []
+      jobSubCategories = response.data.jobSubCategories ?? []
+    }
+  } catch (error) {
+    console.error('获取学分明细数据失败:', error)
+  }
+
   return {
-    records: [],
+    records,
     rules: [],
     filters: {
       departmentTree: deptTree,
-      jobFamilies: [],
-      jobCategories: [],
-      jobSubCategories: [],
+      jobFamilies,
+      jobCategories,
+      jobSubCategories,
       roles: [
         { label: '全员', value: '0' },
         { label: '干部', value: '1' },
@@ -1725,4 +1860,3 @@ export const fetchCadreAiCertificationOverview = async (): Promise<CadreAiCertif
     return null
   }
 }
-

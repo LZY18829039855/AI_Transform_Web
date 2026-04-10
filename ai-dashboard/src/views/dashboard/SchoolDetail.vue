@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { fetchSchoolDetailData } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import type { SchoolDetailData, SchoolDetailFilters } from '@/types/dashboard'
@@ -9,13 +9,37 @@ import { normalizeRoleOptions } from '@/constants/roles'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const detailData = ref<SchoolDetailData | null>(null)
-const filters = ref<SchoolDetailFilters>({
-  role: '0',
-  positionMaturity: '全部',
-  departmentPath: [],
-})
+const hideRoleAndDept = computed(() => route.query.hideRoleAndDept === 'true')
+
+// 从 URL query 参数初始化 filters
+const initFiltersFromQuery = (): SchoolDetailFilters => {
+  const query = route.query
+  const filters: SchoolDetailFilters = {
+    role: (query.role as string) || '0',
+    positionMaturity: '全部',
+    departmentPath: [],
+  }
+
+  if (query.deptCode && query.deptCode !== '0') {
+    filters.deptCode = query.deptCode as string
+    filters.departmentPath = [query.deptCode as string]
+  }
+
+  if (query.deptLevel) {
+    filters.deptLevel = parseInt(query.deptLevel as string, 10)
+  }
+
+  if (query.jobCategory) {
+    filters.jobCategory = query.jobCategory as string
+  }
+
+  return filters
+}
+
+const filters = ref<SchoolDetailFilters>(initFiltersFromQuery())
 
 const {
   departmentTree,
@@ -43,6 +67,15 @@ const handleFilterChange = () => {
   fetchDetail()
 }
 
+/** 点击姓名，以 employeeId 作为 account 在新标签打开个人训战课程详情页 */
+const handleNameDrill = (employeeId: string) => {
+  const resolved = router.resolve({
+    name: 'SchoolPersonalTrainingDetail',
+    query: { account: employeeId },
+  })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
+}
+
 const formatPercent = (value: number) => `${value.toFixed(1)}%`
 
 onMounted(() => {
@@ -51,6 +84,8 @@ onMounted(() => {
 })
 
 onActivated(() => {
+  // 每次激活时从 query 重新初始化 filters
+  Object.assign(filters.value, initFiltersFromQuery())
   refreshDepartmentTree()
   fetchDetail()
 })
@@ -76,94 +111,79 @@ onActivated(() => {
 
     <el-card shadow="hover" class="filter-card" v-if="detailData">
       <el-row :gutter="16" align="middle">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="6" v-if="!hideRoleAndDept">
           <label>部门筛选：</label>
           <el-cascader
-            v-model="filters.departmentPath"
-            :options="departmentTree"
-            :props="cascaderProps"
-            placeholder="请选择部门"
-            clearable
-            @change="handleFilterChange"
-            style="width: 100%"
+              v-model="filters.departmentPath"
+              :options="departmentTree"
+              :props="cascaderProps"
+              placeholder="请选择部门"
+              clearable
+              :disabled="!!filters.deptCode"
+              @change="handleFilterChange"
+              style="width: 100%"
           />
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <label>职位族：</label>
           <el-select
-            v-model="filters.jobFamily"
-            placeholder="请选择职位族"
-            clearable
-            @change="handleFilterChange"
-            style="width: 100%"
+              v-model="filters.jobFamily"
+              placeholder="请选择职位族"
+              clearable
+              @change="handleFilterChange"
+              style="width: 100%"
           >
             <el-option
-              v-for="family in detailData.filters.jobFamilies"
-              :key="family"
-              :label="family"
-              :value="family"
+                v-for="family in detailData.filters.jobFamilies"
+                :key="family"
+                :label="family"
+                :value="family"
             />
           </el-select>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <label>职位类：</label>
           <el-select
-            v-model="filters.jobCategory"
-            placeholder="请选择职位类"
-            clearable
-            @change="handleFilterChange"
-            style="width: 100%"
+              v-model="filters.jobCategory"
+              placeholder="请选择职位类"
+              clearable
+              @change="handleFilterChange"
+              style="width: 100%"
           >
             <el-option
-              v-for="category in detailData.filters.jobCategories"
-              :key="category"
-              :label="category"
-              :value="category"
+                v-for="category in detailData.filters.jobCategories"
+                :key="category"
+                :label="category"
+                :value="category"
             />
           </el-select>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <label>职位子类：</label>
           <el-select
-            v-model="filters.jobSubCategory"
-            placeholder="请选择职位子类"
-            clearable
-            @change="handleFilterChange"
-            style="width: 100%"
+              v-model="filters.jobSubCategory"
+              placeholder="请选择职位子类"
+              clearable
+              @change="handleFilterChange"
+              style="width: 100%"
           >
             <el-option
-              v-for="subCategory in detailData.filters.jobSubCategories"
-              :key="subCategory"
-              :label="subCategory"
-              :value="subCategory"
+                v-for="subCategory in detailData.filters.jobSubCategories"
+                :key="subCategory"
+                :label="subCategory"
+                :value="subCategory"
             />
           </el-select>
         </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="6" v-if="!hideRoleAndDept">
           <label>角色：</label>
           <el-select
-            v-model="filters.role"
-            placeholder="请选择角色"
-            @change="handleFilterChange"
-            style="width: 100%"
+              v-model="filters.role"
+              placeholder="请选择角色"
+              @change="handleFilterChange"
+              style="width: 100%"
           >
             <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-          </el-select>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <label>岗位成熟度：</label>
-          <el-select
-            v-model="filters.positionMaturity"
-            placeholder="请选择岗位成熟度"
-            @change="handleFilterChange"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="maturity in detailData.filters.maturityOptions"
-              :key="maturity.value"
-              :label="maturity.label"
-              :value="maturity.value"
-            />
           </el-select>
         </el-col>
       </el-row>
@@ -177,56 +197,40 @@ onActivated(() => {
           <h3>AI School学分数据明细</h3>
         </template>
         <el-table :data="detailData.records" border style="width: 100%" max-height="600">
-          <el-table-column prop="name" label="姓名" width="100" fixed="left" />
-          <el-table-column prop="employeeId" label="工号" width="120" />
-          <el-table-column prop="jobFamily" label="职位族" width="120" />
-          <el-table-column prop="jobCategory" label="职位类" width="120" />
-          <el-table-column prop="jobSubCategory" label="职位子类" width="120" />
-          <el-table-column prop="departmentLevel1" label="一级部门" width="120" />
-          <el-table-column prop="departmentLevel2" label="二级部门" width="120" />
-          <el-table-column prop="departmentLevel3" label="三级部门" width="120" />
-          <el-table-column prop="departmentLevel4" label="四级部门" width="120" />
-          <el-table-column prop="departmentLevel5" label="五级部门" width="120" />
-          <el-table-column prop="departmentLevel6" label="六级部门" width="120" />
-          <el-table-column prop="minDepartment" label="最小部门" width="150" />
-          <el-table-column prop="isCadre" label="是否干部" width="100">
-            <template #default="{ row }">{{ row.isCadre ? '是' : '否' }}</template>
+          <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" show-overflow-tooltip>
+            <template #default="{ row }">
+              <el-button link type="primary" class="drill-link" @click="handleNameDrill(row.employeeId)">
+                {{ row.name }}
+              </el-button>
+            </template>
           </el-table-column>
-          <el-table-column prop="cadreType" label="干部类型" width="120" />
-          <el-table-column prop="isExpert" label="是否专家" width="100">
-            <template #default="{ row }">{{ row.isExpert ? '是' : '否' }}</template>
+          <el-table-column prop="employeeId" label="工号" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="jobFamily" label="职位族" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="jobCategory" label="职位类" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="jobSubCategory" label="职位子类" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="departmentLevel1" label="一级部门" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="departmentLevel2" label="二级部门" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="departmentLevel3" label="三级部门" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="departmentLevel4" label="四级部门" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="departmentLevel5" label="五级部门" width="120" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="minDepartment" label="最小部门" width="150" align="center" header-align="center" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.minDepartment ? row.minDepartment.split('/')[0] : '-' }}
+            </template>
           </el-table-column>
-          <el-table-column prop="isFrontlineManager" label="是否基层主管" width="120">
-            <template #default="{ row }">{{ row.isFrontlineManager ? '是' : '否' }}</template>
-          </el-table-column>
-          <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="140" />
-          <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="140" />
-          <el-table-column prop="currentCredits" label="当前学分" width="100" />
-          <el-table-column prop="completionRate" label="学分达成率" width="120">
+          <el-table-column prop="currentCredits" label="当前学分" width="100" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="completionRate" label="学分达成率" width="120" align="center" header-align="center" show-overflow-tooltip>
             <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="benchmarkRate" label="所在最小部门标杆学分达成率" width="220">
+          <el-table-column prop="benchmarkRate" label="所在最小部门标杆学分达成率" width="220" align="center" header-align="center" show-overflow-tooltip>
             <template #default="{ row }">{{ formatPercent(row.benchmarkRate) }}</template>
           </el-table-column>
-          <el-table-column prop="completionDate" label="学分达成日期" width="140" />
-          <el-table-column prop="scheduleTarget" label="时间进度学分目标" width="160" />
-          <el-table-column prop="status" label="学分状态预警" width="120" fixed="right">
+          <el-table-column prop="scheduleTarget" label="时间进度学分目标" width="160" align="center" header-align="center" show-overflow-tooltip />
+          <el-table-column prop="status" label="学分状态预警" width="120" fixed="right" align="center" header-align="center">
             <template #default="{ row }">
               <el-tag :type="row.statusType">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-        </el-table>
-      </el-card>
-
-      <!-- AI School学分规则表明细 -->
-      <el-card shadow="hover" class="detail-block">
-        <template #header>
-          <h3>AI School学分规则表明细</h3>
-        </template>
-        <el-table :data="detailData.rules" border style="width: 100%">
-          <el-table-column prop="sourceType" label="学分来源类型" width="150" />
-          <el-table-column prop="content" label="训练内容" />
-          <el-table-column prop="credits" label="学分值" width="120" />
         </el-table>
       </el-card>
     </template>
@@ -311,6 +315,23 @@ onActivated(() => {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+  }
+}
+
+.drill-link {
+  font-weight: 600;
+  padding: 0;
+  border-radius: 0;
+  color: $primary-color;
+  background: transparent;
+
+  &.is-link {
+    color: $primary-color;
+  }
+
+  &:hover {
+    background: transparent;
+    text-decoration: underline;
   }
 }
 
