@@ -20,9 +20,10 @@ export function getCookie(name: string): string | null {
 }
 
 /**
- * 从account cookie中提取工号（8位阿拉伯数字）
- * account格式：首字母 + 8位阿拉伯数字
- * @returns 工号（8位数字），如果格式不正确则返回null
+ * 从 Cookie `account` 中解析当前登录人 8 位数字工号（去掉首字母）。
+ * 约定格式：首字母 + 8 位阿拉伯数字（如 `A12345678` → `12345678`）。
+ * 用于 School 看板「个人数据总览」下钻等**未带 query.account** 的场景；若 URL 已带业务下发的工号（如姓名下钻），应直接使用 query，勿经此函数改写。
+ * @returns 8 位数字工号，格式不正确则返回 null
  */
 export function getUserIdFromAccount(): string | null {
   const account = getCookie('account')

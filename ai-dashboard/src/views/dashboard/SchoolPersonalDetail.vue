@@ -140,8 +140,9 @@ const getSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
 }
 
 /**
- * 手工录入学分列表所需工号：路由下钻带 query.account 时优先（查看指定人员）；
- * 否则由前端从 Cookie `account` 解析 8 位工号，不依赖后端再解析。
+ * 手工录入学分列表的 employeeNumber：
+ * - 列表/明细里点姓名下钻：URL 带 `account`，为接口下发的工号，**原样**传给接口（可能含首字母，不做裁剪）。
+ * - School 看板「个人数据总览」下钻：**不带** `account`，仅此时从 Cookie `account` 用 getUserIdFromAccount 解析（去掉首字母，取 8 位数字）。
  */
 function resolveEmployeeNumberForManualCredit(): string {
   const fromQuery = (route.query.account as string | undefined)?.trim()

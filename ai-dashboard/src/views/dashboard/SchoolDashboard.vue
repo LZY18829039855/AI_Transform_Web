@@ -9,7 +9,6 @@ import type { SchoolRoleSummaryVO } from '@/types/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import CreditOverviewTable from '@/components/dashboard/CreditOverviewTable.vue'
-import { getUserIdFromAccount } from '@/utils/cookie'
 import type {
   SchoolAllStaffSummaryRow,
   SchoolDashboardData,
@@ -218,11 +217,11 @@ const handleAllStaffDrill = (row: SchoolAllStaffSummaryRow, field: string) => {
   })
 }
 
+/** 个人数据总览下钻：不传 account，详情页从 Cookie 解析工号（去首字母）；与列表姓名下钻（带 account）区分 */
 const handleOverviewDrill = (_metric: string) => {
-  const account = getUserIdFromAccount() ?? undefined
   const resolved = router.resolve({
     name: 'SchoolPersonalTrainingDetail',
-    query: { account },
+    query: {},
   })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
