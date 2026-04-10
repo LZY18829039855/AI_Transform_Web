@@ -13,7 +13,7 @@ const route = useRoute()
 const loading = ref(false)
 const detailData = ref<PersonalCourseCompletionResponse | null>(null)
 const selectedCategory = ref<string>('全部')
-/** 当前员工手工录入学分（与学分管理页数据源一致，仅只读展示） */
+/** 多元化学分场景列表数据（与学分管理同源，仅只读展示） */
 const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
 
 const categoryOptions = computed(() => {
@@ -317,10 +317,10 @@ onActivated(() => {
         </el-table>
       </el-card>
 
-      <!-- 手工录入学分（样式对齐学分管理页表格，不含多选/工号/姓名/操作） -->
+      <!-- 多元化学分场景（样式对齐学分管理页表格，不含多选/工号/姓名/操作） -->
       <el-card shadow="hover" class="manual-credit-card">
         <template #header>
-          <h3>手工录入学分</h3>
+          <h3>多元化学分场景</h3>
         </template>
         <el-table
           class="credit-table"
@@ -387,7 +387,7 @@ onActivated(() => {
             show-overflow-tooltip
           />
           <template #empty>
-            <el-empty description="暂无手工录入记录" />
+            <el-empty description="暂无多元化学分场景数据" />
           </template>
         </el-table>
       </el-card>
