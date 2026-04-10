@@ -62,6 +62,41 @@ export interface FetchManualEnterCreditListParams {
   employeeName?: string
 }
 
+/**
+ * 个人课程学分场景：与 /personal-course/completion 相同入参（account 可选，否则服务端从 Cookie 解析工号），
+ * 复用 /manual-enter-credit/list 同一套查询逻辑。
+ */
+export interface FetchManualEnterCreditBySessionParams {
+  pageNum?: number
+  pageSize?: number
+  /** 与 completion 的 account 一致；不传则由后端从 Cookie 解析 */
+  account?: string
+}
+
+export async function fetchManualEnterCreditListBySession(
+  params: FetchManualEnterCreditBySessionParams = {},
+): Promise<PageResult<ManualEnterCreditRecord>> {
+  const pageNum = params.pageNum ?? 1
+  const pageSize = params.pageSize ?? 20
+  const q = new URLSearchParams({
+    pageNum: String(pageNum),
+    pageSize: String(pageSize),
+  })
+  if (params.account?.trim()) {
+    q.set('account', params.account.trim())
+  }
+  const res = await get<Result<PageResult<ManualEnterCreditApi>>>(
+    `/personal-course/manual-enter-credit-list?${q.toString()}`,
+  )
+  if (res.code !== 200 || !res.data) {
+    throw new Error(res.message || '查询失败')
+  }
+  return {
+    total: res.data.total,
+    rows: res.data.rows.map(mapApiToTableRow),
+  }
+}
+
 /** 后端默认 pageSize=20，单页最大 200 */
 export async function fetchManualEnterCreditList(
   params: FetchManualEnterCreditListParams = {},

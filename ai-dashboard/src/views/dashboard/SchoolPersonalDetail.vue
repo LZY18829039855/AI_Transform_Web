@@ -4,10 +4,9 @@ import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
-import { fetchManualEnterCreditList } from '@/api/manualCredit'
+import { fetchManualEnterCreditListBySession } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 import type { ManualEnterCreditRecord } from '@/types/manualCredit'
-import { getUserIdFromAccount } from '@/utils/cookie'
 
 const router = useRouter()
 const route = useRoute()
@@ -139,36 +138,20 @@ const getSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
   return { rowspan: 1, colspan: 1 }
 }
 
-/**
- * 手工录入学分列表的 employeeNumber：
- * - URL 带 `account` 时优先使用（姓名下钻为接口原样；个人总览下钻由看板从 Cookie 解析后写入，一般为 8 位数字）。
- * - 无 `account` 时再从 Cookie 解析（兼容直接打开详情页等）。
- */
-function resolveEmployeeNumberForManualCredit(): string {
-  const fromQuery = (route.query.account as string | undefined)?.trim()
-  if (fromQuery) {
-    return fromQuery
-  }
-  return getUserIdFromAccount() ?? ''
-}
-
 const fetchDetail = async () => {
   loading.value = true
   try {
     const account = (route.query.account as string) || undefined
-    const employeeNumber = resolveEmployeeNumberForManualCredit()
 
-    const manualEnterCreditPromise =
-      employeeNumber !== ''
-        ? fetchManualEnterCreditList({
-            employeeNumber,
-            pageNum: 1,
-            pageSize: 200,
-          }).catch((err) => {
-            console.warn('获取手工录入学分列表失败：', err)
-            return { total: 0, rows: [] as ManualEnterCreditRecord[] }
-          })
-        : Promise.resolve({ total: 0, rows: [] as ManualEnterCreditRecord[] })
+    /** 与 /personal-course/completion 一致：有 account 则查指定人；无则由服务端从 Cookie 解析工号 */
+    const manualEnterCreditPromise = fetchManualEnterCreditListBySession({
+      account,
+      pageNum: 1,
+      pageSize: 200,
+    }).catch((err) => {
+      console.warn('获取手工录入学分列表失败：', err)
+      return { total: 0, rows: [] as ManualEnterCreditRecord[] }
+    })
 
     const [data, manualPage] = await Promise.all([
       fetchPersonalCourseCompletion(account),
