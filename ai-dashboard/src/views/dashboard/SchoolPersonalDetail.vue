@@ -267,7 +267,7 @@ onActivated(() => {
           max-height="600"
           :span-method="getSpanMethod"
         >
-          <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
+          <el-table-column prop="bigType" label="课程主分类" min-width="60" align="center" />
           <el-table-column prop="category" label="训战分类" width="120" align="center" />
           <el-table-column prop="courseName" label="课程名称" min-width="200" align="center">
             <template #default="{ row }">
@@ -281,6 +281,11 @@ onActivated(() => {
                 {{ row.courseName }}
               </el-link>
               <span v-else>{{ row.courseName }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="credit" label="学分" width="80" align="center">
+            <template #default="{ row }">
+              <span>{{ row.credit != null && String(row.credit).trim() !== '' ? row.credit : '—' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="是否完课" width="120" align="center">

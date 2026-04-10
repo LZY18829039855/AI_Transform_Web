@@ -939,6 +939,7 @@ export interface CourseInfo {
   isTargetCourse?: boolean // 是否目标课程
   bigType?: string // 课程主分类
   courseLink?: string // 课程链接
+  credit?: string // 课程学分
 }
 
 /**
