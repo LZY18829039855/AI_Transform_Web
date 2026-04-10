@@ -4,6 +4,7 @@ import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
+import { fetchManualEnterCreditList } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 
 const router = useRouter()
@@ -138,7 +139,21 @@ const fetchDetail = async () => {
   loading.value = true
   try {
     const account = (route.query.account as string) || undefined
-    const data = await fetchPersonalCourseCompletion(account)
+    const employeeNumber = account?.trim() ?? ''
+
+    /** 与下钻一致：query.account 为工号；用于拉取该员工手工录入学分（暂不展示，仅发起请求） */
+    const manualEnterCreditPromise =
+      employeeNumber !== ''
+        ? fetchManualEnterCreditList({
+            employeeNumber,
+            pageNum: 1,
+            pageSize: 200,
+          }).catch((err) => {
+            console.warn('获取手工录入学分列表失败：', err)
+          })
+        : Promise.resolve()
+
+    const [data] = await Promise.all([fetchPersonalCourseCompletion(account), manualEnterCreditPromise])
     if (data) {
       detailData.value = data
     } else {
