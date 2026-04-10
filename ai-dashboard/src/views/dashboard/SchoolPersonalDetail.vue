@@ -6,12 +6,15 @@ import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOpt
 import { fetchPersonalCourseCompletion } from '@/api/dashboard'
 import { fetchManualEnterCreditList } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
+import type { ManualEnterCreditRecord } from '@/types/manualCredit'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const detailData = ref<PersonalCourseCompletionResponse | null>(null)
 const selectedCategory = ref<string>('全部')
+/** 当前员工手工录入学分（与学分管理页数据源一致，仅只读展示） */
+const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
 
 const categoryOptions = computed(() => {
   if (!detailData.value) {
@@ -141,7 +144,7 @@ const fetchDetail = async () => {
     const account = (route.query.account as string) || undefined
     const employeeNumber = account?.trim() ?? ''
 
-    /** 与下钻一致：query.account 为工号；用于拉取该员工手工录入学分（暂不展示，仅发起请求） */
+    /** 与下钻一致：query.account 为工号 */
     const manualEnterCreditPromise =
       employeeNumber !== ''
         ? fetchManualEnterCreditList({
@@ -150,10 +153,15 @@ const fetchDetail = async () => {
             pageSize: 200,
           }).catch((err) => {
             console.warn('获取手工录入学分列表失败：', err)
+            return { total: 0, rows: [] as ManualEnterCreditRecord[] }
           })
-        : Promise.resolve()
+        : Promise.resolve({ total: 0, rows: [] as ManualEnterCreditRecord[] })
 
-    const [data] = await Promise.all([fetchPersonalCourseCompletion(account), manualEnterCreditPromise])
+    const [data, manualPage] = await Promise.all([
+      fetchPersonalCourseCompletion(account),
+      manualEnterCreditPromise,
+    ])
+    manualEnterCreditRows.value = manualPage.rows
     if (data) {
       detailData.value = data
     } else {
@@ -312,6 +320,81 @@ onActivated(() => {
           </el-table-column>
         </el-table>
       </el-card>
+
+      <!-- 手工录入学分（样式对齐学分管理页表格，不含多选/工号/姓名/操作） -->
+      <el-card shadow="hover" class="manual-credit-card">
+        <template #header>
+          <h3>手工录入学分</h3>
+        </template>
+        <el-table
+          class="credit-table"
+          :data="manualEnterCreditRows"
+          border
+          stripe
+          style="width: 100%"
+          max-height="560"
+        >
+          <el-table-column
+            prop="credit_type"
+            label="学分类型"
+            min-width="96"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="activity_name"
+            label="活动名称"
+            min-width="120"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="activity_date"
+            label="活动日期"
+            min-width="150"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="credits"
+            label="获得学分"
+            min-width="88"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="description"
+            label="详细描述"
+            min-width="140"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="attachment_url"
+            label="附件URL"
+            min-width="120"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="update_time"
+            label="更新时间"
+            min-width="150"
+            header-align="center"
+            align="center"
+            show-overflow-tooltip
+          />
+          <template #empty>
+            <el-empty description="暂无手工录入记录" />
+          </template>
+        </el-table>
+      </el-card>
     </template>
     <el-empty v-else description="暂无详情数据" />
   </section>
@@ -429,6 +512,54 @@ onActivated(() => {
         text-align: center;
       }
     }
+  }
+}
+
+/** 与 ManualCreditManagement 中 .credit-card 一致 */
+.manual-credit-card {
+  border-radius: $radius-md;
+  border: 1px solid $border-color;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: $shadow-card;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+/** 与 ManualCreditManagement 中 .credit-table 一致 */
+.credit-table {
+  width: 100%;
+
+  :deep(.el-table__inner-wrapper) {
+    width: 100% !important;
+  }
+
+  :deep(.el-scrollbar__wrap) {
+    width: 100% !important;
+  }
+
+  :deep(.el-table__header table),
+  :deep(.el-table__body table) {
+    width: 100% !important;
+  }
+
+  :deep(.el-table__header-wrapper th) {
+    font-weight: 700;
+    color: #000;
+    text-align: center !important;
+  }
+
+  :deep(.el-table__header .cell) {
+    font-weight: 700;
+    color: #000;
+    justify-content: center;
+  }
+
+  :deep(.el-table__body .cell) {
+    text-align: center;
   }
 }
 
