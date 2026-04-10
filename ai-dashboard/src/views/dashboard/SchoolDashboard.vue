@@ -7,6 +7,7 @@ import type { SchoolCreditDetailResponseVO, SchoolCreditRecord } from '@/types/d
 import { getPositionStatistics, getDepartmentStatistics, getSchoolCreditDetailList, getRoleSummary } from '@/api/dashboard_credit'
 import type { SchoolRoleSummaryVO } from '@/types/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
+import { getUserIdFromAccount } from '@/utils/cookie'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import CreditOverviewTable from '@/components/dashboard/CreditOverviewTable.vue'
 import type {
@@ -217,11 +218,15 @@ const handleAllStaffDrill = (row: SchoolAllStaffSummaryRow, field: string) => {
   })
 }
 
-/** 个人数据总览下钻：不传 account，详情页从 Cookie 解析工号（去首字母）；与列表姓名下钻（带 account）区分 */
+/**
+ * 个人数据总览下钻：在当前页从 Cookie 解析 8 位工号并写入 URL `account`，
+ * 详情页据此调用 /manual-enter-credit/list（与列表姓名下钻同样带 query.account；列表为接口原样工号，此处为解析后的数字工号）。
+ */
 const handleOverviewDrill = (_metric: string) => {
+  const emp = getUserIdFromAccount()
   const resolved = router.resolve({
     name: 'SchoolPersonalTrainingDetail',
-    query: {},
+    query: emp ? { account: emp } : {},
   })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }

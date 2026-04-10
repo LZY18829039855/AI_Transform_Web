@@ -20,30 +20,46 @@ export function getCookie(name: string): string | null {
 }
 
 /**
- * 从 Cookie `account` 中解析当前登录人 8 位数字工号（去掉首字母）。
- * 约定格式：首字母 + 8 位阿拉伯数字（如 `A12345678` → `12345678`）。
- * 用于 School 看板「个人数据总览」下钻等**未带 query.account** 的场景；若 URL 已带业务下发的工号（如姓名下钻），应直接使用 query，勿经此函数改写。
- * @returns 8 位数字工号，格式不正确则返回 null
+ * 从 Cookie `account` 中解析当前登录人 8 位数字工号（去掉字母前缀等）。
+ * 兼容：纯 8 位数字、`字母+8位数字`、多字母前缀+8 位数字、以及仅含数字且长度≥8 时取末 8 位等。
+ * 看板下钻可在跳转前调用以写入 query；详情页无 query 时也会兜底调用。
+ * @returns 8 位数字工号，无法解析则返回 null
  */
 export function getUserIdFromAccount(): string | null {
-  const account = getCookie('account')
+  const raw = getCookie('account')
+  if (!raw) {
+    return null
+  }
+  let account = raw.trim()
   if (!account) {
     return null
   }
+  try {
+    account = decodeURIComponent(account)
+  } catch {
+    /* 保持原样 */
+  }
+  account = account.trim()
 
-  // 校验格式：首字母 + 8位阿拉伯数字
-  const accountPattern = /^[A-Za-z]\d{8}$/
-  if (!accountPattern.test(account)) {
-    console.warn('account cookie格式不正确，应为：首字母+8位数字，当前值：', account)
-    return null
+  /** 纯 8 位数字工号 */
+  if (/^\d{8}$/.test(account)) {
+    return account
   }
 
-  // 提取8位阿拉伯数字
-  const digits = account.match(/\d{8}$/)
-  if (digits && digits[0]) {
-    return digits[0]
+  /**
+   * 前缀为字母、末尾恰好 8 位数字（兼容单字母/多字母前缀，如 w12345678、AB12345678）
+   */
+  const letterThen8 = account.match(/^([A-Za-z]+)(\d{8})$/)
+  if (letterThen8 && letterThen8[2]) {
+    return letterThen8[2]
   }
 
+  const allDigits = account.replace(/\D/g, '')
+  if (allDigits.length >= 8) {
+    return allDigits.slice(-8)
+  }
+
+  console.warn('account cookie 无法解析出 8 位工号，当前值：', raw)
   return null
 }
 
