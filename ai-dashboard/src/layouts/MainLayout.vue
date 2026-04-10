@@ -58,7 +58,7 @@ const handlePermissionManagement = () => {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="handleGoHome">返回首页</el-dropdown-item>
-                <el-dropdown-item @click="handleGoCreditManagement">学分管理</el-dropdown-item>
+                <el-dropdown-item @click="handleGoCreditManagement">多元化学分管理</el-dropdown-item>
                 <el-dropdown-item divided @click="handlePermissionManagement">权限管理</el-dropdown-item>
               </el-dropdown-menu>
             </template>

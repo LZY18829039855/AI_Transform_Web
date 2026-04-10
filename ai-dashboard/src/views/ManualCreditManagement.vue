@@ -287,7 +287,7 @@ function handleBatchDelete() {
     <section class="credit-dashboard">
       <header class="dashboard__header glass-card">
         <div class="header-info">
-          <h2>学分管理</h2>
+          <h2>多元化学分管理</h2>
           <p>
             在此统一维护与 AI 转型相关的多元化学分方案：既可覆盖培训、赛事、技术分享、认证与主题活动等多类型场景，也可记录活动主题、时间、学分、说明与证明材料等维度信息，支持表格批量导入与单条补录，便于沉淀个人在 AI 能力提升路径上的完整画像。
           </p>

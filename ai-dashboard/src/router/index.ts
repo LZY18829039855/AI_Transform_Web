@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
     name: 'ManualCreditManagement',
     component: () => import('@/views/ManualCreditManagement.vue'),
     meta: {
-      title: '学分管理',
+      title: '多元化学分管理',
       requiresAuth: true,
       keepAlive: false,
     },
