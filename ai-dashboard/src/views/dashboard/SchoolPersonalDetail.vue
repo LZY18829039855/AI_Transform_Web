@@ -7,6 +7,7 @@ import { fetchPersonalCourseCompletion } from '@/api/dashboard'
 import { fetchManualEnterCreditList } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 import type { ManualEnterCreditRecord } from '@/types/manualCredit'
+import { getUserIdFromAccount } from '@/utils/cookie'
 
 const router = useRouter()
 const route = useRoute()
@@ -138,13 +139,24 @@ const getSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
   return { rowspan: 1, colspan: 1 }
 }
 
+/**
+ * 手工录入学分列表所需工号：路由下钻带 query.account 时优先（查看指定人员）；
+ * 否则由前端从 Cookie `account` 解析 8 位工号，不依赖后端再解析。
+ */
+function resolveEmployeeNumberForManualCredit(): string {
+  const fromQuery = (route.query.account as string | undefined)?.trim()
+  if (fromQuery) {
+    return fromQuery
+  }
+  return getUserIdFromAccount() ?? ''
+}
+
 const fetchDetail = async () => {
   loading.value = true
   try {
     const account = (route.query.account as string) || undefined
-    const employeeNumber = account?.trim() ?? ''
+    const employeeNumber = resolveEmployeeNumberForManualCredit()
 
-    /** 与下钻一致：query.account 为工号 */
     const manualEnterCreditPromise =
       employeeNumber !== ''
         ? fetchManualEnterCreditList({
