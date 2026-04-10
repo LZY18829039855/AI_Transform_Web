@@ -471,9 +471,9 @@ function handleBatchDelete() {
         <el-form-item label="活动日期" prop="activity_date">
           <el-date-picker
             v-model="formModel.activity_date"
-            type="datetime"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            placeholder="选择日期时间"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="选择日期"
             style="width: 100%"
             clearable
           />

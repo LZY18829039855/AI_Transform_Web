@@ -7,7 +7,7 @@ export interface ManualEnterCreditRecord {
   employee_name: string
   credit_type: string
   activity_name: string
-  /** 展示用 ISO 风格字符串，如 2026-04-09 12:00:00 */
+  /** 活动日期，与后端 `activityDate` 一致：yyyy-MM-dd */
   activity_date: string | null
   credits: string
   description: string

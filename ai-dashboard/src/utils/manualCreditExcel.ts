@@ -79,13 +79,13 @@ function mapHeaderToField(header: string): ManualFieldKey | null {
   return null
 }
 
-/** 将 Excel 单元格转为活动日期字符串 */
+/** 将 Excel 单元格转为活动日期字符串（与后端 activityDate：yyyy-MM-dd 一致） */
 export function parseActivityDateCell(value: unknown): string | null {
   if (value === null || value === undefined || value === '') {
     return null
   }
   if (value instanceof Date) {
-    return dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : null
+    return dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : null
   }
   if (typeof value === 'number') {
     const parsed = XLSX.SSF?.parse_date_code?.(value) as
@@ -93,7 +93,7 @@ export function parseActivityDateCell(value: unknown): string | null {
       | undefined
     if (parsed && parsed.y) {
       const d = new Date(parsed.y, parsed.m - 1, parsed.d, parsed.H ?? 0, parsed.M ?? 0, parsed.S ?? 0)
-      return dayjs(d).format('YYYY-MM-DD HH:mm:ss')
+      return dayjs(d).format('YYYY-MM-DD')
     }
   }
   const s = String(value).trim()
@@ -101,13 +101,11 @@ export function parseActivityDateCell(value: unknown): string | null {
   for (const f of formats) {
     const d = dayjs(s, f, true)
     if (d.isValid()) {
-      return f === 'YYYY-MM-DD' || f === 'YYYY/MM/DD' || f === 'YYYY/M/D' || f === 'MM-DD-YYYY'
-        ? d.format('YYYY-MM-DD HH:mm:ss')
-        : d.format('YYYY-MM-DD HH:mm:ss')
+      return d.format('YYYY-MM-DD')
     }
   }
   const loose = dayjs(s)
-  return loose.isValid() ? loose.format('YYYY-MM-DD HH:mm:ss') : s
+  return loose.isValid() ? loose.format('YYYY-MM-DD') : s
 }
 
 export interface ParseManualCreditResult {
