@@ -440,7 +440,8 @@ onActivated(() => {
 
 .target-course-section {
   & + & {
-    margin-top: $spacing-lg;
+    /* 两个表之间的间距：比卡片间距更紧凑 */
+    margin-top: $spacing-md;
   }
 }
 
@@ -454,7 +455,8 @@ onActivated(() => {
   align-items: center;
   justify-content: space-between;
   gap: $spacing-md;
-  margin: 0 0 $spacing-sm;
+  /* 标题行与表格的间距 */
+  margin: 0 0 10px;
 }
 
 .theory-filter-controls {
@@ -465,6 +467,7 @@ onActivated(() => {
 
 .target-course-title {
   margin: 0;
+  line-height: 22px;
   font-size: 16px;
   font-weight: 700;
   color: #000;
