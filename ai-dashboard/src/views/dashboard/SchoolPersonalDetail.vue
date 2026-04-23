@@ -583,7 +583,8 @@ onActivated(() => {
 
   .target-course-section {
     & + & {
-      margin-top: 12px;
+      /* 实战表与理论表之间留更舒适的间距 */
+      margin-top: 16px;
     }
   }
 
