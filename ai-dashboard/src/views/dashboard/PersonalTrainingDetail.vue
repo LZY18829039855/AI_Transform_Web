@@ -337,7 +337,7 @@ onActivated(() => {
           </div>
         </template>
 
-        <div class="target-course-section target-course-section--fixed" v-if="practicalTargetCourses.length">
+        <div class="target-course-section" v-if="practicalTargetCourses.length">
           <h4 class="target-course-title">实战目标课程列表</h4>
           <el-table
             :data="practicalTargetCourses"
@@ -441,13 +441,13 @@ onActivated(() => {
 .target-course-section {
   & + & {
     /* 两个表之间的间距：比卡片间距更紧凑 */
-    margin-top: $spacing-md;
+    margin-top: 12px;
   }
 }
 
 .target-course-section--fixed {
   /* 避免筛选刷新导致页面高度大幅变化而产生“跳动” */
-  min-height: 420px;
+  min-height: 360px;
 }
 
 .target-course-title-row {
