@@ -16,8 +16,14 @@ const categoryOptions = computed(() => {
   if (!detailData.value) {
     return []
   }
-  const options = detailData.value.courseStatistics.map((stat) => stat.courseLevel)
-  return ['全部', ...options]
+  // 仅用于「理论目标课程列表」筛选：去掉实战，并做名称标准化后去重排序
+  const levels = detailData.value.courseStatistics
+    .map((stat) => normalizeCategory(stat.courseLevel || '未分类'))
+    .filter((level) => level !== '实战')
+
+  const unique = Array.from(new Set(levels))
+  const sorted = unique.sort((a, b) => getCategoryOrder(a) - getCategoryOrder(b))
+  return ['全部', ...sorted]
 })
 
 // 训战分类排序顺序（支持多种名称映射）
@@ -139,14 +145,10 @@ const practicalTargetCourses = computed<TargetCourseRow[]>(() => {
   if (!detailData.value) {
     return []
   }
-  // 选了非「全部/实战」时，不展示实战表
-  if (selectedCategory.value !== '全部' && selectedCategory.value !== '实战') {
-    return []
-  }
   return buildTargetCourseRows(
     detailData.value.courseStatistics,
     (level) => normalizeCategory(level) === '实战',
-    selectedCategory.value === '实战' ? '实战' : '全部'
+    '全部'
   )
 })
 
@@ -154,14 +156,12 @@ const theoryTargetCourses = computed<TargetCourseRow[]>(() => {
   if (!detailData.value) {
     return []
   }
-  // 选了「实战」时，不展示理论表
-  if (selectedCategory.value === '实战') {
-    return []
-  }
+
+  const selected = selectedCategory.value === '实战' ? '全部' : selectedCategory.value
   return buildTargetCourseRows(
     detailData.value.courseStatistics,
     (level) => normalizeCategory(level) !== '实战',
-    selectedCategory.value
+    selected
   )
 })
 
@@ -212,6 +212,10 @@ const fetchDetail = async () => {
     const data = await fetchPersonalCourseCompletion(account)
     if (data) {
       detailData.value = data
+      // 兜底：若历史路由/缓存里把筛选设成了「实战」，改为「全部」（当前下拉已移除实战选项）
+      if (selectedCategory.value === '实战') {
+        selectedCategory.value = '全部'
+      }
     } else {
       ElMessage.warning('获取个人课程详情失败')
     }
@@ -330,21 +334,10 @@ onActivated(() => {
         <template #header>
           <div class="filter-header">
             <h3>目标课程列表</h3>
-            <div class="filter-controls">
-              <span class="filter-label">训战分类：</span>
-              <el-select v-model="selectedCategory" placeholder="选择分类" style="width: 180px">
-                <el-option
-                  v-for="option in categoryOptions"
-                  :key="option"
-                  :label="option"
-                  :value="option"
-                />
-              </el-select>
-            </div>
           </div>
         </template>
 
-        <div class="target-course-section" v-if="practicalTargetCourses.length">
+        <div class="target-course-section target-course-section--fixed" v-if="practicalTargetCourses.length">
           <h4 class="target-course-title">实战目标课程列表</h4>
           <el-table
             :data="practicalTargetCourses"
@@ -380,8 +373,25 @@ onActivated(() => {
           </el-table>
         </div>
 
-        <div class="target-course-section" v-if="theoryTargetCourses.length">
-          <h4 class="target-course-title">理论目标课程列表</h4>
+        <div class="target-course-section target-course-section--fixed" v-if="theoryTargetCourses.length">
+          <div class="target-course-title-row">
+            <h4 class="target-course-title">理论目标课程列表</h4>
+            <div class="theory-filter-controls">
+              <span class="filter-label">训战分类：</span>
+              <el-select
+                v-model="selectedCategory"
+                placeholder="选择分类"
+                style="width: 180px"
+              >
+                <el-option
+                  v-for="option in categoryOptions"
+                  :key="option"
+                  :label="option"
+                  :value="option"
+                />
+              </el-select>
+            </div>
+          </div>
           <el-table
             :data="theoryTargetCourses"
             border
@@ -434,8 +444,27 @@ onActivated(() => {
   }
 }
 
-.target-course-title {
+.target-course-section--fixed {
+  /* 避免筛选刷新导致页面高度大幅变化而产生“跳动” */
+  min-height: 420px;
+}
+
+.target-course-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
   margin: 0 0 $spacing-sm;
+}
+
+.theory-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.target-course-title {
+  margin: 0;
   font-size: 16px;
   font-weight: 700;
   color: #000;
