@@ -41,31 +41,37 @@ const getCategoryOrder = (category: string): number => {
   return index >= 0 ? index : categoryOrder.length
 }
 
-const filteredCourses = computed(() => {
-  if (!detailData.value) {
-    return []
-  }
-  
-  // 收集所有课程
+type TargetCourseRow = CourseInfo & { category: string; bigType: string }
+
+const buildTargetCourseRows = (
+  stats: PersonalCourseCompletionResponse['courseStatistics'],
+  courseLevelFilter: (courseLevel: string) => boolean,
+  selectedLevel: string
+): TargetCourseRow[] => {
+  // 收集所有目标课程
   const allCourses: Array<CourseInfo & { category: string }> = []
-  detailData.value.courseStatistics.forEach((stat) => {
-    if (stat.courseList) {
-      stat.courseList.forEach((course) => {
-        if (course.isTargetCourse) {
-          allCourses.push({
-            ...course,
-            category: stat.courseLevel,
-          })
-        }
-      })
+  stats.forEach((stat) => {
+    const level = stat.courseLevel || '未分类'
+    if (!courseLevelFilter(level)) {
+      return
     }
+    if (!stat.courseList) {
+      return
+    }
+    stat.courseList.forEach((course) => {
+      if (course.isTargetCourse) {
+        allCourses.push({
+          ...course,
+          category: level,
+        })
+      }
+    })
   })
-  
+
   // 按筛选条件过滤
-  let filtered = selectedCategory.value === '全部' 
-    ? allCourses 
-    : allCourses.filter((course) => course.category === selectedCategory.value)
-  
+  const filtered =
+    selectedLevel === '全部' ? allCourses : allCourses.filter((course) => course.category === selectedLevel)
+
   // 按主分类分组
   const groupedByBigType = new Map<string, Array<CourseInfo & { category: string }>>()
   filtered.forEach((course) => {
@@ -75,23 +81,23 @@ const filteredCourses = computed(() => {
     }
     groupedByBigType.get(bigType)!.push(course)
   })
-  
+
   // 对每个主分类内的课程进行排序和分组
-  const result: Array<CourseInfo & { category: string; bigType: string }> = []
-  
+  const result: TargetCourseRow[] = []
+
   // 按主分类的课程数量排序（数量多的在前），如果数量相同则按名称排序
   const sortedBigTypes = Array.from(groupedByBigType.keys()).sort((a, b) => {
     const countA = groupedByBigType.get(a)!.length
     const countB = groupedByBigType.get(b)!.length
     if (countA !== countB) {
-      return countB - countA // 数量多的在前
+      return countB - countA
     }
-    return a.localeCompare(b) // 数量相同时按名称排序
+    return a.localeCompare(b)
   })
-  
+
   sortedBigTypes.forEach((bigType) => {
     const courses = groupedByBigType.get(bigType)!
-    
+
     // 按训战分类分组
     const groupedByCategory = new Map<string, Array<CourseInfo & { category: string }>>()
     courses.forEach((course) => {
@@ -101,75 +107,103 @@ const filteredCourses = computed(() => {
       }
       groupedByCategory.get(category)!.push(course)
     })
-    
+
     // 按训战分类排序（基础、进阶、高阶、实战）
     const sortedCategories = Array.from(groupedByCategory.keys()).sort((a, b) => {
       return getCategoryOrder(a) - getCategoryOrder(b)
     })
-    
+
     // 对每个训战分类内的课程排序：完课在前，未完课在后
     sortedCategories.forEach((category) => {
       const categoryCourses = groupedByCategory.get(category)!
       categoryCourses.sort((a, b) => {
-        // 完课的在前（true 在前），未完课的在后（false 在后）
         if (a.isCompleted === b.isCompleted) {
           return 0
         }
         return a.isCompleted ? -1 : 1
       })
-      
-      // 添加到结果中，并添加 bigType 字段
+
       categoryCourses.forEach((course) => {
         result.push({
           ...course,
-          bigType: bigType,
+          bigType,
         })
       })
     })
   })
-  
+
   return result
+}
+
+const practicalTargetCourses = computed<TargetCourseRow[]>(() => {
+  if (!detailData.value) {
+    return []
+  }
+  // 选了非「全部/实战」时，不展示实战表
+  if (selectedCategory.value !== '全部' && selectedCategory.value !== '实战') {
+    return []
+  }
+  return buildTargetCourseRows(
+    detailData.value.courseStatistics,
+    (level) => normalizeCategory(level) === '实战',
+    selectedCategory.value === '实战' ? '实战' : '全部'
+  )
+})
+
+const theoryTargetCourses = computed<TargetCourseRow[]>(() => {
+  if (!detailData.value) {
+    return []
+  }
+  // 选了「实战」时，不展示理论表
+  if (selectedCategory.value === '实战') {
+    return []
+  }
+  return buildTargetCourseRows(
+    detailData.value.courseStatistics,
+    (level) => normalizeCategory(level) !== '实战',
+    selectedCategory.value
+  )
 })
 
 // 计算合并单元格的 span-method
-const getSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
-  if (columnIndex === 0) {
-    // 课程主分类列需要合并
-    const currentBigType = row.bigType
-    let rowspan = 1
-    
-    // 向前查找相同主分类的行数
-    let startIndex = rowIndex
-    while (startIndex > 0 && filteredCourses.value[startIndex - 1]?.bigType === currentBigType) {
-      startIndex--
-    }
-    
-    // 向后查找相同主分类的行数
-    let endIndex = rowIndex
-    while (endIndex < filteredCourses.value.length - 1 && filteredCourses.value[endIndex + 1]?.bigType === currentBigType) {
-      endIndex++
-    }
-    
-    // 如果是该主分类的第一行，则合并
-    if (rowIndex === startIndex) {
-      rowspan = endIndex - startIndex + 1
-      return {
-        rowspan: rowspan,
-        colspan: 1,
+const createSpanMethod = (rows: { value: Array<{ bigType?: string }> }) => {
+  return ({ row, columnIndex, rowIndex }: any) => {
+    if (columnIndex === 0) {
+      const currentBigType = row.bigType
+
+      // 向前查找相同主分类的行数
+      let startIndex = rowIndex
+      while (startIndex > 0 && rows.value[startIndex - 1]?.bigType === currentBigType) {
+        startIndex--
       }
-    } else {
+
+      // 向后查找相同主分类的行数
+      let endIndex = rowIndex
+      while (endIndex < rows.value.length - 1 && rows.value[endIndex + 1]?.bigType === currentBigType) {
+        endIndex++
+      }
+
+      if (rowIndex === startIndex) {
+        return {
+          rowspan: endIndex - startIndex + 1,
+          colspan: 1,
+        }
+      }
       return {
         rowspan: 0,
         colspan: 0,
       }
     }
-  }
-  
-  return {
-    rowspan: 1,
-    colspan: 1,
+
+    return {
+      rowspan: 1,
+      colspan: 1,
+    }
   }
 }
+
+const getPracticalSpanMethod = createSpanMethod(practicalTargetCourses)
+const getTheorySpanMethod = createSpanMethod(theoryTargetCourses)
 
 const fetchDetail = async () => {
   loading.value = true
@@ -309,38 +343,78 @@ onActivated(() => {
             </div>
           </div>
         </template>
-        <el-table 
-          :data="filteredCourses" 
-          border 
-          stripe 
-          style="width: 100%" 
-          max-height="600"
-          :span-method="getSpanMethod"
-        >
-          <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
-          <el-table-column prop="category" label="训战分类" width="120" align="center" />
-          <el-table-column prop="courseName" label="课程名称" min-width="200" align="center">
-            <template #default="{ row }">
-              <el-link
-                v-if="row.courseLink"
-                :href="row.courseLink"
-                target="_blank"
-                type="primary"
-                :underline="false"
-              >
-                {{ row.courseName }}
-              </el-link>
-              <span v-else>{{ row.courseName }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="是否完课" width="120" align="center">
-            <template #default="{ row }">
-              <el-tag :type="row.isCompleted ? 'success' : 'warning'" effect="light">
-                {{ formatBoolean(row.isCompleted) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
+
+        <div class="target-course-section" v-if="practicalTargetCourses.length">
+          <h4 class="target-course-title">实战目标课程列表</h4>
+          <el-table
+            :data="practicalTargetCourses"
+            border
+            stripe
+            style="width: 100%"
+            max-height="360"
+            :span-method="getPracticalSpanMethod"
+          >
+            <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
+            <el-table-column prop="category" label="训战分类" width="120" align="center" />
+            <el-table-column prop="courseName" label="课程名称" min-width="200" align="center">
+              <template #default="{ row }">
+                <el-link
+                  v-if="row.courseLink"
+                  :href="row.courseLink"
+                  target="_blank"
+                  type="primary"
+                  :underline="false"
+                >
+                  {{ row.courseName }}
+                </el-link>
+                <span v-else>{{ row.courseName }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="是否完课" width="120" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.isCompleted ? 'success' : 'warning'" effect="light">
+                  {{ formatBoolean(row.isCompleted) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div class="target-course-section" v-if="theoryTargetCourses.length">
+          <h4 class="target-course-title">理论目标课程列表</h4>
+          <el-table
+            :data="theoryTargetCourses"
+            border
+            stripe
+            style="width: 100%"
+            max-height="600"
+            :span-method="getTheorySpanMethod"
+          >
+            <el-table-column prop="bigType" label="课程主分类" min-width="140" align="center" />
+            <el-table-column prop="category" label="训战分类" width="120" align="center" />
+            <el-table-column prop="courseName" label="课程名称" min-width="200" align="center">
+              <template #default="{ row }">
+                <el-link
+                  v-if="row.courseLink"
+                  :href="row.courseLink"
+                  target="_blank"
+                  type="primary"
+                  :underline="false"
+                >
+                  {{ row.courseName }}
+                </el-link>
+                <span v-else>{{ row.courseName }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="是否完课" width="120" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.isCompleted ? 'success' : 'warning'" effect="light">
+                  {{ formatBoolean(row.isCompleted) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </el-card>
     </template>
     <el-empty v-else description="暂无详情数据" />
@@ -352,6 +426,19 @@ onActivated(() => {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+}
+
+.target-course-section {
+  & + & {
+    margin-top: $spacing-lg;
+  }
+}
+
+.target-course-title {
+  margin: 0 0 $spacing-sm;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
 }
 
 .glass-card {
