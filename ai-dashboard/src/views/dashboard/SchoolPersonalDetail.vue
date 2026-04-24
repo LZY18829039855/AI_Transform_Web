@@ -598,6 +598,8 @@ onActivated(() => {
     align-items: center;
     justify-content: space-between;
     gap: $spacing-md;
+    /* 与上方实战表下沿留出与训战个人详情页一致的“呼吸感” */
+    padding-top: 4px;
     margin: 0 0 10px;
   }
 
