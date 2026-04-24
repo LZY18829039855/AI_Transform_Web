@@ -456,7 +456,7 @@ onActivated(() => {
   justify-content: space-between;
   gap: $spacing-md;
   /* 与上方实战表下沿再拉开一点，避免与表格边框/滚动条区显得贴太紧 */
-  padding-top: 4px;
+  padding-top: 8px;
   /* 标题行与表格的间距 */
   margin: 0 0 10px;
 }
