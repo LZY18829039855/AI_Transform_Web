@@ -15,6 +15,8 @@ const detailData = ref<SchoolDetailData | null>(null)
 const hideRoleAndDept = computed(() => route.query.hideRoleAndDept === 'true')
 const pageNum = ref(1)
 const pageSize = ref(50)
+const records = computed(() => detailData.value?.records ?? [])
+const total = computed(() => detailData.value?.total ?? 0)
 
 // 从 URL query 参数初始化 filters
 const initFiltersFromQuery = (): SchoolDetailFilters => {
@@ -212,14 +214,13 @@ onActivated(() => {
       </el-row>
     </el-card>
 
-    <el-skeleton :rows="6" animated v-if="loading" />
-    <template v-else-if="detailData">
+    <template v-if="detailData">
       <!-- AI School学分数据明细 -->
-      <el-card shadow="hover" class="detail-block">
+      <el-card shadow="hover" class="detail-block" v-loading="loading">
         <template #header>
           <h3>AI School学分数据明细</h3>
         </template>
-        <el-table :data="detailData.records" border style="width: 100%" max-height="600">
+        <el-table :data="records" border style="width: 100%" max-height="600">
           <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" show-overflow-tooltip>
             <template #default="{ row }">
               <el-button link type="primary" class="drill-link" @click="handleNameDrill(row.employeeId)">
@@ -260,7 +261,7 @@ onActivated(() => {
             v-model:current-page="pageNum"
             v-model:page-size="pageSize"
             :page-sizes="[10, 20, 50, 100]"
-            :total="detailData.total"
+            :total="total"
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="handleSizeChange"
             @current-change="handlePageChange"
