@@ -889,6 +889,10 @@ export interface EmployeePersonalCertQualifiedInfo {
   competenceGradeCn?: string
   competenceFrom?: string
   competenceTo?: string
+  /** AI认证学分（若后端返回则用于“AI认证”表展示） */
+  certCredit?: number | string
+  /** AI任职学分（若后端返回则用于“AI任职”表展示） */
+  qualifiedCredit?: number | string
 }
 
 /**

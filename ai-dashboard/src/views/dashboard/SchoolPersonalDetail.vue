@@ -18,6 +18,8 @@ const selectedCategory = ref<string>('全部')
 const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
 /** 任职认证详情（基于 t_employee） */
 const certQualifiedDetail = ref<EmployeePersonalCertQualifiedInfo | null>(null)
+const certQualifiedActiveTab = ref<'appointment' | 'certification'>('appointment')
+const manualCreditTableMaxHeight = computed(() => (manualEnterCreditRows.value.length ? 560 : 80))
 
 // 训战分类排序顺序（支持多种名称映射）
 const categoryOrder = ['基础', '进阶', '高阶', '实战']
@@ -230,6 +232,35 @@ const handleBack = () => {
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 const formatFlag = (value?: number | null) => (Number(value) === 1 ? '是' : '否')
+const hasOwn = (obj: Record<string, unknown>, key: string) => Object.prototype.hasOwnProperty.call(obj, key)
+
+type CertQualifiedColumn = { prop: keyof EmployeePersonalCertQualifiedInfo; label: string; minWidth?: number }
+
+const appointmentColumns = computed<CertQualifiedColumn[]>(() => {
+  return [
+    { prop: 'competenceFamilyCn', label: '专业任职资格族', minWidth: 140 },
+    { prop: 'competenceCategoryCn', label: '专业任职资格类（仅体现AI）', minWidth: 220 },
+    { prop: 'competenceSubcategoryCn', label: '专业任职资格子类', minWidth: 160 },
+    { prop: 'directionCnName', label: '资格方向', minWidth: 160 },
+    { prop: 'competenceRatingCn', label: '资格级别', minWidth: 120 },
+    { prop: 'qualifiedCredit', label: '学分', minWidth: 100 },
+  ]
+})
+
+const certificationColumns = computed<CertQualifiedColumn[]>(() => {
+  return [
+    { prop: 'certTitle', label: '证书名称', minWidth: 220 },
+    { prop: 'certCredit', label: '学分', minWidth: 100 },
+  ]
+})
+
+const visibleCertQualifiedColumns = computed<CertQualifiedColumn[]>(() => {
+  const detail = certQualifiedDetail.value
+  if (!detail) return []
+  const cols = certQualifiedActiveTab.value === 'appointment' ? appointmentColumns.value : certificationColumns.value
+  // “如果当前没有该字段，即不展示”：用对象是否包含该 key 来决定是否展示列
+  return cols.filter((c) => hasOwn(detail as any, String(c.prop)))
+})
 
 const avatarUrl = computed(() => {
   if (!detailData.value?.empNum) return null
@@ -425,10 +456,11 @@ onActivated(() => {
         <el-table
           class="credit-table"
           :data="manualEnterCreditRows"
+          empty-text="暂无多元化学分场景数据"
           border
           stripe
           style="width: 100%"
-          max-height="560"
+          :max-height="manualCreditTableMaxHeight"
         >
           <el-table-column
             prop="credit_type"
@@ -486,53 +518,94 @@ onActivated(() => {
             align="center"
             show-overflow-tooltip
           />
-          <template #empty>
-            <el-empty description="暂无多元化学分场景数据" />
-          </template>
         </el-table>
       </el-card>
 
       <!-- 任职认证详情 -->
       <el-card shadow="hover" class="manual-credit-card">
         <template #header>
-          <h3>任职认证详情</h3>
+          <div class="cert-qualified-header">
+            <h3>任职认证详情</h3>
+            <div class="cert-qualified-actions">
+              <el-button
+                size="small"
+                :type="certQualifiedActiveTab === 'appointment' ? 'primary' : 'default'"
+                @click="certQualifiedActiveTab = 'appointment'"
+              >
+                AI任职
+              </el-button>
+              <el-button
+                size="small"
+                :type="certQualifiedActiveTab === 'certification' ? 'primary' : 'default'"
+                @click="certQualifiedActiveTab = 'certification'"
+              >
+                AI认证
+              </el-button>
+            </div>
+          </div>
         </template>
-        <el-table
-          class="credit-table"
-          :data="certQualifiedDetail ? [certQualifiedDetail] : []"
-          border
-          stripe
-          style="width: 100%"
-        >
-          <el-table-column prop="employeeNumber" label="工号" min-width="120" header-align="center" align="center" />
-          <el-table-column prop="lastName" label="姓名" min-width="120" header-align="center" align="center" />
-          <el-table-column prop="jobType" label="岗位族" min-width="120" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="jobCategory" label="岗位类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="jobSubcategory" label="岗位子类" min-width="140" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column label="任职达标" min-width="100" header-align="center" align="center">
-            <template #default="{ row }">{{ formatFlag(row.isQualificationsStandard) }}</template>
-          </el-table-column>
-          <el-table-column label="持证达标" min-width="100" header-align="center" align="center">
-            <template #default="{ row }">{{ formatFlag(row.isCertStandard) }}</template>
-          </el-table-column>
-          <el-table-column prop="certTitle" label="证书名称" min-width="180" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column label="科目二通过" min-width="110" header-align="center" align="center">
-            <template #default="{ row }">{{ formatFlag(row.isPassedSubject2) }}</template>
-          </el-table-column>
-          <el-table-column prop="lowestDept" label="最小部门" min-width="160" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceFamilyCn" label="能力族" min-width="120" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceCategoryCn" label="能力类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceSubcategoryCn" label="能力子类" min-width="140" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceRatingCn" label="能力定级" min-width="120" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceGradeCn" label="能力等级" min-width="120" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceFrom" label="生效开始" min-width="140" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="competenceTo" label="生效结束" min-width="140" header-align="center" align="center" show-overflow-tooltip />
-          <el-table-column prop="updatedTime" label="更新时间" min-width="160" header-align="center" align="center" show-overflow-tooltip />
+        <div class="cert-qualified-layout">
+          <aside class="cert-qualified-sider">
+            <el-button
+              class="cert-qualified-sider-btn"
+              :type="certQualifiedActiveTab === 'appointment' ? 'primary' : 'default'"
+              @click="certQualifiedActiveTab = 'appointment'"
+            >
+              AI任职
+            </el-button>
+            <el-button
+              class="cert-qualified-sider-btn"
+              :type="certQualifiedActiveTab === 'certification' ? 'primary' : 'default'"
+              @click="certQualifiedActiveTab = 'certification'"
+            >
+              AI认证
+            </el-button>
+          </aside>
+          <div class="cert-qualified-main">
+            <el-table
+              class="credit-table"
+              :data="certQualifiedDetail ? [certQualifiedDetail] : []"
+              border
+              stripe
+              style="width: 100%"
+            >
+              <template v-for="col in visibleCertQualifiedColumns" :key="String(col.prop)">
+                <el-table-column
+                  v-if="col.prop === 'isQualificationsStandard' || col.prop === 'isCertStandard' || col.prop === 'isPassedSubject2'"
+                  :label="col.label"
+                  :min-width="col.minWidth ?? 120"
+                  header-align="center"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <span v-if="(row as any)[col.prop] != null">{{ formatFlag((row as any)[col.prop]) }}</span>
+                    <span v-else>—</span>
+                  </template>
+                </el-table-column>
+                <el-table-column
+                  v-else
+                  :prop="String(col.prop)"
+                  :label="col.label"
+                  :min-width="col.minWidth ?? 120"
+                  header-align="center"
+                  align="center"
+                  show-overflow-tooltip
+                >
+                  <template #default="{ row }">
+                    <span v-if="(row as any)[col.prop] != null && String((row as any)[col.prop]).trim() !== ''">
+                      {{ (row as any)[col.prop] }}
+                    </span>
+                    <span v-else>—</span>
+                  </template>
+                </el-table-column>
+              </template>
 
-          <template #empty>
-            <el-empty description="暂无任职认证信息" />
-          </template>
-        </el-table>
+              <template #empty>
+                <el-empty description="暂无任职认证信息" />
+              </template>
+            </el-table>
+          </div>
+        </div>
       </el-card>
     </template>
     <el-empty v-else description="暂无详情数据" />
@@ -730,6 +803,42 @@ onActivated(() => {
   :deep(.el-table__body .cell) {
     text-align: center;
   }
+}
+
+.cert-qualified-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.cert-qualified-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.cert-qualified-layout {
+  display: flex;
+  gap: $spacing-md;
+  align-items: stretch;
+}
+
+.cert-qualified-sider {
+  width: 140px;
+  flex: 0 0 140px;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.cert-qualified-sider-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.cert-qualified-main {
+  flex: 1;
+  min-width: 0;
 }
 
 .summary-card {
