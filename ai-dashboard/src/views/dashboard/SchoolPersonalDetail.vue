@@ -18,7 +18,6 @@ const selectedCategory = ref<string>('全部')
 const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
 /** 任职认证详情（基于 t_employee） */
 const certQualifiedDetail = ref<EmployeePersonalCertQualifiedInfo | null>(null)
-const certQualifiedActiveTab = ref<'appointment' | 'certification'>('appointment')
 const manualCreditTableMaxHeight = computed(() => (manualEnterCreditRows.value.length ? 560 : 80))
 
 // 训战分类排序顺序（支持多种名称映射）
@@ -232,35 +231,11 @@ const handleBack = () => {
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
 const formatFlag = (value?: number | null) => (Number(value) === 1 ? '是' : '否')
-const hasOwn = (obj: Record<string, unknown>, key: string) => Object.prototype.hasOwnProperty.call(obj, key)
-
-type CertQualifiedColumn = { prop: keyof EmployeePersonalCertQualifiedInfo; label: string; minWidth?: number }
-
-const appointmentColumns = computed<CertQualifiedColumn[]>(() => {
-  return [
-    { prop: 'competenceFamilyCn', label: '专业任职资格族', minWidth: 140 },
-    { prop: 'competenceCategoryCn', label: '专业任职资格类（仅体现AI）', minWidth: 220 },
-    { prop: 'competenceSubcategoryCn', label: '专业任职资格子类', minWidth: 160 },
-    { prop: 'directionCnName', label: '资格方向', minWidth: 160 },
-    { prop: 'competenceRatingCn', label: '资格级别', minWidth: 120 },
-    { prop: 'qualifiedCredit', label: '学分', minWidth: 100 },
-  ]
-})
-
-const certificationColumns = computed<CertQualifiedColumn[]>(() => {
-  return [
-    { prop: 'certTitle', label: '证书名称', minWidth: 220 },
-    { prop: 'certCredit', label: '学分', minWidth: 100 },
-  ]
-})
-
-const visibleCertQualifiedColumns = computed<CertQualifiedColumn[]>(() => {
-  const detail = certQualifiedDetail.value
-  if (!detail) return []
-  const cols = certQualifiedActiveTab.value === 'appointment' ? appointmentColumns.value : certificationColumns.value
-  // “如果当前没有该字段，即不展示”：用对象是否包含该 key 来决定是否展示列
-  return cols.filter((c) => hasOwn(detail as any, String(c.prop)))
-})
+const formatText = (value: unknown) => {
+  if (value == null) return '—'
+  const s = String(value).trim()
+  return s.length ? s : '—'
+}
 
 const avatarUrl = computed(() => {
   if (!detailData.value?.empNum) return null
@@ -524,87 +499,60 @@ onActivated(() => {
       <!-- 任职认证详情 -->
       <el-card shadow="hover" class="manual-credit-card">
         <template #header>
-          <div class="cert-qualified-header">
-            <h3>任职认证详情</h3>
-            <div class="cert-qualified-actions">
-              <el-button
-                size="small"
-                :type="certQualifiedActiveTab === 'appointment' ? 'primary' : 'default'"
-                @click="certQualifiedActiveTab = 'appointment'"
-              >
-                AI任职
-              </el-button>
-              <el-button
-                size="small"
-                :type="certQualifiedActiveTab === 'certification' ? 'primary' : 'default'"
-                @click="certQualifiedActiveTab = 'certification'"
-              >
-                AI认证
-              </el-button>
-            </div>
-          </div>
+          <h3>任职认证详情</h3>
         </template>
-        <div class="cert-qualified-layout">
-          <aside class="cert-qualified-sider">
-            <el-button
-              class="cert-qualified-sider-btn"
-              :type="certQualifiedActiveTab === 'appointment' ? 'primary' : 'default'"
-              @click="certQualifiedActiveTab = 'appointment'"
-            >
-              AI任职
-            </el-button>
-            <el-button
-              class="cert-qualified-sider-btn"
-              :type="certQualifiedActiveTab === 'certification' ? 'primary' : 'default'"
-              @click="certQualifiedActiveTab = 'certification'"
-            >
-              AI认证
-            </el-button>
-          </aside>
-          <div class="cert-qualified-main">
-            <el-table
-              class="credit-table"
-              :data="certQualifiedDetail ? [certQualifiedDetail] : []"
-              border
-              stripe
-              style="width: 100%"
-            >
-              <template v-for="col in visibleCertQualifiedColumns" :key="String(col.prop)">
-                <el-table-column
-                  v-if="col.prop === 'isQualificationsStandard' || col.prop === 'isCertStandard' || col.prop === 'isPassedSubject2'"
-                  :label="col.label"
-                  :min-width="col.minWidth ?? 120"
-                  header-align="center"
-                  align="center"
-                >
-                  <template #default="{ row }">
-                    <span v-if="(row as any)[col.prop] != null">{{ formatFlag((row as any)[col.prop]) }}</span>
-                    <span v-else>—</span>
-                  </template>
-                </el-table-column>
-                <el-table-column
-                  v-else
-                  :prop="String(col.prop)"
-                  :label="col.label"
-                  :min-width="col.minWidth ?? 120"
-                  header-align="center"
-                  align="center"
-                  show-overflow-tooltip
-                >
-                  <template #default="{ row }">
-                    <span v-if="(row as any)[col.prop] != null && String((row as any)[col.prop]).trim() !== ''">
-                      {{ (row as any)[col.prop] }}
-                    </span>
-                    <span v-else>—</span>
-                  </template>
-                </el-table-column>
-              </template>
+        <div class="cert-qualified-stack">
+          <div class="cert-qualified-subtitle">任职详情</div>
+          <el-table
+            class="credit-table"
+            :data="certQualifiedDetail ? [certQualifiedDetail] : []"
+            border
+            stripe
+            style="width: 100%"
+          >
+            <el-table-column prop="competenceFamilyCn" label="专业任职资格族" min-width="140" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.competenceFamilyCn) }}</template>
+            </el-table-column>
+            <el-table-column prop="competenceCategoryCn" label="专业任职资格类（仅体现AI）" min-width="220" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.competenceCategoryCn) }}</template>
+            </el-table-column>
+            <el-table-column prop="competenceSubcategoryCn" label="专业任职资格子类" min-width="160" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.competenceSubcategoryCn) }}</template>
+            </el-table-column>
+            <el-table-column prop="directionCnName" label="资格方向" min-width="160" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.directionCnName) }}</template>
+            </el-table-column>
+            <el-table-column prop="competenceRatingCn" label="资格级别" min-width="120" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.competenceRatingCn) }}</template>
+            </el-table-column>
+            <el-table-column prop="qualifiedCredit" label="学分" min-width="100" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.qualifiedCredit) }}</template>
+            </el-table-column>
 
-              <template #empty>
-                <el-empty description="暂无任职认证信息" />
-              </template>
-            </el-table>
-          </div>
+            <template #empty>
+              <el-empty description="暂无任职详情数据" />
+            </template>
+          </el-table>
+
+          <div class="cert-qualified-subtitle cert-qualified-subtitle--spaced">认证详情</div>
+          <el-table
+            class="credit-table"
+            :data="certQualifiedDetail ? [certQualifiedDetail] : []"
+            border
+            stripe
+            style="width: 100%"
+          >
+            <el-table-column prop="certTitle" label="证书名称" min-width="220" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.certTitle) }}</template>
+            </el-table-column>
+            <el-table-column prop="certCredit" label="学分" min-width="100" header-align="center" align="center" show-overflow-tooltip>
+              <template #default="{ row }">{{ formatText(row.certCredit) }}</template>
+            </el-table-column>
+
+            <template #empty>
+              <el-empty description="暂无认证详情数据" />
+            </template>
+          </el-table>
         </div>
       </el-card>
     </template>
@@ -805,40 +753,20 @@ onActivated(() => {
   }
 }
 
-.cert-qualified-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: $spacing-md;
-}
-
-.cert-qualified-actions {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.cert-qualified-layout {
-  display: flex;
-  gap: $spacing-md;
-  align-items: stretch;
-}
-
-.cert-qualified-sider {
-  width: 140px;
-  flex: 0 0 140px;
+.cert-qualified-stack {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
 }
 
-.cert-qualified-sider-btn {
-  width: 100%;
-  justify-content: center;
+.cert-qualified-subtitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 10px;
 }
 
-.cert-qualified-main {
-  flex: 1;
-  min-width: 0;
+.cert-qualified-subtitle--spaced {
+  margin-top: 14px;
 }
 
 .summary-card {
