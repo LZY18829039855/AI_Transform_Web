@@ -852,6 +852,46 @@ export interface EmployeeDetailVO {
 }
 
 /**
+ * 个人任职/认证信息（对应后端 EmployeePO）
+ * GET /employee/personal-cert-qualified
+ */
+export interface EmployeePersonalCertQualifiedInfo {
+  employeeNumber?: string
+  lastName?: string
+  firstdeptcode?: string
+  seconddeptcode?: string
+  thirddeptcode?: string
+  fourthdeptcode?: string
+  fifthdeptcode?: string
+  sixthdeptcode?: string
+  lowestDeptId?: string
+  firstdept?: string
+  seconddept?: string
+  thirddept?: string
+  fourthdept?: string
+  fifthdept?: string
+  sixthdept?: string
+  lowestDept?: string
+  jobType?: string
+  jobCategory?: string
+  jobSubcategory?: string
+  periodId?: string
+  updatedTime?: string
+  isQualificationsStandard?: number
+  isCertStandard?: number
+  certTitle?: string
+  isPassedSubject2?: number
+  competenceFamilyCn?: string
+  competenceCategoryCn?: string
+  competenceSubcategoryCn?: string
+  directionCnName?: string
+  competenceRatingCn?: string
+  competenceGradeCn?: string
+  competenceFrom?: string
+  competenceTo?: string
+}
+
+/**
  * 员工下钻查询响应VO（对应后端 EmployeeDrillDownResponseVO）
  */
 export interface EmployeeDrillDownResponseVO {

@@ -24,6 +24,7 @@ import type {
   DepartmentNode,
   EmployeeCertStatisticsResponse,
   EmployeeDrillDownResponseVO,
+  EmployeePersonalCertQualifiedInfo,
   ExpertAppointmentSummaryRow,
   ExpertCertificationSummaryRow,
   MetricItem,
@@ -1217,6 +1218,30 @@ export const fetchPersonalCourseCompletion = async (
     return null
   } catch (error) {
     console.error('获取个人课程完成情况异常：', error)
+    return null
+  }
+}
+
+/**
+ * 获取个人任职/认证信息
+ * @param account 可选，工号；不传时后端从 cookie 获取当前用户
+ */
+export const fetchEmployeePersonalCertQualified = async (
+  account?: string
+): Promise<EmployeePersonalCertQualifiedInfo | null> => {
+  try {
+    const url =
+      account != null && account.trim() !== ''
+        ? `/employee/personal-cert-qualified?account=${encodeURIComponent(account.trim())}`
+        : '/employee/personal-cert-qualified'
+    const response = await get<Result<EmployeePersonalCertQualifiedInfo>>(url)
+    if (response.code === 200) {
+      return response.data
+    }
+    console.warn('获取个人任职/认证信息失败：', response.message)
+    return null
+  } catch (error) {
+    console.error('获取个人任职/认证信息异常：', error)
     return null
   }
 }

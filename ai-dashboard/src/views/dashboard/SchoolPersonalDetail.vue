@@ -3,10 +3,11 @@ import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
-import { fetchPersonalCourseCompletion } from '@/api/dashboard'
+import { fetchEmployeePersonalCertQualified, fetchPersonalCourseCompletion } from '@/api/dashboard'
 import { fetchManualEnterCreditListBySession } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
 import type { ManualEnterCreditRecord } from '@/types/manualCredit'
+import type { EmployeePersonalCertQualifiedInfo } from '@/types/dashboard'
 
 const router = useRouter()
 const route = useRoute()
@@ -15,6 +16,8 @@ const detailData = ref<PersonalCourseCompletionResponse | null>(null)
 const selectedCategory = ref<string>('全部')
 /** 多元化学分场景列表数据（与学分管理同源，仅只读展示） */
 const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
+/** 任职认证详情（基于 t_employee） */
+const certQualifiedDetail = ref<EmployeePersonalCertQualifiedInfo | null>(null)
 
 // 训战分类排序顺序（支持多种名称映射）
 const categoryOrder = ['基础', '进阶', '高阶', '实战']
@@ -191,11 +194,18 @@ const fetchDetail = async () => {
       return { total: 0, rows: [] as ManualEnterCreditRecord[] }
     })
 
-    const [data, manualPage] = await Promise.all([
+    const certQualifiedPromise = fetchEmployeePersonalCertQualified(account).catch((err) => {
+      console.warn('获取任职认证信息失败：', err)
+      return null
+    })
+
+    const [data, manualPage, certQualified] = await Promise.all([
       fetchPersonalCourseCompletion(account),
       manualEnterCreditPromise,
+      certQualifiedPromise,
     ])
     manualEnterCreditRows.value = manualPage.rows
+    certQualifiedDetail.value = certQualified
     if (data) {
       detailData.value = data
       // 兜底：若历史路由/缓存里把筛选设成了「实战」，改为「全部」（当前下拉已移除实战选项）
@@ -219,6 +229,7 @@ const handleBack = () => {
 
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatBoolean = (value: boolean) => (value ? '是' : '否')
+const formatFlag = (value?: number | null) => (Number(value) === 1 ? '是' : '否')
 
 const avatarUrl = computed(() => {
   if (!detailData.value?.empNum) return null
@@ -477,6 +488,49 @@ onActivated(() => {
           />
           <template #empty>
             <el-empty description="暂无多元化学分场景数据" />
+          </template>
+        </el-table>
+      </el-card>
+
+      <!-- 任职认证详情 -->
+      <el-card shadow="hover" class="manual-credit-card">
+        <template #header>
+          <h3>任职认证详情</h3>
+        </template>
+        <el-table
+          class="credit-table"
+          :data="certQualifiedDetail ? [certQualifiedDetail] : []"
+          border
+          stripe
+          style="width: 100%"
+        >
+          <el-table-column prop="employeeNumber" label="工号" min-width="120" header-align="center" align="center" />
+          <el-table-column prop="lastName" label="姓名" min-width="120" header-align="center" align="center" />
+          <el-table-column prop="jobType" label="岗位族" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="jobCategory" label="岗位类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="jobSubcategory" label="岗位子类" min-width="140" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column label="任职达标" min-width="100" header-align="center" align="center">
+            <template #default="{ row }">{{ formatFlag(row.isQualificationsStandard) }}</template>
+          </el-table-column>
+          <el-table-column label="持证达标" min-width="100" header-align="center" align="center">
+            <template #default="{ row }">{{ formatFlag(row.isCertStandard) }}</template>
+          </el-table-column>
+          <el-table-column prop="certTitle" label="证书名称" min-width="180" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column label="科目二通过" min-width="110" header-align="center" align="center">
+            <template #default="{ row }">{{ formatFlag(row.isPassedSubject2) }}</template>
+          </el-table-column>
+          <el-table-column prop="lowestDept" label="最小部门" min-width="160" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceFamilyCn" label="能力族" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceCategoryCn" label="能力类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceSubcategoryCn" label="能力子类" min-width="140" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceRatingCn" label="能力定级" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceGradeCn" label="能力等级" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceFrom" label="生效开始" min-width="140" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="competenceTo" label="生效结束" min-width="140" header-align="center" align="center" show-overflow-tooltip />
+          <el-table-column prop="updatedTime" label="更新时间" min-width="160" header-align="center" align="center" show-overflow-tooltip />
+
+          <template #empty>
+            <el-empty description="暂无任职认证信息" />
           </template>
         </el-table>
       </el-card>
