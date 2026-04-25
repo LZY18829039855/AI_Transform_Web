@@ -13,6 +13,8 @@ const route = useRoute()
 const loading = ref(false)
 const detailData = ref<SchoolDetailData | null>(null)
 const hideRoleAndDept = computed(() => route.query.hideRoleAndDept === 'true')
+const pageNum = ref(1)
+const pageSize = ref(50)
 
 // 从 URL query 参数初始化 filters
 const initFiltersFromQuery = (): SchoolDetailFilters => {
@@ -53,7 +55,15 @@ const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filter
 const fetchDetail = async () => {
   loading.value = true
   try {
-    detailData.value = await fetchSchoolDetailData(props.id, filters.value)
+    detailData.value = await fetchSchoolDetailData(props.id, {
+      ...filters.value,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+    })
+    if (detailData.value) {
+      pageNum.value = detailData.value.pageNum ?? pageNum.value
+      pageSize.value = detailData.value.pageSize ?? pageSize.value
+    }
   } finally {
     loading.value = false
   }
@@ -64,6 +74,7 @@ const handleBack = () => {
 }
 
 const handleFilterChange = () => {
+  pageNum.value = 1
   fetchDetail()
 }
 
@@ -78,6 +89,17 @@ const handleNameDrill = (employeeId: string) => {
 
 const formatPercent = (value: number) => `${value.toFixed(1)}%`
 
+const handlePageChange = (page: number) => {
+  pageNum.value = page
+  fetchDetail()
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  pageNum.value = 1
+  fetchDetail()
+}
+
 onMounted(() => {
   initDepartmentTree()
   fetchDetail()
@@ -86,6 +108,7 @@ onMounted(() => {
 onActivated(() => {
   // 每次激活时从 query 重新初始化 filters
   Object.assign(filters.value, initFiltersFromQuery())
+  pageNum.value = 1
   refreshDepartmentTree()
   fetchDetail()
 })
@@ -232,6 +255,17 @@ onActivated(() => {
             </template>
           </el-table-column>
         </el-table>
+        <div class="pagination-wrap">
+          <el-pagination
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="detailData.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
       </el-card>
     </template>
   </section>
@@ -316,6 +350,12 @@ onActivated(() => {
     font-size: 18px;
     font-weight: 600;
   }
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
 }
 
 .drill-link {

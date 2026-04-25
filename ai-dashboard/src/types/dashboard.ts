@@ -718,6 +718,10 @@ export interface SchoolRuleRecord {
 
 export interface SchoolDetailData {
   records: SchoolCreditRecord[]
+  total: number
+  pageNum: number
+  pageSize: number
+  pages: number
   rules: SchoolRuleRecord[]
   filters: {
     departmentTree: DepartmentNode[]
@@ -738,6 +742,8 @@ export interface SchoolDetailFilters {
   jobSubCategory?: string
   role?: SchoolRole
   positionMaturity?: '全部' | 'L1' | 'L2' | 'L3'
+  pageNum?: number
+  pageSize?: number
 }
 
 export interface CertificationDashboardFilters {

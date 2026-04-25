@@ -1611,10 +1611,14 @@ export const fetchSchoolDetailData = async (
   if (filters?.positionMaturity && filters.positionMaturity !== '全部') {
     query.append('positionMaturity', filters.positionMaturity)
   }
-  query.append('pageNum', '1')
-  query.append('pageSize', '100')
+  query.append('pageNum', String(filters?.pageNum ?? 1))
+  query.append('pageSize', String(filters?.pageSize ?? 50))
 
   let records: SchoolCreditRecord[] = []
+  let total = 0
+  let pageNum = filters?.pageNum ?? 1
+  let pageSize = filters?.pageSize ?? 50
+  let pages = 0
   let jobFamilies: string[] = []
   let jobCategories: string[] = []
   let jobSubCategories: string[] = []
@@ -1624,6 +1628,10 @@ export const fetchSchoolDetailData = async (
     )
     if (response.code === 200 && response.data) {
       records = response.data.records
+      total = response.data.total ?? 0
+      pageNum = response.data.pageNum ?? pageNum
+      pageSize = response.data.pageSize ?? pageSize
+      pages = response.data.pages ?? 0
       jobFamilies = response.data.jobFamilies ?? []
       jobCategories = response.data.jobCategories ?? []
       jobSubCategories = response.data.jobSubCategories ?? []
@@ -1634,6 +1642,10 @@ export const fetchSchoolDetailData = async (
 
   return {
     records,
+    total,
+    pageNum,
+    pageSize,
+    pages,
     rules: [],
     filters: {
       departmentTree: deptTree,
