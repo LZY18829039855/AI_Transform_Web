@@ -73,9 +73,8 @@ export const getSchoolCreditDetailList = async (
     query.append('pageNum', String(params.pageNum ?? 1))
     query.append('pageSize', String(params.pageSize ?? 50))
 
-    // ✅ 修正为后端实际路径
     const response = await get<Result<SchoolCreditDetailResponseVO>>(
-        `/api/credit/statistics/detail?${query.toString()}`
+        `/api/school-credit-detail/list?${query.toString()}`
     )
     if (response.code === 200) return response.data
     console.warn('获取AI School学分数据明细失败：', response.message)

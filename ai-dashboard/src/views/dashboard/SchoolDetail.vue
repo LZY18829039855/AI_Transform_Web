@@ -40,6 +40,11 @@ const initFiltersFromQuery = (): SchoolDetailFilters => {
     filters.jobCategory = query.jobCategory as string
   }
 
+  if (query.positionMaturity && String(query.positionMaturity).trim() !== '') {
+    // 支持从下钻链接直接带入岗位成熟度（L1/L2/L3）
+    filters.positionMaturity = query.positionMaturity as SchoolDetailFilters['positionMaturity']
+  }
+
   return filters
 }
 

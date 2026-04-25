@@ -194,6 +194,9 @@ const handleRoleSummaryDrill = (
     type: 'expert' | 'cadre',
     field: string
 ) => {
+  const deptCode = resolveDeptIdForStats() || '0'
+  const deptLevel = filters.departmentPath?.length ? String(filters.departmentPath.length) : undefined
+  const roleType = type === 'expert' ? '2' : '1'
   const resolved = router.resolve({
     name: 'SchoolDetail',
     params: { id: 'drill-down' },
@@ -201,7 +204,10 @@ const handleRoleSummaryDrill = (
       type,
       maturityLevel: row.maturityLevel,
       metric: field,
-      role: filters.role,
+      deptCode,
+      deptLevel,
+      role: roleType,
+      positionMaturity: row.maturityLevel,
       hideRoleAndDept: 'true',   // ← 新增
     },
   })
