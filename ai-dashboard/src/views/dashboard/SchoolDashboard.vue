@@ -474,47 +474,47 @@ onActivated(() => {
             :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px', textAlign: 'center' }"
             :cell-style="{ textAlign: 'center' }"
         >
-          <el-table-column prop="maturityLevel" label="专家岗位成熟度等级" width="180" />
-          <el-table-column prop="baseline" label="专家人数" width="120">
+          <el-table-column prop="maturityLevel" label="专家岗位成熟度等级" min-width="180" />
+          <el-table-column prop="baseline" label="专家人数" min-width="120">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'baseline')">
                 {{ row.baseline }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="maxCredits" label="专家个人最高学分" width="150">
+          <el-table-column prop="maxCredits" label="专家个人最高学分" min-width="150">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'maxCredits')">
                 {{ row.maxCredits }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="minCredits" label="专家个人最低学分" width="150">
+          <el-table-column prop="minCredits" label="专家个人最低学分" min-width="150">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'minCredits')">
                 {{ row.minCredits }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="averageCredits" label="当前平均学分" width="130">
+          <el-table-column prop="averageCredits" label="当前平均学分" min-width="130">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'averageCredits')">
                 {{ formatNumber(row.averageCredits) }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="targetCredits" label="目标平均学分" width="130">
+          <el-table-column prop="targetCredits" label="目标平均学分" min-width="130">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'targetCredits')">
                 {{ formatNumber(row.targetCredits) }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="completionRate" label="学分达成率" width="120">
+          <el-table-column prop="completionRate" label="学分达成率" min-width="120">
             <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="scheduleTarget" label="时间进度学分目标" width="150" />
-          <el-table-column prop="status" label="学分状态预警" width="120">
+          <el-table-column prop="scheduleTarget" label="时间进度学分目标" min-width="150" />
+          <el-table-column prop="status" label="学分状态预警" min-width="120">
             <template #default="{ row }">
               <el-tag :type="row.statusType">{{ row.status }}</el-tag>
             </template>
@@ -531,47 +531,47 @@ onActivated(() => {
             :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px', textAlign: 'center' }"
             :cell-style="{ textAlign: 'center' }"
         >
-          <el-table-column prop="maturityLevel" label="干部岗位成熟度等级" width="180" />
-          <el-table-column prop="baseline" label="干部人数" width="120">
+          <el-table-column prop="maturityLevel" label="干部岗位成熟度等级" min-width="180" />
+          <el-table-column prop="baseline" label="干部人数" min-width="120">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'baseline')">
                 {{ row.baseline }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="maxCredits" label="干部个人最高学分" width="150">
+          <el-table-column prop="maxCredits" label="干部个人最高学分" min-width="150">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'maxCredits')">
                 {{ row.maxCredits }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="minCredits" label="干部个人最低学分" width="150">
+          <el-table-column prop="minCredits" label="干部个人最低学分" min-width="150">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'minCredits')">
                 {{ row.minCredits }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="averageCredits" label="当前平均学分" width="130">
+          <el-table-column prop="averageCredits" label="当前平均学分" min-width="130">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'averageCredits')">
                 {{ formatNumber(row.averageCredits) }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="targetCredits" label="目标平均学分" width="130">
+          <el-table-column prop="targetCredits" label="目标平均学分" min-width="130">
             <template #default="{ row }">
               <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'targetCredits')">
                 {{ formatNumber(row.targetCredits) }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="completionRate" label="学分达成率" width="120">
+          <el-table-column prop="completionRate" label="学分达成率" min-width="120">
             <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="scheduleTarget" label="时间进度学分目标" width="150" />
-          <el-table-column prop="status" label="学分状态预警" width="120">
+          <el-table-column prop="scheduleTarget" label="时间进度学分目标" min-width="150" />
+          <el-table-column prop="status" label="学分状态预警" min-width="120">
             <template #default="{ row }">
               <el-tag :type="row.statusType">{{ row.status }}</el-tag>
             </template>
