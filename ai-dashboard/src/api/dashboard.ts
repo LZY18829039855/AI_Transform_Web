@@ -1615,7 +1615,10 @@ export const fetchSchoolDetailData = async (
       ? filters.departmentPath[filters.departmentPath.length - 1]
       : undefined)
     || '0'
-  const deptLevel = filters?.deptLevel ?? (filters?.departmentPath?.length || 0)
+  const deptLevel =
+    filters?.deptLevel !== undefined && filters?.deptLevel !== null
+      ? filters.deptLevel
+      : (filters?.departmentPath?.length || 0)
 
   // 调用后端接口获取学分明细数据
   const query = new URLSearchParams()

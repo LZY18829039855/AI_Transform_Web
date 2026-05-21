@@ -195,7 +195,9 @@ const handleRoleSummaryDrill = (
     field: string
 ) => {
   const deptCode = resolveDeptIdForStats() || '0'
-  const deptLevel = filters.departmentPath?.length ? String(filters.departmentPath.length) : undefined
+  // 与详情接口约定：有具体部门编码时用 -1（多列 OR 匹配），避免用级联 path 长度当层级
+  const deptLevel =
+    deptCode && deptCode !== '0' ? '-1' : undefined
   const roleType = type === 'expert' ? '2' : '1'
   const resolved = router.resolve({
     name: 'SchoolDetail',
@@ -234,37 +236,56 @@ const handleOverviewDrill = (_metric: string) => {
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
+/** 解析下钻用的部门层级：优先后端返回的 categoryLevel，最小部门分组为 -1 */
+const resolveDrillDeptLevel = (row: CreditOverviewVO): string => {
+  if (row.categoryLevel != null) {
+    return String(row.categoryLevel)
+  }
+  return '-1'
+}
+
 // 处理基线人数下钻 - 跳转到 SchoolDetail 页面，传递当前行的筛选条件
 const handleCreditDrillDown = (row: CreditOverviewVO, field: string, type: 'department' | 'position') => {
   if (field !== 'baselineHeadcount') return
+  if (row.categoryName === '总计') {
+    ElMessage.warning('总计行不支持下钻，请点击具体部门行的基线人数')
+    return
+  }
 
   if (type === 'department') {
+    const deptCode = row.categoryCode?.trim()
+    if (!deptCode) {
+      ElMessage.warning('无法下钻：缺少部门编码')
+      return
+    }
     const resolved = router.resolve({
       name: 'SchoolDetail',
       params: { id: 'drill-down' },
       query: {
         type: 'department',
-        deptCode: row.categoryCode || '0',
-        deptLevel: '4',
+        deptCode,
+        deptLevel: resolveDrillDeptLevel(row),
         role: creditRole.value,
-        hideRoleAndDept: 'true',   // ← 新增
+        hideRoleAndDept: 'true',
       },
     })
     window.open(resolved.href, '_blank', 'noopener,noreferrer')
   } else {
-    const currentDeptCode = filters.departmentPath?.length
-        ? filters.departmentPath[filters.departmentPath.length - 1]
-        : '0'
+    const currentDeptCode = resolveDeptIdForStats() || '0'
+    const query: Record<string, string> = {
+      type: 'position',
+      deptCode: currentDeptCode,
+      jobCategory: row.categoryName,
+      role: creditRole.value,
+      hideRoleAndDept: 'true',
+    }
+    if (currentDeptCode && currentDeptCode !== '0') {
+      query.deptLevel = '-1'
+    }
     const resolved = router.resolve({
       name: 'SchoolDetail',
       params: { id: 'drill-down' },
-      query: {
-        type: 'position',
-        deptCode: currentDeptCode,
-        jobCategory: row.categoryName,
-        role: creditRole.value,
-        hideRoleAndDept: 'true',   // ← 新增
-      },
+      query,
     })
     window.open(resolved.href, '_blank', 'noopener,noreferrer')
   }

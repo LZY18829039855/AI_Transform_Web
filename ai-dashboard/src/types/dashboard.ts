@@ -1031,6 +1031,10 @@ export interface PersonalCredit {
 
 export interface CreditOverviewVO {
   categoryName: string
+  /** 部门编码或职位类编码，用于下钻 */
+  categoryCode?: string
+  /** 分组维度部门层级：1-6；-1 表示最小部门编号 */
+  categoryLevel?: number
   baselineHeadcount: number
   maxScore: number
   minScore: number
