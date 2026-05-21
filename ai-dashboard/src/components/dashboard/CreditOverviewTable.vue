@@ -33,9 +33,6 @@ const formatScore = (_row: any, _column: any, cellValue: number) => {
   return cellValue
 }
 const handleDrillDown = (row: CreditOverviewVO, field: string) => {
-  if (row.categoryName === '总计') {
-    return
-  }
   emit('drill-down', row, field)
 }
 
@@ -69,14 +66,12 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       <el-table-column prop="baselineHeadcount" label="基线人数" min-width="100">
         <template #default="{ row }">
           <el-button
-            v-if="row.categoryName !== '总计'"
             link
             class="drill-link"
             @click="handleDrillDown(row, 'baselineHeadcount')"
           >
             {{ row.baselineHeadcount }}
           </el-button>
-          <span v-else>{{ row.baselineHeadcount }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="maxScore" label="最高分" min-width="100" :formatter="formatScore" />
