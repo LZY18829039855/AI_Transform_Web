@@ -20,9 +20,13 @@ import type {
 const router = useRouter()
 const loading = ref(false)
 const dashboardData = ref<SchoolDashboardData | null>(null)
+
+/** 默认选至二级部门：云核心网产品线（与认证看板一致） */
+const DEFAULT_DEPARTMENT_PATH = ['ICT_BG', 'CLOUD_CORE_NETWORK'] as const
+
 const filters = reactive<SchoolDashboardFilters>({
   role: '0',
-  departmentPath: ['ICT_BG', '0'],
+  departmentPath: [...DEFAULT_DEPARTMENT_PATH],
 })
 
 // 学分统计数据
@@ -81,6 +85,10 @@ const resolveDeptIdForStats = (): string | undefined => {
   const path = filters.departmentPath
   if (!path || path.length === 0) return undefined
   const last = path[path.length - 1]
+  // ICT BG / 云核心网产品线占位节点：接口仍按云核心网产品线（deptCode=0）统计
+  if (last === 'ICT_BG' || last === 'CLOUD_CORE_NETWORK') {
+    return '0'
+  }
   return (last != null && String(last).trim() !== '') ? String(last) : undefined
 }
 
@@ -178,7 +186,7 @@ watch(
 
 const resetFilters = () => {
   filters.role = '0'
-  filters.departmentPath = ['ICT_BG', '0']  // 改：恢复初始值
+  filters.departmentPath = [...DEFAULT_DEPARTMENT_PATH]
 }
 
 const goToDetail = (query: Record<string, string | undefined>) => {
