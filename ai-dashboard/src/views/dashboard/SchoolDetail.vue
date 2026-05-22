@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, onActivated, onMounted, ref } from 'vue'
-import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
+import { ArrowLeft, Download, Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { fetchSchoolDetailData } from '@/api/dashboard'
+import { fetchAllSchoolCreditRecords } from '@/api/dashboard_credit'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
-import type { SchoolDetailData, SchoolDetailFilters } from '@/types/dashboard'
+import { exportSchoolCreditDetailToExcel } from '@/utils/excelExport'
+import type { SchoolCreditDetailRequest, SchoolDetailData, SchoolDetailFilters } from '@/types/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
+const exporting = ref(false)
 const detailData = ref<SchoolDetailData | null>(null)
 const hideRoleAndDept = computed(() => route.query.hideRoleAndDept === 'true')
 const pageNum = ref(1)
@@ -107,6 +111,57 @@ const handleSizeChange = (size: number) => {
   fetchDetail()
 }
 
+/** 构建学分明细查询参数（列表与导出共用） */
+const buildCreditDetailQueryParams = (): SchoolCreditDetailRequest => {
+  const deptCode: string = filters.value.deptCode
+    || (filters.value.departmentPath?.length
+      ? filters.value.departmentPath[filters.value.departmentPath.length - 1]
+      : undefined)
+    || '0'
+  const deptLevel =
+    filters.value.deptLevel !== undefined && filters.value.deptLevel !== null
+      ? filters.value.deptLevel
+      : (filters.value.departmentPath?.length || 0)
+
+  const params: SchoolCreditDetailRequest = {
+    deptCode,
+    deptLevel,
+    pageNum: 1,
+    pageSize: 50,
+  }
+  if (filters.value.role && filters.value.role !== '0') {
+    params.roleType = parseInt(filters.value.role, 10)
+  }
+  if (filters.value.jobFamily) params.jobFamily = filters.value.jobFamily
+  if (filters.value.jobCategory) params.jobCategory = filters.value.jobCategory
+  if (filters.value.jobSubCategory) params.jobSubCategory = filters.value.jobSubCategory
+  if (filters.value.positionMaturity && filters.value.positionMaturity !== '全部') {
+    params.positionMaturity = filters.value.positionMaturity
+  }
+  return params
+}
+
+/** 导出报表：按当前筛选条件导出全部明细为 Excel */
+const handleExport = async () => {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const { pageNum: _pn, pageSize: _ps, ...exportParams } = buildCreditDetailQueryParams()
+    const allRecords = await fetchAllSchoolCreditRecords(exportParams)
+    if (!allRecords.length) {
+      ElMessage.warning('暂无数据可导出')
+      return
+    }
+    exportSchoolCreditDetailToExcel(allRecords, 'AI School看板详情')
+    ElMessage.success(`导出成功，共 ${allRecords.length} 条`)
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
+  }
+}
+
 onMounted(() => {
   initDepartmentTree()
   fetchDetail()
@@ -135,7 +190,15 @@ onActivated(() => {
       </div>
       <el-space>
         <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
-        <el-button type="primary">导出报表</el-button>
+        <el-button
+          type="primary"
+          :icon="Download"
+          :loading="exporting"
+          :disabled="!detailData || total === 0"
+          @click="handleExport"
+        >
+          导出报表
+        </el-button>
       </el-space>
     </header>
 

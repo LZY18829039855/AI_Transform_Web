@@ -4,6 +4,7 @@ import type {
   CreditStatisticsResponseVO,
   SchoolCreditDetailResponseVO,
   SchoolCreditDetailRequest,
+  SchoolCreditRecord,
   SchoolRoleSummaryResponseVO
 } from '../types/dashboard'
 
@@ -83,6 +84,36 @@ export const getSchoolCreditDetailList = async (
     console.error('获取AI School学分数据明细异常：', error)
     return null
   }
+}
+
+/**
+ * 按当前筛选条件拉取全部学分明细（用于导出，不受列表分页限制）
+ */
+export const fetchAllSchoolCreditRecords = async (
+  params: Omit<SchoolCreditDetailRequest, 'pageNum' | 'pageSize'>
+): Promise<SchoolCreditRecord[]> => {
+  const probe = await getSchoolCreditDetailList({ ...params, pageNum: 1, pageSize: 1 })
+  if (!probe) return []
+  const total = probe.total ?? 0
+  if (total <= 0) return []
+  const EXPORT_PAGE_SIZE = 10000
+  if (total <= EXPORT_PAGE_SIZE) {
+    const res = await getSchoolCreditDetailList({ ...params, pageNum: 1, pageSize: total })
+    return res?.records ?? []
+  }
+  const all: SchoolCreditRecord[] = []
+  const pages = Math.ceil(total / EXPORT_PAGE_SIZE)
+  for (let page = 1; page <= pages; page += 1) {
+    const res = await getSchoolCreditDetailList({
+      ...params,
+      pageNum: page,
+      pageSize: EXPORT_PAGE_SIZE,
+    })
+    if (res?.records?.length) {
+      all.push(...res.records)
+    }
+  }
+  return all
 }
 
 /**

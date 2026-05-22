@@ -6,6 +6,7 @@ import type {
   DepartmentCourseCompletionRateRow,
   DepartmentEmployeeTrainingOverviewRow,
   DepartmentSelection,
+  SchoolCreditRecord,
   TrainingBattleRecord,
   TrainingRoleSummaryRow,
 } from '@/types/dashboard'
@@ -529,5 +530,43 @@ export const exportTrainingDetailToExcel = (
   const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
   const finalFileName = `${fileName}_${dateStr}.xlsx`
   XLSX.writeFile(workbook, finalFileName)
+}
+
+/**
+ * 导出 AI School 看板详情学分明细到 Excel
+ */
+export const exportSchoolCreditDetailToExcel = (
+  records: SchoolCreditRecord[],
+  fileName: string = 'AI School看板详情',
+) => {
+  const pctFmt = (v: number | undefined) => `${(v ?? 0).toFixed(1)}%`
+  const minDeptFmt = (v: string | undefined) => (v ? v.split('/')[0] : '')
+
+  const rows = records.map((row) => ({
+    '姓名': row.name || '',
+    '工号': row.employeeId || '',
+    '职位族': row.jobFamily || '',
+    '职位类': row.jobCategory || '',
+    '职位子类': row.jobSubCategory || '',
+    '一级部门': row.departmentLevel1 || '',
+    '二级部门': row.departmentLevel2 || '',
+    '三级部门': row.departmentLevel3 || '',
+    '四级部门': row.departmentLevel4 || '',
+    '五级部门': row.departmentLevel5 || '',
+    '最小部门': minDeptFmt(row.minDepartment),
+    '当前学分': String(row.currentCredits ?? ''),
+    '学分达成率': pctFmt(row.completionRate),
+    '所在最小部门标杆学分达成率': pctFmt(row.benchmarkRate),
+    '时间进度学分目标': String(row.scheduleTarget ?? ''),
+    '学分状态预警': row.status || '',
+  }))
+
+  const workbook = XLSX.utils.book_new()
+  const sheet = XLSX.utils.json_to_sheet(rows)
+  XLSX.utils.book_append_sheet(workbook, sheet, 'AI School学分数据明细')
+
+  const date = new Date()
+  const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
+  XLSX.writeFile(workbook, `${fileName}_${dateStr}.xlsx`)
 }
 
