@@ -90,6 +90,33 @@ export interface DepartmentEmployeeTrainingOverviewRow {
   totalCompletionRate: number
 }
 
+/** 部门完课矩阵导出：课程列 */
+export interface CourseCompletionColumn {
+  key: string
+  header: string
+  courseLevel: string
+  courseId: number
+}
+
+/** 部门完课矩阵导出：人员行 */
+export interface EmployeeCourseCompletionRow {
+  employeeNumber: string
+  name: string
+  firstDept: string
+  secondDept: string
+  thirdDept: string
+  fourthDept: string
+  fifthDept: string
+  lowestDept: string
+  completions: Record<string, boolean>
+}
+
+/** 部门全员目标课程完课矩阵（导出） */
+export interface DepartmentEmployeeCourseCompletionDetail {
+  columns: CourseCompletionColumn[]
+  rows: EmployeeCourseCompletionRow[]
+}
+
 export interface TrainingRoleSummaryRow {
   maturityLevel: string
   personCount: number

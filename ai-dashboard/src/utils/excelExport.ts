@@ -4,6 +4,7 @@ import type {
   CertificationAuditRecord,
   CoursePlanningInfo,
   DepartmentCourseCompletionRateRow,
+  DepartmentEmployeeCourseCompletionDetail,
   DepartmentEmployeeTrainingOverviewRow,
   DepartmentSelection,
   SchoolCreditRecord,
@@ -413,6 +414,34 @@ export const exportCoursePlanningToExcel = (
  * @param roleSummaryRow 专家/干部训战总览单行（人数下钻时有值），与 departmentRow 二选一
  * @param roleType 专家或干部
  */
+const appendCourseCompletionMatrixSheet = (
+  workbook: XLSX.WorkBook,
+  courseCompletionDetail: DepartmentEmployeeCourseCompletionDetail | null | undefined,
+) => {
+  if (!courseCompletionDetail?.rows?.length) {
+    return
+  }
+  const { columns, rows } = courseCompletionDetail
+  const detailData: Record<string, string>[] = rows.map((row) => {
+    const record: Record<string, string> = {
+      '一级部门': row.firstDept || '',
+      '二级部门': row.secondDept || '',
+      '三级部门': row.thirdDept || '',
+      '四级部门': row.fourthDept || '',
+      '五级部门': row.fifthDept || '',
+      '最小部门': row.lowestDept || '',
+      '工号': row.employeeNumber || '',
+      '姓名': row.name || '',
+    }
+    for (const col of columns) {
+      record[col.header] = row.completions?.[col.key] ? '✓' : ''
+    }
+    return record
+  })
+  const matrixSheet = XLSX.utils.json_to_sheet(detailData)
+  XLSX.utils.book_append_sheet(workbook, matrixSheet, '课程完课明细')
+}
+
 export const exportTrainingDetailToExcel = (
   departmentRow: DepartmentCourseCompletionRateRow | null,
   detailRows: DepartmentEmployeeTrainingOverviewRow[] | TrainingBattleRecord[],
@@ -420,6 +449,7 @@ export const exportTrainingDetailToExcel = (
   fileName: string = 'AI训战看板详情',
   roleSummaryRow?: TrainingRoleSummaryRow | null,
   roleType?: 'expert' | 'cadre' | null,
+  courseCompletionDetail?: DepartmentEmployeeCourseCompletionDetail | null,
 ) => {
   const workbook = XLSX.utils.book_new()
 
@@ -525,6 +555,8 @@ export const exportTrainingDetailToExcel = (
 
   const detailSheet = XLSX.utils.json_to_sheet(detailData)
   XLSX.utils.book_append_sheet(workbook, detailSheet, 'AI训战数据明细')
+
+  appendCourseCompletionMatrixSheet(workbook, courseCompletionDetail)
 
   const date = new Date()
   const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`

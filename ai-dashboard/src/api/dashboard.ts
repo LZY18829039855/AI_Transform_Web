@@ -50,6 +50,7 @@ import type {
   TrainingBattleRecord,
   TrainingCoursePlanRecord,
   DepartmentCourseCompletionRateRow,
+  DepartmentEmployeeCourseCompletionDetail,
   DepartmentEmployeeTrainingOverviewRow,
   PositionAiMaturityCourseCompletionRateVO,
   TrainingPersonalOverviewRow,
@@ -1274,6 +1275,34 @@ export const fetchDepartmentCompletionRate = async (
  * @param personType 0 全员；1 干部；2 专家
  * @param aiMaturity 岗位 AI 成熟度（可选）：L1、L2、L3；仅 personType 为 1 或 2 时生效
  */
+/**
+ * 部门全员目标课程完课矩阵（导出用）
+ */
+export const fetchDepartmentEmployeeCourseCompletionDetail = async (
+  deptId: string,
+  personType: number = 0,
+  aiMaturity?: string
+): Promise<DepartmentEmployeeCourseCompletionDetail | null> => {
+  try {
+    const params = new URLSearchParams({
+      deptId,
+      personType: String(personType),
+    })
+    if (aiMaturity != null && String(aiMaturity).trim() !== '') {
+      params.set('ai_maturity', String(aiMaturity).trim())
+    }
+    const url = `/personal-course/department-employee-course-completion-detail?${params.toString()}`
+    const response = await get<Result<DepartmentEmployeeCourseCompletionDetail>>(url)
+    if (response.code === 200 && response.data) {
+      return response.data
+    }
+    return null
+  } catch (error) {
+    console.error('获取部门完课矩阵异常：', error)
+    return null
+  }
+}
+
 export const fetchDepartmentEmployeeTrainingOverview = async (
   deptId: string,
   personType: number = 0,

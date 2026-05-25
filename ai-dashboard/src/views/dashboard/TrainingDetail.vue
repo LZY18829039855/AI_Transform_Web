@@ -3,7 +3,11 @@ import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch
 import { ArrowLeft, Refresh, Search, Close, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchDepartmentEmployeeTrainingOverview, fetchTrainingDetail } from '@/api/dashboard'
+import {
+  fetchDepartmentEmployeeCourseCompletionDetail,
+  fetchDepartmentEmployeeTrainingOverview,
+  fetchTrainingDetail,
+} from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { exportTrainingDetailToExcel } from '@/utils/excelExport'
@@ -19,6 +23,7 @@ const props = defineProps<{ id: string }>()
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
+const exporting = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
 /** 部门下钻时，从「部门全员训战总览」接口返回的明细列表 */
 const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
@@ -289,8 +294,9 @@ const handleCourseClick = (url: string) => {
   window.open(url, '_blank')
 }
 
-/** 导出数据：部门训战数据（下钻时有）+ AI训战数据明细，两个 sheet */
-const handleExport = () => {
+/** 导出数据：部门训战数据（下钻时有）+ AI训战数据明细 + 课程完课明细（下钻全员目标课矩阵） */
+const handleExport = async () => {
+  if (exporting.value) return
   const isDrill = isDrillDownPage.value
   const deptRow = isDrill ? drillDownDepartmentRow.value : null
   const roleRow = isDrill ? drillDownRoleSummaryRow.value : null
@@ -301,7 +307,19 @@ const handleExport = () => {
     ElMessage.warning('暂无数据可导出')
     return
   }
+
+  exporting.value = true
   try {
+    let courseCompletionDetail = null
+    const deptId = route.query.deptId as string | undefined
+    if (isDrill && deptId) {
+      courseCompletionDetail = await fetchDepartmentEmployeeCourseCompletionDetail(
+        deptId,
+        parsePersonTypeFromRouteQuery(),
+        parseAiMaturityFromRouteQuery(),
+      )
+    }
+
     let fileName = 'AI训战看板详情'
     if (deptRow?.deptName) {
       fileName = `${(deptRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_')}_训战看板详情`
@@ -310,11 +328,26 @@ const handleExport = () => {
       const label = roleType === 'expert' ? '专家' : '干部'
       fileName = `${lvl || label}_${label}_训战看板详情`
     }
-    exportTrainingDetailToExcel(deptRow, detailList, isDrill, fileName, roleRow, roleType)
-    ElMessage.success('导出成功')
+    exportTrainingDetailToExcel(
+      deptRow,
+      detailList,
+      isDrill,
+      fileName,
+      roleRow,
+      roleType,
+      courseCompletionDetail,
+    )
+    const matrixCount = courseCompletionDetail?.rows?.length ?? 0
+    ElMessage.success(
+      matrixCount > 0
+        ? `导出成功（含课程完课明细 ${matrixCount} 人）`
+        : '导出成功',
+    )
   } catch (error) {
     console.error('导出失败:', error)
     ElMessage.error('导出失败，请稍后重试')
+  } finally {
+    exporting.value = false
   }
 }
 
@@ -544,6 +577,7 @@ onBeforeUnmount(() => {
         <el-button
           type="primary"
           :icon="Download"
+          :loading="exporting"
           :disabled="isDrillDownPage ? (filteredDrillDownRecords.length === 0 && !drillDownDepartmentRow && !drillDownRoleSummaryRow) : filteredDetailRecords.length === 0"
           @click="handleExport"
         >
