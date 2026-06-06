@@ -2,7 +2,7 @@
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag, ElTooltip } from 'element-plus'
 import { fetchEmployeePersonalCertQualified, fetchPersonalCourseCompletion } from '@/api/dashboard'
 import { fetchManualEnterCreditListBySession } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
@@ -291,7 +291,12 @@ onActivated(() => {
         </div>
       </div>
       <el-space>
-        <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
+        <el-tooltip
+          content="注：当前按钮只重置页面数据，个人课程完课数据同步周期为T+1"
+          placement="top"
+        >
+          <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
+        </el-tooltip>
       </el-space>
     </header>
 
