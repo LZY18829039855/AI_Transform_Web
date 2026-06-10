@@ -31,11 +31,24 @@ export const useDashboardTabs = () => {
     { immediate: true }
   )
 
-  const goTo = (tab: DashboardTabName) => {
-    appStore.setActiveTab(tab)
+  let navigating = false
+
+  const goTo = async (tab: DashboardTabName) => {
+    if (navigating) {
+      return
+    }
     const target = DASHBOARD_TABS.find((item) => item.name === tab)
-    if (target) {
-      router.push(target.route)
+    if (!target) {
+      return
+    }
+    navigating = true
+    try {
+      appStore.setActiveTab(tab)
+      await router.push(target.route)
+    } catch (error) {
+      console.error('跳转看板失败：', error)
+    } finally {
+      navigating = false
     }
   }
 

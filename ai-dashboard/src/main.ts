@@ -6,6 +6,11 @@ import App from './App.vue'
 import router from './router'
 import './styles/index.scss'
 
+const TOKEN_KEY = 'token'
+if (!localStorage.getItem(TOKEN_KEY)) {
+  localStorage.setItem(TOKEN_KEY, 'demo-token')
+}
+
 const app = createApp(App)
 
 app.use(createPinia())

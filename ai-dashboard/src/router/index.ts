@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { get } from '../utils/request'
+import { checkUserPermissions } from '../utils/permissions'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -145,7 +145,7 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
-router.beforeEach(async (to, _from, next) => {
+router.beforeEach(async (to, from, next) => {
   if (to.meta.title) {
     document.title = `${to.meta.title} - AI转型IT看板`
   } else {
@@ -155,21 +155,21 @@ router.beforeEach(async (to, _from, next) => {
     next()
     return
   }
-  const response = await get<any>(`/user-config/permissions`)
-  if (!response.data) {
-    next({ name: 'Home' })
-    return
-  }
 
-  if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      next({ name: 'Home' })
+  try {
+    const allowed = await checkUserPermissions()
+    if (!allowed) {
+      if (from.name !== 'Home') {
+        next({ name: 'Home' })
+      } else {
+        next(false)
+      }
       return
     }
+    next()
+  } catch {
+    next(false)
   }
-
-  next()
 })
 
 export default router
