@@ -4,6 +4,8 @@ import { ElMessage } from 'element-plus'
 import { useDashboardTabs } from '@/composables/useDashboardTabs'
 import type { DashboardTabName } from '@/stores/modules/app'
 import { DASHBOARD_CARD_META, DEVELOPING_DASHBOARD_TABS } from '@/constants/dashboardCards'
+import { NO_ACCESS_MESSAGE } from '@/constants/permissions'
+import { canAccessDashboardTab, fetchUserPermissions } from '@/utils/permissions'
 
 const { tabs, activeTab, goTo } = useDashboardTabs()
 
@@ -14,7 +16,12 @@ const cardItems = computed(() =>
   })),
 )
 
-const goToDashboard = (name: DashboardTabName) => {
+const goToDashboard = async (name: DashboardTabName) => {
+  const permissions = await fetchUserPermissions()
+  if (!canAccessDashboardTab(name, permissions)) {
+    ElMessage.warning(NO_ACCESS_MESSAGE)
+    return
+  }
   if (DEVELOPING_DASHBOARD_TABS.has(name)) {
     ElMessage.info('组织/岗位AI成熟度看板功能开发中')
     return

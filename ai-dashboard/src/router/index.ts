@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { checkUserPermissions } from '../utils/permissions'
+import { ElMessage } from 'element-plus'
+import { NO_ACCESS_MESSAGE } from '@/constants/permissions'
+import { canAccessRoute, fetchUserPermissions } from '../utils/permissions'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -20,6 +22,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '多元化学分管理',
       requiresAuth: true,
+      requiresAdmin: true,
       keepAlive: false,
     },
   },
@@ -39,6 +42,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '组织/岗位AI成熟度看板',
           requiresAuth: true,
+          requiresAdmin: true,
           keepAlive: true,
         },
       },
@@ -59,6 +63,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'AI训战看板详情',
           requiresAuth: true,
+          requiresAdmin: true,
           keepAlive: false,
         },
         props: true,
@@ -80,6 +85,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '训战课程规划明细',
           requiresAuth: true,
+          requiresAdmin: true,
           keepAlive: false,
         },
       },
@@ -100,6 +106,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'AI School看板详情',
           requiresAuth: true,
+          requiresAdmin: true,
           keepAlive: false,
         },
         props: true,
@@ -109,7 +116,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SchoolPersonalTrainingDetail',
         component: () => import('@/views/dashboard/SchoolPersonalDetail.vue'),
         meta: {
-          title: '个人课程学分详情', // ← 改这里
+          title: '个人课程学分详情',
           requiresAuth: true,
           keepAlive: false,
         },
@@ -121,6 +128,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'AI任职认证看板',
           requiresAuth: true,
+          requiresAdmin: true,
           keepAlive: true,
         },
       },
@@ -132,6 +140,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'AI任职认证看板详情',
           requiresAuth: true,
+          requiresAdmin: true,
           keepAlive: false,
         },
       },
@@ -157,8 +166,8 @@ router.beforeEach(async (to, from, next) => {
   }
 
   try {
-    const allowed = await checkUserPermissions()
-    if (!allowed) {
+    const permissions = await fetchUserPermissions()
+    if (!permissions.member) {
       if (from.name !== 'Home') {
         next({ name: 'Home' })
       } else {
@@ -166,6 +175,17 @@ router.beforeEach(async (to, from, next) => {
       }
       return
     }
+
+    if (!canAccessRoute(to.name, permissions)) {
+      ElMessage.warning(NO_ACCESS_MESSAGE)
+      if (from.name && from.name !== 'Home') {
+        next(false)
+      } else {
+        next({ name: 'Home' })
+      }
+      return
+    }
+
     next()
   } catch {
     next(false)
@@ -173,4 +193,3 @@ router.beforeEach(async (to, from, next) => {
 })
 
 export default router
-

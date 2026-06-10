@@ -9,6 +9,7 @@ import type { SchoolRoleSummaryVO } from '@/types/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import CreditOverviewTable from '@/components/dashboard/CreditOverviewTable.vue'
+import { guardAdminAccess } from '@/utils/permissions'
 import type {
   SchoolAllStaffSummaryRow,
   SchoolDashboardData,
@@ -189,7 +190,10 @@ const resetFilters = () => {
   filters.departmentPath = [...DEFAULT_DEPARTMENT_PATH]
 }
 
-const goToDetail = (query: Record<string, string | undefined>) => {
+const goToDetail = async (query: Record<string, string | undefined>) => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   router.push({
     name: 'SchoolDetail',
     params: { id: 'drill-down' },
@@ -197,11 +201,14 @@ const goToDetail = (query: Record<string, string | undefined>) => {
   })
 }
 
-const handleRoleSummaryDrill = (
+const handleRoleSummaryDrill = async (
     row: SchoolRoleSummaryRow,
     type: 'expert' | 'cadre',
     field: string
 ) => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   const deptCode = resolveDeptIdForStats() || '0'
   // 与详情接口约定：有具体部门编码时用 -1（多列 OR 匹配），避免用级联 path 长度当层级
   const deptLevel =
@@ -224,8 +231,8 @@ const handleRoleSummaryDrill = (
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
-const handleAllStaffDrill = (row: SchoolAllStaffSummaryRow, field: string) => {
-  goToDetail({
+const handleAllStaffDrill = async (row: SchoolAllStaffSummaryRow, field: string) => {
+  await goToDetail({
     type: 'allStaff',
     dimension: row.dimension,
     metric: field,
@@ -253,8 +260,11 @@ const resolveDrillDeptLevel = (row: CreditOverviewVO): string => {
 }
 
 // 处理基线人数下钻 - 跳转到 SchoolDetail 页面，传递当前行的筛选条件
-const handleCreditDrillDown = (row: CreditOverviewVO, field: string, type: 'department' | 'position') => {
+const handleCreditDrillDown = async (row: CreditOverviewVO, field: string, type: 'department' | 'position') => {
   if (field !== 'baselineHeadcount') return
+  if (!(await guardAdminAccess())) {
+    return
+  }
 
   if (type === 'department') {
     const isTotalRow = row.categoryName === '总计'

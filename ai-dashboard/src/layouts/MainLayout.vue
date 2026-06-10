@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DashboardNavCards from '@/components/common/DashboardNavCards.vue'
 import { useAppStore } from '@/stores/modules/app'
 import { getUserAvatarUrl } from '@/utils/cookie'
+import { guardAdminAccess } from '@/utils/permissions'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,12 +20,18 @@ const handleGoHome = () => {
   router.push({ name: 'Home' })
 }
 
-const handleGoCreditManagement = () => {
+const handleGoCreditManagement = async () => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   const resolved = router.resolve({ name: 'ManualCreditManagement' })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
-const handlePermissionManagement = () => {
+const handlePermissionManagement = async () => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   ElMessage.info('页面开发中')
 }
 </script>

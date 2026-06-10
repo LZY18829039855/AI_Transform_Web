@@ -12,6 +12,7 @@ import {
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
+import { guardAdminAccess } from '@/utils/permissions'
 import type {
   DepartmentCourseCompletionRateRow,
   TrainingAllStaffSummaryGroup,
@@ -65,12 +66,18 @@ const deptTrainTableHeaderStyle = {
   fontSize: '12px',
 } as const
 
-const handlePlanningDetailClick = () => {
+const handlePlanningDetailClick = async () => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   const resolved = router.resolve({ name: 'TrainingPlanningDetail' })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
 const handlePlanningClick = async () => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   try {
     // 获取课程规划明细数据
     const planningData = await fetchCoursePlanningInfoList()
@@ -181,7 +188,10 @@ const resetFilters = () => {
   filters.departmentPath = []
 }
 
-const goToDetail = (query: Record<string, string | undefined>) => {
+const goToDetail = async (query: Record<string, string | undefined>) => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   router.push({
     name: 'TrainingDetail',
     params: { id: 'drill-down' },
@@ -194,11 +204,14 @@ const handlePersonalDrill = (row: TrainingPersonalOverviewRow, field: string) =>
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
-const handleRoleSummaryDrill = (
+const handleRoleSummaryDrill = async (
   row: TrainingRoleSummaryRow,
   roleType: 'expert' | 'cadre',
   field: string
 ) => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   const deptId = resolveDeptIdForCompletionRate()
   const personType = roleType === 'expert' ? '2' : '1'
   const raw = String(row.maturityLevel ?? '').trim()
@@ -235,12 +248,12 @@ const handleRoleSummaryDrill = (
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
-const handleAllStaffDrill = (
+const handleAllStaffDrill = async (
   group: TrainingAllStaffSummaryGroup,
   row: TrainingAllStaffSummaryRow,
   field: string
 ) => {
-  goToDetail({
+  await goToDetail({
     type: 'allStaff',
     group: group.title,
     dimension: row.dimension,
@@ -250,7 +263,10 @@ const handleAllStaffDrill = (
 }
 
 /** 部门训战数据 - 基线人数在新标签页打开训战看板详情；行数据经 localStorage + drillStorageKey 传递（新标签无 router.state、sessionStorage 不跨标签） */
-const handleDepartmentBaselineDrill = (row: DepartmentCourseCompletionRateRow) => {
+const handleDepartmentBaselineDrill = async (row: DepartmentCourseCompletionRateRow) => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
   try {
     sessionStorage.removeItem('training_drill_role_summary')
   } catch (_) {
