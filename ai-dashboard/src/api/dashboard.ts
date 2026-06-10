@@ -61,6 +61,7 @@ import type {
   CreditOverviewVO,
 } from '../types/dashboard'
 import { get } from '../utils/request'
+import { getUserIdFromAccount } from '../utils/cookie'
 
 const delay = (ms = 320) => new Promise((resolve) => window.setTimeout(resolve, ms))
 
@@ -1203,20 +1204,44 @@ export const fetchTrainingDetail = async (
  * @param account 可选，工号；不传时后端从 cookie 获取当前用户
  * @returns 个人课程完成情况数据
  */
+const resolvePersonalAccount = (account?: string): string | undefined => {
+  const trimmed = account?.trim()
+  if (trimmed) {
+    return trimmed
+  }
+  return getUserIdFromAccount() ?? undefined
+}
+
+const requestPersonalCourseCompletion = async (
+  account?: string,
+): Promise<PersonalCourseCompletionResponse | null> => {
+  const resolvedAccount = resolvePersonalAccount(account)
+  const url = resolvedAccount
+    ? `/personal-course/completion?account=${encodeURIComponent(resolvedAccount)}`
+    : '/personal-course/completion'
+  const response = await get<Result<PersonalCourseCompletionResponse>>(url)
+  if (response.code === 200) {
+    return response.data
+  }
+  console.warn('获取个人课程完成情况失败：', response.message)
+  return null
+}
+
+/**
+ * 获取个人课程完成情况（/completion 接口）
+ * @param account 可选，工号；不传时从浏览器 Cookie 解析后作为 query 传给后端
+ * @returns 个人课程完成情况数据
+ */
 export const fetchPersonalCourseCompletion = async (
-  account?: string
+  account?: string,
 ): Promise<PersonalCourseCompletionResponse | null> => {
   try {
-    const url =
-      account != null && account.trim() !== ''
-        ? `/personal-course/completion?account=${encodeURIComponent(account.trim())}`
-        : '/personal-course/completion'
-    const response = await get<Result<PersonalCourseCompletionResponse>>(url)
-    if (response.code === 200) {
-      return response.data
+    let data = await requestPersonalCourseCompletion(account)
+    if (!data) {
+      await delay(300)
+      data = await requestPersonalCourseCompletion(account)
     }
-    console.warn('获取个人课程完成情况失败：', response.message)
-    return null
+    return data
   } catch (error) {
     console.error('获取个人课程完成情况异常：', error)
     return null
@@ -1401,10 +1426,7 @@ export const fetchTrainingDashboard = async (
   const departmentTree = await fetchDepartmentTree()
   const role: TrainingRole = (filters?.role ?? '0')
 
-  // 获取个人训战总览数据
-  console.log('开始获取个人训战总览数据...')
   const personalCompletionData = await fetchPersonalCourseCompletion()
-  console.log('个人训战总览数据获取结果：', personalCompletionData)
   const personalOverview: TrainingPersonalOverviewRow[] = []
   
   if (personalCompletionData?.courseStatistics) {

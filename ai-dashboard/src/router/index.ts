@@ -153,6 +153,7 @@ router.beforeEach(async (to, _from, next) => {
   }
   if (to.name === 'Home') {
     next()
+    return
   }
   const response = await get<any>(`/user-config/permissions`)
   if (!response.data) {
