@@ -20,7 +20,7 @@ const primaryCard = computed(() => cardItems.value[0])
 const secondaryCards = computed(() => cardItems.value.slice(1))
 
 const goToDashboard = async (name: DashboardTabName) => {
-  const permissions = await fetchUserPermissions()
+  const permissions = await fetchUserPermissions({ force: true })
   if (!canAccessDashboardTab(name, permissions)) {
     ElMessage.warning(NO_ACCESS_MESSAGE)
     return

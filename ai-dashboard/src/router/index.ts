@@ -165,7 +165,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   try {
-    const permissions = await fetchUserPermissions()
+    const permissions = await fetchUserPermissions({ force: from.name === 'Home' })
     if (!permissions.member) {
       if (from.name !== 'Home') {
         next({ name: 'Home' })
