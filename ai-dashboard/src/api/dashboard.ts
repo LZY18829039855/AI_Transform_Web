@@ -62,6 +62,7 @@ import type {
 } from '../types/dashboard'
 import { get } from '../utils/request'
 import { getUserIdFromAccount } from '../utils/cookie'
+import { resolveSessionAccount } from '../utils/userAccount'
 
 const delay = (ms = 320) => new Promise((resolve) => window.setTimeout(resolve, ms))
 
@@ -1569,18 +1570,31 @@ export const fetchCertificationAuditRecords = async (): Promise<{
   }
 }
 
+const requestPersonalCreditOverview = async (account?: string): Promise<PersonalCredit | null> => {
+  const resolvedAccount = await resolveSessionAccount(account)
+  const url = resolvedAccount
+    ? `/api/personal-credit/overview?account=${encodeURIComponent(resolvedAccount)}`
+    : '/api/personal-credit/overview'
+  const response = await get<Result<PersonalCredit>>(url)
+  if (response.code === 200) {
+    return response.data
+  }
+  console.warn('获取个人学分概览失败：', response.message)
+  return null
+}
+
 /**
  * 获取个人学分概览数据
  * @returns 个人学分概览数据
  */
 export const fetchPersonalCreditOverview = async (): Promise<PersonalCredit | null> => {
   try {
-    const response = await get<Result<PersonalCredit>>('/api/personal-credit/overview')
-    if (response.code === 200) {
-      return response.data
+    let data = await requestPersonalCreditOverview()
+    if (!data) {
+      await delay(300)
+      data = await requestPersonalCreditOverview()
     }
-    console.warn('获取个人学分概览失败：', response.message)
-    return null
+    return data
   } catch (error) {
     console.error('获取个人学分概览异常：', error)
     return null
@@ -1590,7 +1604,6 @@ export const fetchPersonalCreditOverview = async (): Promise<PersonalCredit | nu
 export const fetchSchoolDashboard = async (
   _filters?: SchoolDashboardFilters
 ): Promise<SchoolDashboardData> => {
-  await delay()
   const [deptTree, personalCredit] = await Promise.all([
     fetchDepartmentTree(),
     fetchPersonalCreditOverview()

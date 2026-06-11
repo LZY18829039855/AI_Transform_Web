@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElCascader, ElCol, ElDialog, ElForm, ElFormItem, ElRow, ElSelect, ElSkeleton, ElTable, ElTableColumn, ElTag, ElMessage, ElPagination } from 'element-plus'
 import { fetchSchoolDashboard } from '@/api/dashboard'
@@ -9,7 +9,7 @@ import type { SchoolRoleSummaryVO } from '@/types/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import CreditOverviewTable from '@/components/dashboard/CreditOverviewTable.vue'
-import { guardAdminAccess } from '@/utils/permissions'
+import { fetchUserPermissions, guardAdminAccess } from '@/utils/permissions'
 import type {
   SchoolAllStaffSummaryRow,
   SchoolDashboardData,
@@ -123,6 +123,8 @@ const fetchCreditStatsOnly = async () => {
 const fetchData = async () => {
   loading.value = true
   try {
+    await fetchUserPermissions()
+
     const payload: SchoolDashboardFilters = {
       role: filters.role,
       departmentPath: filters.departmentPath?.length ? [...filters.departmentPath] : undefined,
@@ -132,40 +134,49 @@ const fetchData = async () => {
     loadingDepartment.value = true
     loadingRoleSummary.value = true
 
-    fetchSchoolDashboard(payload)
-        .then(res => { dashboardData.value = res })
-        .catch(err => console.error('Dashboard data error:', err))
-
     const deptCode = resolveDeptIdForStats()
 
-    getRoleSummary(deptCode)
-        .then(res => {
+    const [schoolData] = await Promise.all([
+      fetchSchoolDashboard(payload).catch((err) => {
+        console.error('Dashboard data error:', err)
+        return null
+      }),
+      getRoleSummary(deptCode)
+        .then((res) => {
           if (res) {
             expertSummary.value = res.expertSummary
-            cadreSummary.value  = res.cadreSummary
+            cadreSummary.value = res.cadreSummary
           }
         })
-        .catch(err => console.error('Role summary error:', err))
-        .finally(() => loadingRoleSummary.value = false)
-
-    getPositionStatistics(deptCode, creditRole.value)
-        .then(res => {
+        .catch((err) => console.error('Role summary error:', err))
+        .finally(() => {
+          loadingRoleSummary.value = false
+        }),
+      getPositionStatistics(deptCode, creditRole.value)
+        .then((res) => {
           positionData.value = res
-              ? [...res.statistics, ...(res.totalStatistics ? [res.totalStatistics] : [])]
-              : []
+            ? [...res.statistics, ...(res.totalStatistics ? [res.totalStatistics] : [])]
+            : []
         })
-        .catch(err => console.error('Position stats error:', err))
-        .finally(() => loadingPosition.value = false)
-
-    getDepartmentStatistics(deptCode, creditRole.value)
-        .then(res => {
+        .catch((err) => console.error('Position stats error:', err))
+        .finally(() => {
+          loadingPosition.value = false
+        }),
+      getDepartmentStatistics(deptCode, creditRole.value)
+        .then((res) => {
           departmentData.value = res
-              ? [...res.statistics, ...(res.totalStatistics ? [res.totalStatistics] : [])]
-              : []
+            ? [...res.statistics, ...(res.totalStatistics ? [res.totalStatistics] : [])]
+            : []
         })
-        .catch(err => console.error('Department stats error:', err))
-        .finally(() => loadingDepartment.value = false)
+        .catch((err) => console.error('Department stats error:', err))
+        .finally(() => {
+          loadingDepartment.value = false
+        }),
+    ])
 
+    if (schoolData) {
+      dashboardData.value = schoolData
+    }
   } catch (error) {
     console.error('获取School看板数据失败', error)
     ElMessage.error('获取部分数据失败，请重试')
@@ -414,14 +425,19 @@ const overviewItems = computed(() => {
   ]
 })
 
+const initPageData = async () => {
+  await nextTick()
+  await fetchData()
+}
+
 onMounted(() => {
-  initDepartmentTree()
-  fetchData()
+  void initDepartmentTree()
+  void initPageData()
 })
 
 onActivated(() => {
-  refreshDepartmentTree()
-  fetchData()
+  void refreshDepartmentTree()
+  void initPageData()
 })
 </script>
 
