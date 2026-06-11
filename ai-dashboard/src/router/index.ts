@@ -165,7 +165,8 @@ router.beforeEach(async (to, from, next) => {
   }
 
   try {
-    const permissions = await fetchUserPermissions({ force: from.name === 'Home' })
+    // 从首页跳转时复用首页导航前已校验并写入的权限缓存，避免重复强制请求覆盖正确结果
+    const permissions = await fetchUserPermissions()
     if (!permissions.member) {
       if (from.name !== 'Home') {
         next({ name: 'Home' })

@@ -5,7 +5,7 @@ import { useDashboardTabs } from '@/composables/useDashboardTabs'
 import type { DashboardTabName } from '@/stores/modules/app'
 import { DASHBOARD_CARD_META, DEVELOPING_DASHBOARD_TABS } from '@/constants/dashboardCards'
 import { NO_ACCESS_MESSAGE } from '@/constants/permissions'
-import { canAccessDashboardTab, fetchUserPermissions } from '@/utils/permissions'
+import { canAccessDashboardTab, fetchUserPermissionsForNavigation } from '@/utils/permissions'
 
 const { tabs, activeTab, goTo } = useDashboardTabs()
 
@@ -20,7 +20,7 @@ const primaryCard = computed(() => cardItems.value[0])
 const secondaryCards = computed(() => cardItems.value.slice(1))
 
 const goToDashboard = async (name: DashboardTabName) => {
-  const permissions = await fetchUserPermissions({ force: true })
+  const permissions = await fetchUserPermissionsForNavigation()
   if (!canAccessDashboardTab(name, permissions)) {
     ElMessage.warning(NO_ACCESS_MESSAGE)
     return

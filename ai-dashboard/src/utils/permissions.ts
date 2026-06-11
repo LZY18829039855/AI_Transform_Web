@@ -2,7 +2,9 @@ import { ElMessage } from 'element-plus'
 import { ADMIN_ONLY_ROUTE_NAMES, MEMBER_DASHBOARD_TABS, NO_ACCESS_MESSAGE } from '@/constants/permissions'
 import type { DashboardTabName } from '@/stores/modules/app'
 import type { PermissionsResult, UserPermissionStatus } from '@/types/permission'
+import { getUserIdFromAccount } from './cookie'
 import { get } from './request'
+import { resolveSessionAccount } from './userAccount'
 
 const DENIED_PERMISSIONS: UserPermissionStatus = {
   member: false,
@@ -22,6 +24,18 @@ const parsePermissionsResponse = (response: PermissionsResult): UserPermissionSt
   }
 }
 
+const delay = (ms = 300) => new Promise<void>((resolve) => {
+  window.setTimeout(resolve, ms)
+})
+
+/** 登录前无 Cookie 时的无权限结果不缓存，避免自动登录后仍读到旧状态 */
+const shouldCachePermissions = (permissions: UserPermissionStatus): boolean => {
+  if (permissions.member) {
+    return true
+  }
+  return getUserIdFromAccount() != null
+}
+
 /**
  * 获取当前用户权限状态（合并并发请求，结果短期缓存）
  */
@@ -30,24 +44,37 @@ export const fetchUserPermissions = (options?: { force?: boolean }): Promise<Use
     return Promise.resolve(cachedPermissions)
   }
 
-  if (inflightCheck) {
+  if (!options?.force && inflightCheck) {
     return inflightCheck
   }
 
   inflightCheck = get<PermissionsResult>('/user-config/permissions')
     .then((response) => {
-      cachedPermissions = parsePermissionsResponse(response)
-      return cachedPermissions
+      const permissions = parsePermissionsResponse(response)
+      if (response.code === 200 && response.data != null && shouldCachePermissions(permissions)) {
+        cachedPermissions = permissions
+      }
+      return permissions
     })
-    .catch(() => {
-      cachedPermissions = DENIED_PERMISSIONS
-      return cachedPermissions
-    })
+    .catch(() => DENIED_PERMISSIONS)
     .finally(() => {
       inflightCheck = null
     })
 
   return inflightCheck
+}
+
+/**
+ * 导航前获取权限：先等待会话就绪，无权限时短暂重试一次（兼容自动登录后 Cookie 延迟生效）
+ */
+export const fetchUserPermissionsForNavigation = async (): Promise<UserPermissionStatus> => {
+  await resolveSessionAccount()
+  let permissions = await fetchUserPermissions({ force: true })
+  if (!permissions.member) {
+    await delay(300)
+    permissions = await fetchUserPermissions({ force: true })
+  }
+  return permissions
 }
 
 /** 是否在白名单内 */
