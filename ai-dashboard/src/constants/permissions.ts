@@ -7,7 +7,6 @@ export const MEMBER_DASHBOARD_TABS = new Set<DashboardTabName>(['training', 'sch
 export const ADMIN_ONLY_ROUTE_NAMES = new Set<string>([
   'MaturityDashboard',
   'TrainingDetail',
-  'TrainingPlanningDetail',
   'SchoolDetail',
   'CertificationDashboard',
   'CertificationDetail',

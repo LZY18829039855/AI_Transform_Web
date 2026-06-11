@@ -85,7 +85,6 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '训战课程规划明细',
           requiresAuth: true,
-          requiresAdmin: true,
           keepAlive: false,
         },
       },

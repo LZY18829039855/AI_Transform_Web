@@ -66,10 +66,7 @@ const deptTrainTableHeaderStyle = {
   fontSize: '12px',
 } as const
 
-const handlePlanningDetailClick = async () => {
-  if (!(await guardAdminAccess())) {
-    return
-  }
+const handlePlanningDetailClick = () => {
   const resolved = router.resolve({ name: 'TrainingPlanningDetail' })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
