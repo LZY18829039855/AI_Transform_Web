@@ -227,8 +227,9 @@ const goToDashboard = async (name: DashboardTabName) => {
   }
 
   .nav-card__action {
-    padding: 0 $spacing-lg;
-    font-size: 16px;
+    min-height: 52px;
+    padding: 14px 40px;
+    font-size: 18px;
   }
 }
 
