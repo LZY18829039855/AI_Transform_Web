@@ -10,10 +10,12 @@ import { canAccessDashboardTab, fetchUserPermissionsForNavigation } from '@/util
 const { tabs, activeTab, goTo } = useDashboardTabs()
 
 const cardItems = computed(() =>
-  tabs.map((tab) => ({
-    ...tab,
-    ...DASHBOARD_CARD_META[tab.name],
-  })),
+  tabs
+    .filter((tab) => !DEVELOPING_DASHBOARD_TABS.has(tab.name))
+    .map((tab) => ({
+      ...tab,
+      ...DASHBOARD_CARD_META[tab.name],
+    })),
 )
 
 const primaryCard = computed(() => cardItems.value[0])
@@ -23,10 +25,6 @@ const goToDashboard = async (name: DashboardTabName) => {
   const permissions = await fetchUserPermissionsForNavigation()
   if (!canAccessDashboardTab(name, permissions)) {
     ElMessage.warning(NO_ACCESS_MESSAGE)
-    return
-  }
-  if (DEVELOPING_DASHBOARD_TABS.has(name)) {
-    ElMessage.info('组织/岗位AI成熟度看板功能开发中')
     return
   }
   goTo(name)
@@ -75,7 +73,7 @@ const goToDashboard = async (name: DashboardTabName) => {
         :key="card.name"
         :xs="24"
         :sm="12"
-        :lg="8"
+        :lg="12"
         @click="goToDashboard(card.name)"
       >
         <el-card

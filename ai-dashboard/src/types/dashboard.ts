@@ -769,6 +769,8 @@ export interface SchoolDetailFilters {
   jobSubCategory?: string
   role?: SchoolRole
   positionMaturity?: '全部' | 'L1' | 'L2' | 'L3'
+  name?: string
+  employeeId?: string
   pageNum?: number
   pageSize?: number
 }
@@ -1102,6 +1104,8 @@ export interface SchoolCreditDetailRequest {
   jobSubCategory?: string
   organizationMaturity?: string
   positionMaturity?: string
+  name?: string
+  employeeId?: string
   queryType?: string
   pageNum?: number
   pageSize?: number

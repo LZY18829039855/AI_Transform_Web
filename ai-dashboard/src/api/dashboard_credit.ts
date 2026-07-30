@@ -70,6 +70,8 @@ export const getSchoolCreditDetailList = async (
     if (params.jobSubCategory) query.append('jobSubCategory', params.jobSubCategory)
     if (params.organizationMaturity) query.append('organizationMaturity', params.organizationMaturity)
     if (params.positionMaturity) query.append('positionMaturity', params.positionMaturity)
+    if (params.name?.trim()) query.append('name', params.name.trim())
+    if (params.employeeId?.trim()) query.append('employeeId', params.employeeId.trim())
     if (params.queryType) query.append('queryType', params.queryType)
     query.append('pageNum', String(params.pageNum ?? 1))
     query.append('pageSize', String(params.pageSize ?? 50))

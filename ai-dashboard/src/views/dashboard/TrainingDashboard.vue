@@ -732,16 +732,20 @@ defineExpose({
 .download-resource-card {
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(58, 122, 254, 0.15);
+    box-shadow: 0 14px 30px rgba(255, 92, 147, 0.28);
     transform: translateY(-2px);
   }
 
   &__item {
+    position: relative;
+    overflow: hidden;
     border-radius: $radius-lg;
-    background: rgba(58, 122, 254, 0.08);
+    background: linear-gradient(120deg, #ff7a45 0%, #ff5c93 52%, #7a5cff 100%);
+    box-shadow: 0 10px 24px rgba(255, 92, 147, 0.22);
     padding: $spacing-lg;
     display: flex;
     flex-direction: row;
@@ -750,19 +754,86 @@ defineExpose({
     gap: $spacing-md;
     width: 100%;
 
+    // 斜向流光，周期性扫过卡片以吸引注意
+    &::after {
+      content: '';
+      position: absolute;
+      top: -60%;
+      left: -30%;
+      width: 40%;
+      height: 220%;
+      background: linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.38) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: rotate(18deg);
+      pointer-events: none;
+      animation: resource-shine 3.6s ease-in-out infinite;
+    }
+
     h4 {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
-      color: $text-main-color;
+      color: #fff;
       flex-shrink: 0;
     }
 
     p {
       margin: 0;
-      color: $text-secondary-color;
+      color: rgba(255, 255, 255, 0.9);
       flex: 1;
     }
+  }
+
+  :deep(.el-button) {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    border: none;
+    font-weight: 600;
+    color: #ff4f6d;
+    background: #fff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    animation: resource-button-pulse 2.4s ease-out infinite;
+
+    &:hover,
+    &:focus {
+      color: #ff3b5c;
+      background: #fff;
+      transform: scale(1.04);
+    }
+  }
+}
+
+@keyframes resource-shine {
+  0% {
+    left: -30%;
+  }
+  55%,
+  100% {
+    left: 130%;
+  }
+}
+
+@keyframes resource-button-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.75);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .download-resource-card__item::after,
+  .download-resource-card :deep(.el-button) {
+    animation: none;
   }
 }
 

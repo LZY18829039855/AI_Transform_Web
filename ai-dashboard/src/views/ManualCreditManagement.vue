@@ -15,6 +15,10 @@ import {
   downloadManualCreditTemplate,
   parseManualCreditWorkbook,
 } from '@/utils/manualCreditExcel'
+import {
+  fetchCreditWritePermission,
+  guardCreditWriteAccess,
+} from '@/utils/permissions'
 
 const loading = ref(false)
 const tableData = ref<ManualEnterCreditRecord[]>([])
@@ -25,6 +29,7 @@ const pageNum = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const pageSizeOptions = [10, 20, 50, 100, 200] as const
+const canEditCredit = ref(false)
 
 /** 表格筛选：无汉字按工号查，有汉字按姓名查；汉字与数字不可同现 */
 const filterKeyword = ref('')
@@ -122,6 +127,9 @@ function handleFilterClear() {
 
 onMounted(() => {
   loadList()
+  fetchCreditWritePermission().then((allowed) => {
+    canEditCredit.value = allowed
+  })
 })
 
 const rules: FormRules = {
@@ -139,7 +147,10 @@ function formatTextCell(v: string | number | null | undefined): string {
   return String(v).trim()
 }
 
-function triggerImport() {
+async function triggerImport() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   fileInputRef.value?.click()
 }
 
@@ -148,6 +159,9 @@ async function onFileChange(ev: Event) {
   const file = input.files?.[0]
   input.value = ''
   if (!file) {
+    return
+  }
+  if (!(await guardCreditWriteAccess())) {
     return
   }
   loading.value = true
@@ -204,19 +218,29 @@ function handleSelectionChange(rows: ManualEnterCreditRecord[]) {
   selectedRows.value = rows
 }
 
-function handleAdd() {
+async function handleAdd() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   dialogTitle.value = '新增学分记录'
   formModel.value = emptyRecord()
   dialogVisible.value = true
 }
 
-function handleEdit(row: ManualEnterCreditRecord) {
+async function handleEdit(row: ManualEnterCreditRecord) {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   dialogTitle.value = '编辑学分记录'
   formModel.value = { ...row }
   dialogVisible.value = true
 }
 
 async function handleSubmit() {
+  if (!(await guardCreditWriteAccess())) {
+    dialogVisible.value = false
+    return
+  }
   if (!formRef.value) {
     return
   }
@@ -247,7 +271,10 @@ async function handleSubmit() {
   }
 }
 
-function handleDelete(row: ManualEnterCreditRecord) {
+async function handleDelete(row: ManualEnterCreditRecord) {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   ElMessageBox.confirm(`确定删除「${row.employee_name || row.employee_number || row.id}」的这条记录吗？`, '删除确认', {
     type: 'warning',
     confirmButtonText: '删除',
@@ -261,8 +288,11 @@ function handleDelete(row: ManualEnterCreditRecord) {
     .catch(() => {})
 }
 
-function handleBatchDelete() {
+async function handleBatchDelete() {
   if (!selectedRows.value.length) {
+    return
+  }
+  if (!(await guardCreditWriteAccess())) {
     return
   }
   ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 条记录吗？`, '批量删除', {
@@ -304,9 +334,14 @@ function handleBatchDelete() {
           @change="onFileChange"
         />
         <div class="credit-toolbar__start">
-          <el-button type="success" :icon="DocumentAdd" @click="handleAdd">新增记录</el-button>
+          <el-button v-if="canEditCredit" type="success" :icon="DocumentAdd" @click="handleAdd">
+            新增记录
+          </el-button>
           <el-button type="primary" :icon="Download" @click="handleTemplate">下载导入模板</el-button>
-          <el-button type="primary" :icon="Upload" @click="triggerImport">导入学分</el-button>
+          <el-button v-if="canEditCredit" type="primary" :icon="Upload" @click="triggerImport">
+            导入学分
+          </el-button>
+          <el-tag v-if="!canEditCredit" type="info" effect="plain">只读模式</el-tag>
         </div>
         <div class="credit-toolbar__right">
           <el-input
@@ -327,7 +362,7 @@ function handleBatchDelete() {
               </el-icon>
             </template>
           </el-input>
-          <el-tooltip content="批量删除" placement="top">
+          <el-tooltip v-if="canEditCredit" content="批量删除" placement="top">
             <span class="credit-toolbar__batch-icon-wrap">
               <el-button
                 type="danger"
@@ -350,7 +385,13 @@ function handleBatchDelete() {
         max-height="560"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="48" header-align="center" align="center" />
+        <el-table-column
+          v-if="canEditCredit"
+          type="selection"
+          width="48"
+          header-align="center"
+          align="center"
+        />
         <el-table-column
           label="工号"
           min-width="96"
@@ -413,14 +454,22 @@ function handleBatchDelete() {
         />
         <el-table-column prop="update_time" label="更新时间" min-width="150" header-align="center" align="center" />
         <!-- 不设置 width：由 Element Plus 将剩余宽度分配给最后一列，整表在 width:100% 下铺满容器 -->
-        <el-table-column label="操作" min-width="140" header-align="center" align="center">
+        <el-table-column
+          v-if="canEditCredit"
+          label="操作"
+          min-width="140"
+          header-align="center"
+          align="center"
+        >
           <template #default="{ row }">
             <el-button link type="primary" :icon="EditPen" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
         <template #empty>
-          <el-empty description="暂无数据，请导入学分或点击「新增记录」" />
+          <el-empty
+            :description="canEditCredit ? '暂无数据，请导入学分或点击「新增记录」' : '暂无数据'"
+          />
         </template>
       </el-table>
 

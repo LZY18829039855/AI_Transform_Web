@@ -1703,6 +1703,12 @@ export const fetchSchoolDetailData = async (
   if (filters?.positionMaturity && filters.positionMaturity !== '全部') {
     query.append('positionMaturity', filters.positionMaturity)
   }
+  if (filters?.name?.trim()) {
+    query.append('name', filters.name.trim())
+  }
+  if (filters?.employeeId?.trim()) {
+    query.append('employeeId', filters.employeeId.trim())
+  }
   query.append('pageNum', String(filters?.pageNum ?? 1))
   query.append('pageSize', String(filters?.pageSize ?? 50))
 

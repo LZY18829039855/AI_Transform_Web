@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onActivated, onMounted, ref } from 'vue'
-import { ArrowLeft, Download, Refresh } from '@element-plus/icons-vue'
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ArrowLeft, Close, Download, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { fetchSchoolDetailData } from '@/api/dashboard'
@@ -111,6 +111,138 @@ const handleSizeChange = (size: number) => {
   fetchDetail()
 }
 
+// 表格筛选框状态（姓名/工号，样式与逻辑对齐训战详情页；确认后走后端过滤）
+const filterWrapperRef = ref<HTMLElement | null>(null)
+const filterInputRef = ref<HTMLInputElement | null>(null)
+const keywordInputRef = ref()
+const showFieldDropdown = ref(false)
+const showKeywordDropdown = ref(false)
+const selectedField = ref<'name' | 'employeeId' | null>(null)
+const keywordInput = ref('')
+const filterInputValue = ref('')
+const tableFilterName = ref<string | undefined>(undefined)
+const tableFilterEmployeeId = ref<string | undefined>(undefined)
+const isFilterBoxUpdating = ref(false)
+
+const applyTableFilterAndFetch = () => {
+  filters.value.name = tableFilterName.value
+  filters.value.employeeId = tableFilterEmployeeId.value
+  pageNum.value = 1
+  fetchDetail()
+}
+
+const handleFilterInputFocus = (event: Event) => {
+  event.stopPropagation()
+  if (!selectedField.value) {
+    showFieldDropdown.value = true
+    showKeywordDropdown.value = false
+  } else {
+    showFieldDropdown.value = false
+    showKeywordDropdown.value = true
+    keywordInput.value = (selectedField.value === 'name' ? tableFilterName.value : tableFilterEmployeeId.value) || ''
+    nextTick(() => {
+      if (keywordInputRef.value && keywordInputRef.value.$el) {
+        const inputEl = keywordInputRef.value.$el.querySelector('input')
+        if (inputEl) {
+          inputEl.focus()
+        }
+      }
+    })
+  }
+}
+
+const handleFieldSelect = (field: 'name' | 'employeeId') => {
+  selectedField.value = field
+  const fieldLabel = field === 'name' ? '姓名' : '工号'
+  filterInputValue.value = fieldLabel
+  showFieldDropdown.value = false
+  keywordInput.value = (field === 'name' ? tableFilterName.value : tableFilterEmployeeId.value) || ''
+  showKeywordDropdown.value = true
+  nextTick(() => {
+    if (keywordInputRef.value && keywordInputRef.value.$el) {
+      const inputEl = keywordInputRef.value.$el.querySelector('input')
+      if (inputEl) {
+        inputEl.focus()
+      }
+    }
+  })
+}
+
+const handleKeywordConfirm = () => {
+  if (!selectedField.value) {
+    return
+  }
+  const keyword = keywordInput.value.trim()
+  isFilterBoxUpdating.value = true
+  if (keyword) {
+    if (selectedField.value === 'name') {
+      tableFilterName.value = keyword
+      tableFilterEmployeeId.value = undefined
+    } else {
+      tableFilterEmployeeId.value = keyword
+      tableFilterName.value = undefined
+    }
+    filterInputValue.value = `${selectedField.value === 'name' ? '姓名' : '工号'}: ${keyword}`
+  } else {
+    tableFilterName.value = undefined
+    tableFilterEmployeeId.value = undefined
+    filterInputValue.value = ''
+    selectedField.value = null
+  }
+  showKeywordDropdown.value = false
+  applyTableFilterAndFetch()
+  nextTick(() => {
+    isFilterBoxUpdating.value = false
+  })
+}
+
+const handleKeywordCancel = () => {
+  keywordInput.value = ''
+  showKeywordDropdown.value = false
+}
+
+const handleFilterClear = () => {
+  isFilterBoxUpdating.value = true
+  selectedField.value = null
+  filterInputValue.value = ''
+  keywordInput.value = ''
+  tableFilterName.value = undefined
+  tableFilterEmployeeId.value = undefined
+  showFieldDropdown.value = false
+  showKeywordDropdown.value = false
+  applyTableFilterAndFetch()
+  nextTick(() => {
+    isFilterBoxUpdating.value = false
+  })
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  if (filterWrapperRef.value && !filterWrapperRef.value.contains(event.target as Node)) {
+    showFieldDropdown.value = false
+    showKeywordDropdown.value = false
+  }
+}
+
+watch(
+  () => [tableFilterName.value, tableFilterEmployeeId.value],
+  ([name, employeeId]) => {
+    if (isFilterBoxUpdating.value) {
+      return
+    }
+    if (name && name.trim()) {
+      filterInputValue.value = `姓名: ${name.trim()}`
+      selectedField.value = 'name'
+    } else if (employeeId && employeeId.trim()) {
+      filterInputValue.value = `工号: ${employeeId.trim()}`
+      selectedField.value = 'employeeId'
+    } else if (filterInputValue.value) {
+      filterInputValue.value = ''
+      selectedField.value = null
+    }
+  },
+  { immediate: true },
+)
+
 /** 构建学分明细查询参数（列表与导出共用） */
 const buildCreditDetailQueryParams = (): SchoolCreditDetailRequest => {
   const deptCode: string = filters.value.deptCode
@@ -138,6 +270,8 @@ const buildCreditDetailQueryParams = (): SchoolCreditDetailRequest => {
   if (filters.value.positionMaturity && filters.value.positionMaturity !== '全部') {
     params.positionMaturity = filters.value.positionMaturity
   }
+  if (filters.value.name?.trim()) params.name = filters.value.name.trim()
+  if (filters.value.employeeId?.trim()) params.employeeId = filters.value.employeeId.trim()
   return params
 }
 
@@ -165,11 +299,23 @@ const handleExport = async () => {
 onMounted(() => {
   initDepartmentTree()
   fetchDetail()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 
 onActivated(() => {
-  // 每次激活时从 query 重新初始化 filters
-  Object.assign(filters.value, initFiltersFromQuery())
+  // 每次激活时从 query 重新初始化 filters，并清空姓名/工号筛选框
+  filters.value = initFiltersFromQuery()
+  tableFilterName.value = undefined
+  tableFilterEmployeeId.value = undefined
+  filterInputValue.value = ''
+  selectedField.value = null
+  keywordInput.value = ''
+  showFieldDropdown.value = false
+  showKeywordDropdown.value = false
   pageNum.value = 1
   refreshDepartmentTree()
   fetchDetail()
@@ -286,7 +432,82 @@ onActivated(() => {
       <!-- AI School学分数据明细 -->
       <el-card shadow="hover" class="detail-block" v-loading="loading">
         <template #header>
-          <h3>AI School学分数据明细</h3>
+          <div class="detail-block-header">
+            <h3>AI School学分数据明细</h3>
+            <div class="header-actions">
+              <div class="filter-area">
+                <div class="filter-input-wrapper" ref="filterWrapperRef">
+                  <div class="filter-container">
+                    <div class="filter-icon-wrapper">
+                      <el-icon class="filter-icon">
+                        <Search />
+                      </el-icon>
+                    </div>
+                    <div class="filter-input-area">
+                      <div class="filter-tags" v-if="filterInputValue">
+                        <template v-if="filterInputValue.includes(':')">
+                          <span class="filter-tag">
+                            <span class="filter-tag-field">{{ filterInputValue.split(':')[0] }}</span>
+                            <span class="filter-tag-separator">:</span>
+                            <span class="filter-tag-value">{{ filterInputValue.split(':')[1].trim() }}</span>
+                          </span>
+                        </template>
+                        <span v-else class="filter-tag">
+                          <span class="filter-tag-field">{{ filterInputValue }}</span>
+                        </span>
+                      </div>
+                      <div class="mainInput">
+                        <input
+                          ref="filterInputRef"
+                          value=""
+                          class="filter-input"
+                          placeholder="点击此处添加筛选"
+                          @focus="handleFilterInputFocus"
+                          @click="handleFilterInputFocus"
+                          readonly
+                          @keydown.prevent
+                        />
+                      </div>
+                    </div>
+                    <button
+                      v-if="filterInputValue"
+                      type="button"
+                      class="filter-delete-btn"
+                      title="删除"
+                      @click="handleFilterClear"
+                    >
+                      <el-icon>
+                        <Close />
+                      </el-icon>
+                    </button>
+                  </div>
+                  <div v-if="showFieldDropdown" class="filter-dropdown field-dropdown" @click.stop>
+                    <div class="dropdown-item" @click="handleFieldSelect('name')">
+                      <span>姓名</span>
+                    </div>
+                    <div class="dropdown-item" @click="handleFieldSelect('employeeId')">
+                      <span>工号</span>
+                    </div>
+                  </div>
+                  <div v-if="showKeywordDropdown" class="filter-dropdown keyword-dropdown" @click.stop>
+                    <div class="keyword-input-wrapper">
+                      <el-input
+                        v-model="keywordInput"
+                        :placeholder="`请输入${selectedField === 'name' ? '姓名' : '工号'}`"
+                        @keyup.enter="handleKeywordConfirm"
+                        @keyup.esc="handleKeywordCancel"
+                        ref="keywordInputRef"
+                      />
+                    </div>
+                    <div class="dropdown-actions">
+                      <el-button size="small" @click="handleKeywordCancel">取消</el-button>
+                      <el-button type="primary" size="small" @click="handleKeywordConfirm">确认</el-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
         <el-table :data="records" border style="width: 100%" max-height="600">
           <el-table-column prop="name" label="姓名" width="100" fixed="left" align="center" header-align="center" show-overflow-tooltip>
@@ -414,10 +635,208 @@ onActivated(() => {
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
 
+  .detail-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: $spacing-md;
+  }
+
   h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .filter-area {
+    position: relative;
+  }
+
+  .filter-input-wrapper {
+    position: relative;
+  }
+
+  .filter-container {
+    display: flex;
+    border: 1px solid #d7d8da;
+    border-radius: 5px;
+    align-items: center;
+    background: white;
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+    box-sizing: border-box;
+  }
+
+  .filter-icon-wrapper {
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .filter-icon {
+      font-size: 18px;
+      color: #606266;
+    }
+  }
+
+  .filter-input-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    align-items: center;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .filter-tags {
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      flex-shrink: 0;
+
+      .filter-tag {
+        display: inline-block;
+        padding: 4px 8px;
+        background: #f0f2f5;
+        border: 1px solid $primary-color;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #606266;
+        margin-right: 8px;
+      }
+
+      .filter-tag-field {
+        color: $primary-color;
+        font-weight: 500;
+      }
+
+      .filter-tag-separator {
+        margin: 0 4px;
+        color: #606266;
+      }
+
+      .filter-tag-value {
+        color: $primary-color;
+        font-weight: 500;
+      }
+    }
+
+    .mainInput {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .filter-input {
+      width: 100%;
+      min-width: 150px;
+      margin-left: 8px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      color: #606266;
+      background: transparent;
+      padding: 8px 0;
+      cursor: pointer;
+
+      &::placeholder {
+        color: #909399;
+      }
+
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+
+  .filter-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #606266;
+    padding: 0;
+    flex-shrink: 0;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #409eff;
+    }
+
+    .el-icon {
+      font-size: 12px;
+    }
+  }
+
+  .filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 280px;
+    width: 280px;
+  }
+
+  .field-dropdown {
+    min-width: 120px;
+    width: 120px;
+    text-align: left;
+
+    .dropdown-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      text-align: left;
+
+      &:hover {
+        background-color: #f5f7fa;
+      }
+
+      span {
+        font-size: 14px;
+        color: #606266;
+      }
+    }
+  }
+
+  .keyword-dropdown {
+    padding: 12px;
+    min-width: 280px;
+    width: 280px;
+
+    .keyword-input-wrapper {
+      margin-bottom: 12px;
+    }
+
+    .dropdown-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
   }
 }
 

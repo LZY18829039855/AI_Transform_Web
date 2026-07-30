@@ -9,6 +9,7 @@ import { resolveSessionAccount } from './userAccount'
 const DENIED_PERMISSIONS: UserPermissionStatus = {
   member: false,
   asAdmin: false,
+  canEditCredit: false,
 }
 
 let inflightCheck: Promise<UserPermissionStatus> | null = null
@@ -21,6 +22,10 @@ const parsePermissionsResponse = (response: PermissionsResult): UserPermissionSt
   return {
     member: response.data.member === true,
     asAdmin: response.data.member === true && response.data.asAdmin === true,
+    canEditCredit:
+      response.data.member === true
+      && response.data.asAdmin === true
+      && response.data.canEditCredit === true,
   }
 }
 
@@ -132,6 +137,24 @@ export const guardAdminAccess = async (): Promise<boolean> => {
   const permissions = await fetchUserPermissions()
   if (!permissions.asAdmin) {
     ElMessage.warning(NO_ACCESS_MESSAGE)
+    return false
+  }
+  return true
+}
+
+/**
+ * 获取多元化学分写权限（强制向服务端查询最新结果）
+ */
+export const fetchCreditWritePermission = async (): Promise<boolean> => {
+  const permissions = await fetchUserPermissionsForNavigation()
+  return permissions.canEditCredit
+}
+
+/** 无多元化学分更新权限时提示并返回 false */
+export const guardCreditWriteAccess = async (): Promise<boolean> => {
+  const canEdit = await fetchCreditWritePermission()
+  if (!canEdit) {
+    ElMessage.warning('暂无多元化学分更新权限')
     return false
   }
   return true

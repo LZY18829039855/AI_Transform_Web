@@ -10,20 +10,18 @@ import { canAccessDashboardTab, fetchUserPermissions } from '@/utils/permissions
 const { tabs, activeTab, goTo } = useDashboardTabs()
 
 const cardItems = computed(() =>
-  tabs.map((tab) => ({
-    ...tab,
-    ...DASHBOARD_CARD_META[tab.name],
-  })),
+  tabs
+    .filter((tab) => !DEVELOPING_DASHBOARD_TABS.has(tab.name))
+    .map((tab) => ({
+      ...tab,
+      ...DASHBOARD_CARD_META[tab.name],
+    })),
 )
 
 const goToDashboard = async (name: DashboardTabName) => {
   const permissions = await fetchUserPermissions()
   if (!canAccessDashboardTab(name, permissions)) {
     ElMessage.warning(NO_ACCESS_MESSAGE)
-    return
-  }
-  if (DEVELOPING_DASHBOARD_TABS.has(name)) {
-    ElMessage.info('组织/岗位AI成熟度看板功能开发中')
     return
   }
   goTo(name)
@@ -51,7 +49,6 @@ const goToDashboard = async (name: DashboardTabName) => {
             <el-tag v-if="card.badge" size="small" effect="plain">{{ card.badge }}</el-tag>
           </span>
           <span
-            v-if="card.name !== 'maturity'"
             class="capsule__action"
             :class="{ 'is-active': activeTab === card.name }"
           >

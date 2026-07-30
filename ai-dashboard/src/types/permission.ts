@@ -1,6 +1,7 @@
 export interface UserPermissionStatus {
   member: boolean
-  asAdmin: boolean,
+  asAdmin: boolean
+  canEditCredit: boolean
 }
 
 export interface PermissionsResult {

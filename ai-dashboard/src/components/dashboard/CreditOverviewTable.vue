@@ -25,7 +25,7 @@ const categoryLabel = computed(() => {
 
 const formatPercent = (_row: any, _column: any, cellValue: number) => {
   if (cellValue == null) return '-'
-  return `${cellValue}%`
+  return `${Number(cellValue).toFixed(1)}%`
 }
 
 const formatScore = (_row: any, _column: any, cellValue: number) => {
@@ -81,7 +81,7 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       <el-table-column prop="achievementRate" label="达成率" min-width="120">
         <template #default="{ row }">
           <span :class="{ 'warning-text': row.isWarning }">
-            {{ row.achievementRate != null ? `${row.achievementRate}%` : '-' }}
+            {{ row.achievementRate != null ? `${Number(row.achievementRate).toFixed(1)}%` : '-' }}
           </span>
         </template>
       </el-table-column>
