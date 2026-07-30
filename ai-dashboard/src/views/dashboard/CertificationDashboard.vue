@@ -1884,6 +1884,7 @@ onActivated(() => {
                       <div>软件类L2/L3干部要求在26年H1之前完成"AI算法技术"专业级认证；</div>
                       <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
                       <div>产品线管理团队成员按L2标准要求。</div>
+                      <div style="margin-top: 8px;">AI专业级持证人数：持有专业级证书，或有效AI任职达到5/6/7/8级（免认证）的人数。</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -2436,6 +2437,7 @@ onActivated(() => {
                       <div>软件类L2/L3专家要求在26年H1之前完成"AI算法技术"专业级认证；</div>
                       <div>其他L2/L3岗位专家要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
                       <div>产品线管理团队成员按L2标准要求。</div>
+                      <div style="margin-top: 8px;">AI专业级持证人数：持有专业级证书，或有效AI任职达到5/6/7/8级（免认证）的人数。</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
