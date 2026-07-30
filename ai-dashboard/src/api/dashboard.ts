@@ -1357,7 +1357,9 @@ export const fetchDepartmentEmployeeTrainingOverview = async (
 const MATURITY_LEVEL_ORDER = ['L1', 'L2', 'L3']
 
 const sortMaturityTrainingRows = (rows: TrainingRoleSummaryRow[]): TrainingRoleSummaryRow[] => {
-  return [...rows].sort((a, b) => {
+  const normalRows = rows.filter((r) => String(r.maturityLevel ?? '').trim() !== '总计')
+  const totalRows = rows.filter((r) => String(r.maturityLevel ?? '').trim() === '总计')
+  const sorted = [...normalRows].sort((a, b) => {
     const ka = String(a.maturityLevel ?? '')
       .trim()
       .toUpperCase()
@@ -1370,6 +1372,7 @@ const sortMaturityTrainingRows = (rows: TrainingRoleSummaryRow[]): TrainingRoleS
     const vb = ib === -1 ? 999 : ib
     return va - vb
   })
+  return [...sorted, ...totalRows]
 }
 
 /**

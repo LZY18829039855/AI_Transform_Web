@@ -212,8 +212,10 @@ const handleRoleSummaryDrill = async (
   const deptId = resolveDeptIdForCompletionRate()
   const personType = roleType === 'expert' ? '2' : '1'
   const raw = String(row.maturityLevel ?? '').trim()
+  const isTotalRow = raw === '总计'
+  // 总计行不下钻按成熟度过滤，展示当前筛选部门下该角色全量人员
   const aiMaturity =
-    raw && /^L[123]$/i.test(raw) ? raw.toUpperCase() : raw || undefined
+    !isTotalRow && raw && /^L[123]$/i.test(raw) ? raw.toUpperCase() : undefined
 
   try {
     sessionStorage.removeItem('training_drill_department_row')
@@ -269,6 +271,9 @@ const handleDepartmentBaselineDrill = async (row: DepartmentCourseCompletionRate
   } catch (_) {
     // 忽略存储失败（如隐私模式）
   }
+  // 总计行按下钻当前筛选部门（与学分总览一致），接口侧 0 会解析为云核心网
+  const isTotalRow = row.deptName === '总计'
+  const drillDeptId = isTotalRow ? resolveDeptIdForCompletionRate() : row.deptId
   const drillKey = `training_drill_dept_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
   try {
     localStorage.setItem(drillKey, JSON.stringify(row))
@@ -280,7 +285,7 @@ const handleDepartmentBaselineDrill = async (row: DepartmentCourseCompletionRate
     params: { id: 'drill-down' },
     query: {
       type: 'department',
-      deptId: row.deptId,
+      deptId: drillDeptId,
       deptName: row.deptName,
       role: filters.role,
       /** 与全员训战总览表「角色视图」一致：0 全员 / 1 干部 / 2 专家，供下钻接口 personType */
@@ -289,6 +294,21 @@ const handleDepartmentBaselineDrill = async (row: DepartmentCourseCompletionRate
     },
   })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
+}
+
+/** 部门/专家/干部训战表总计行样式（对齐学分总览 total-row） */
+const trainingSummaryRowClassName = ({
+  row,
+}: {
+  row: DepartmentCourseCompletionRateRow | TrainingRoleSummaryRow
+}) => {
+  const name =
+    'deptName' in row
+      ? row.deptName
+      : 'maturityLevel' in row
+        ? row.maturityLevel
+        : ''
+  return name === '总计' ? 'training-summary-total-row' : ''
 }
 
 const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
@@ -450,6 +470,7 @@ defineExpose({
                   stripe
                   size="small"
                   :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px' }"
+                  :row-class-name="trainingSummaryRowClassName"
                   style="width: 100%"
                 >
                   <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
@@ -504,6 +525,7 @@ defineExpose({
             size="small"
             :header-cell-style="deptTrainTableHeaderStyle"
             :cell-style="{ textAlign: 'center' }"
+            :row-class-name="trainingSummaryRowClassName"
             style="width: 100%"
           >
             <el-table-column
@@ -557,6 +579,7 @@ defineExpose({
             size="small"
             :header-cell-style="deptTrainTableHeaderStyle"
             :cell-style="{ textAlign: 'center' }"
+            :row-class-name="trainingSummaryRowClassName"
             style="width: 100%"
           >
             <el-table-column
@@ -922,6 +945,15 @@ defineExpose({
     td .el-button.is-link {
       vertical-align: baseline;
     }
+
+    .training-summary-total-row {
+      font-weight: bold;
+      --el-table-tr-bg-color: #f5f7fa;
+    }
+
+    .training-summary-total-row td.el-table__cell {
+      background-color: #f5f7fa !important;
+    }
   }
 }
 
@@ -1074,6 +1106,15 @@ defineExpose({
             font-size: 14px !important;
           }
         }
+      }
+
+      .training-summary-total-row {
+        font-weight: bold;
+        --el-table-tr-bg-color: #f5f7fa;
+      }
+
+      .training-summary-total-row td.el-table__cell {
+        background-color: #f5f7fa !important;
       }
     }
   }
