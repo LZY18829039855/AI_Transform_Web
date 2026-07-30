@@ -1626,12 +1626,14 @@ export const fetchSchoolDashboard = async (
       scheduleTarget = Number(((passedDays / totalDays) * personalCredit.targetCredit).toFixed(1))
     }
     
-    // 学分预警状态：当前学分和时间进度学分目标比大小
+    // 学分预警状态：当前学分 vs 时间进度学分目标
     if (personalCredit.currentCredit >= scheduleTarget) {
       status = '正常'
       statusType = 'success'
+    } else if (personalCredit.currentCredit >= scheduleTarget * 0.8) {
+      status = '轻度预警'
+      statusType = 'warning'
     } else {
-      // 简单预警逻辑：小于进度目标即为滞后，可根据差距程度细分轻度/滞后
       status = '滞后预警'
       statusType = 'danger'
     }
