@@ -2559,6 +2559,7 @@ onActivated(() => {
                       <div>AI算法及应用（ICT）</div>
                       <div>AI软件工程与工具（ICT）</div>
                       <div>AI系统测试（ICT）</div>
+                      <div>或任职子类为“AI算法及应用”</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -2620,6 +2621,7 @@ onActivated(() => {
                         <div>AI算法及应用（ICT）</div>
                         <div>AI软件工程与工具（ICT）</div>
                         <div>AI系统测试（ICT）</div>
+                        <div>或任职子类为“AI算法及应用”</div>
                         <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
                         <div>AI算法技术</div>
                         <div>AI决策推理</div>
@@ -2715,6 +2717,7 @@ onActivated(() => {
                       <div>AI算法及应用（ICT）</div>
                       <div>AI软件工程与工具（ICT）</div>
                       <div>AI系统测试（ICT）</div>
+                      <div>或任职子类为“AI算法及应用”</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -2776,6 +2779,7 @@ onActivated(() => {
                         <div>AI算法及应用（ICT）</div>
                         <div>AI软件工程与工具（ICT）</div>
                         <div>AI系统测试（ICT）</div>
+                        <div>或任职子类为“AI算法及应用”</div>
                         <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">AI认证方向包括：</div>
                         <div>AI算法技术</div>
                         <div>AI决策推理</div>
