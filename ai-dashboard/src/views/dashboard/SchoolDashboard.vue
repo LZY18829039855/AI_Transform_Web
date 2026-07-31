@@ -178,7 +178,7 @@ const fetchData = async () => {
       dashboardData.value = schoolData
     }
   } catch (error) {
-    console.error('获取School看板数据失败', error)
+    console.error('获取学分看板数据失败', error)
     ElMessage.error('获取部分数据失败，请重试')
   } finally {
     loading.value = false
@@ -445,7 +445,7 @@ onActivated(() => {
   <section class="dashboard school-dashboard">
     <header class="dashboard__header glass-card">
       <div class="header-info">
-        <h2>AI School 看板</h2>
+        <h2>AI学分看板</h2>
         <p>
           覆盖专家、干部与全员多维度的学分达成态势，结合部门筛选快速定位薄弱环节，支持下钻查看详情。
         </p>

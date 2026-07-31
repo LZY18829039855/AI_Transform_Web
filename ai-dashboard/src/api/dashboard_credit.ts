@@ -55,7 +55,7 @@ export const getDepartmentStatistics = async (deptCode?: string, role?: string):
 }
 
 /**
- * 获取AI School学分数据明细列表（基线人数下钻）
+ * 获取AI学分数据明细列表（基线人数下钻）
  */
 export const getSchoolCreditDetailList = async (
     params: SchoolCreditDetailRequest
@@ -80,10 +80,10 @@ export const getSchoolCreditDetailList = async (
         `/api/school-credit-detail/list?${query.toString()}`
     )
     if (response.code === 200) return response.data
-    console.warn('获取AI School学分数据明细失败：', response.message)
+    console.warn('获取AI学分数据明细失败：', response.message)
     return null
   } catch (error) {
-    console.error('获取AI School学分数据明细异常：', error)
+    console.error('获取AI学分数据明细异常：', error)
     return null
   }
 }

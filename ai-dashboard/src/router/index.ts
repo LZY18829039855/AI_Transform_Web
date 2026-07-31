@@ -51,7 +51,7 @@ const routes: RouteRecordRaw[] = [
         name: 'TrainingDashboard',
         component: () => import('@/views/dashboard/TrainingDashboard.vue'),
         meta: {
-          title: 'AI训战看板',
+          title: 'AI训战课程看板',
           requiresAuth: true,
           keepAlive: true,
         },
@@ -61,7 +61,7 @@ const routes: RouteRecordRaw[] = [
         name: 'TrainingDetail',
         component: () => import('@/views/dashboard/TrainingDetail.vue'),
         meta: {
-          title: 'AI训战看板详情',
+          title: 'AI训战课程看板详情',
           requiresAuth: true,
           requiresAdmin: true,
           keepAlive: false,
@@ -93,7 +93,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SchoolDashboard',
         component: () => import('@/views/dashboard/SchoolDashboard.vue'),
         meta: {
-          title: 'AI School看板',
+          title: 'AI学分看板',
           requiresAuth: true,
           keepAlive: true,
         },
@@ -103,7 +103,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SchoolDetail',
         component: () => import('@/views/dashboard/SchoolDetail.vue'),
         meta: {
-          title: 'AI School看板详情',
+          title: 'AI学分看板详情',
           requiresAuth: true,
           requiresAdmin: true,
           keepAlive: false,

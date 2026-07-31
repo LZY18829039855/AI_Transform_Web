@@ -29,7 +29,7 @@ const detailData = ref<TrainingDetailData | null>(null)
 const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
 /** 部门下钻时，从看板传入的本部门训战数据行（用于展示部门训战数据表，不请求后端） */
 const drillDownDepartmentRow = ref<DepartmentCourseCompletionRateRow | null>(null)
-/** 专家/干部人数下钻时，从看板传入的当前行（与训战看板专家/干部总览表列一致） */
+/** 专家/干部人数下钻时，从看板传入的当前行（与训战课程看板专家/干部总览表列一致） */
 const drillDownRoleSummaryRow = ref<TrainingRoleSummaryRow | null>(null)
 const drillDownRoleType = ref<'expert' | 'cadre' | null>(null)
 
@@ -99,7 +99,7 @@ const {
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
-/** 与训战看板专家/干部表表头一致 */
+/** 与训战课程看板专家/干部表表头一致 */
 const roleSummaryTableHeaderStyle = {
   background: 'rgba(58, 122, 254, 0.06)',
   color: '#2f3b52',
@@ -320,13 +320,13 @@ const handleExport = async () => {
       )
     }
 
-    let fileName = 'AI训战看板详情'
+    let fileName = 'AI训战课程看板详情'
     if (deptRow?.deptName) {
-      fileName = `${(deptRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_')}_训战看板详情`
+      fileName = `${(deptRow.deptName || '部门').replace(/[/\\*?\[\]:]/g, '_')}_训战课程看板详情`
     } else if (roleRow && roleType) {
       const lvl = (roleRow.maturityLevel || '').replace(/[/\\*?\[\]:]/g, '_')
       const label = roleType === 'expert' ? '专家' : '干部'
-      fileName = `${lvl || label}_${label}_训战看板详情`
+      fileName = `${lvl || label}_${label}_训战课程看板详情`
     }
     exportTrainingDetailToExcel(
       deptRow,
@@ -568,7 +568,7 @@ onBeforeUnmount(() => {
       <div class="header-left">
         <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回列表页</el-button>
         <div>
-          <h2>AI 训战看板详情</h2>
+          <h2>AI训战课程看板详情</h2>
           <p>查看训战数据明细与课程规划，支持多维度筛选，快速定位关键信息。</p>
         </div>
       </div>
@@ -786,7 +786,7 @@ onBeforeUnmount(() => {
           </el-table-column>
         </el-table>
       </el-card>
-      <!-- 专家/干部人数下钻：与训战看板「专家训战总览」「干部训战总览」单行一致 -->
+      <!-- 专家/干部人数下钻：与训战课程看板「专家训战总览」「干部训战总览」单行一致 -->
       <el-card
         v-if="isDrillDownPage && drillDownRoleSummaryRow && drillDownRoleType && (route.query.type === 'expert' || route.query.type === 'cadre')"
         shadow="hover"
@@ -925,7 +925,7 @@ onBeforeUnmount(() => {
                 v-else-if="isDrillDownPage && !route.query.deptId && !drillDownRoleSummaryRow"
                 class="drill-down-dept drill-down-hint"
               >
-                请从训战看板「部门训战数据」表格中点击基线人数进入，以加载该部门全员明细。
+                请从训战课程看板「部门训战数据」表格中点击基线人数进入，以加载该部门全员明细。
               </p>
             </div>
             <div class="header-actions">

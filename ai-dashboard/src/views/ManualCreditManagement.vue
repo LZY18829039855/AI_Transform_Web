@@ -554,7 +554,7 @@ async function handleBatchDelete() {
   padding-bottom: $spacing-xl;
 }
 
-/** 与 AI 训战看板顶部「玻璃卡」文案区一致 */
+/** 与 AI训战课程看板顶部「玻璃卡」文案区一致 */
 .credit-dashboard {
   display: flex;
   flex-direction: column;

@@ -406,7 +406,7 @@ export const exportCoursePlanningToExcel = (
 }
 
 /**
- * 导出训战看板详情数据到 Excel（两个 sheet：部门或专家/干部总览 + AI训战数据明细）
+ * 导出训战课程看板详情数据到 Excel（两个 sheet：部门或专家/干部总览 + AI训战数据明细）
  * @param departmentRow 部门训战数据单行（下钻时有值），对应第一个 sheet
  * @param detailRows 明细数据：下钻时为部门全员训战总览，否则为训战明细记录
  * @param isDrillDown 是否为部门下钻页（决定明细列结构）
@@ -446,7 +446,7 @@ export const exportTrainingDetailToExcel = (
   departmentRow: DepartmentCourseCompletionRateRow | null,
   detailRows: DepartmentEmployeeTrainingOverviewRow[] | TrainingBattleRecord[],
   isDrillDown: boolean,
-  fileName: string = 'AI训战看板详情',
+  fileName: string = 'AI训战课程看板详情',
   roleSummaryRow?: TrainingRoleSummaryRow | null,
   roleType?: 'expert' | 'cadre' | null,
   courseCompletionDetail?: DepartmentEmployeeCourseCompletionDetail | null,
@@ -565,11 +565,11 @@ export const exportTrainingDetailToExcel = (
 }
 
 /**
- * 导出 AI School 看板详情学分明细到 Excel
+ * 导出 AI学分看板详情学分明细到 Excel
  */
 export const exportSchoolCreditDetailToExcel = (
   records: SchoolCreditRecord[],
-  fileName: string = 'AI School看板详情',
+  fileName: string = 'AI学分看板详情',
 ) => {
   const pctFmt = (v: number | undefined) => `${(v ?? 0).toFixed(1)}%`
   const minDeptFmt = (v: string | undefined) => (v ? v.split('/')[0] : '')
@@ -595,7 +595,7 @@ export const exportSchoolCreditDetailToExcel = (
 
   const workbook = XLSX.utils.book_new()
   const sheet = XLSX.utils.json_to_sheet(rows)
-  XLSX.utils.book_append_sheet(workbook, sheet, 'AI School学分数据明细')
+  XLSX.utils.book_append_sheet(workbook, sheet, 'AI学分数据明细')
 
   const date = new Date()
   const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`

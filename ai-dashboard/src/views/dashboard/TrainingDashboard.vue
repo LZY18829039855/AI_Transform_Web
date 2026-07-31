@@ -140,7 +140,7 @@ const fetchData = async () => {
     expertSummaryRows.value = expertRows
     cadreSummaryRows.value = cadreRows
   } catch (error) {
-    console.error('获取训战看板数据失败：', error)
+    console.error('获取训战课程看板数据失败：', error)
     ElMessage.error('获取数据失败，请稍后重试')
   } finally {
     loading.value = false
@@ -261,7 +261,7 @@ const handleAllStaffDrill = async (
   })
 }
 
-/** 部门训战数据 - 基线人数在新标签页打开训战看板详情；行数据经 localStorage + drillStorageKey 传递（新标签无 router.state、sessionStorage 不跨标签） */
+/** 部门训战数据 - 基线人数在新标签页打开训战课程看板详情；行数据经 localStorage + drillStorageKey 传递（新标签无 router.state、sessionStorage 不跨标签） */
 const handleDepartmentBaselineDrill = async (row: DepartmentCourseCompletionRateRow) => {
   if (!(await guardAdminAccess())) {
     return
@@ -355,7 +355,7 @@ defineExpose({
   <section class="dashboard training-dashboard">
     <header class="dashboard__header glass-card">
       <div class="header-info">
-        <h2>AI 训战看板</h2>
+        <h2>AI训战课程看板</h2>
         <p>
           聚焦专家、干部与全员的训战执行态势，通过部门与角色筛选快速定位短板，支持关键指标下钻查看详情。
         </p>

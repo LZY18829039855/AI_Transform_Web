@@ -23,7 +23,7 @@ const getTagType = (completion: number) => {
     <template #header>
       <div class="course-card__header">
         <div>
-          <p class="course-card__title">AI School 课程概览</p>
+          <p class="course-card__title">AI学分课程概览</p>
           <p class="course-card__description">涵盖基础能力、Prompt 工程、数据治理等课程体系。</p>
         </div>
         <el-button type="primary" plain round size="small">创建新课程</el-button>

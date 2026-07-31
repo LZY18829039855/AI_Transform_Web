@@ -286,7 +286,7 @@ const handleExport = async () => {
       ElMessage.warning('暂无数据可导出')
       return
     }
-    exportSchoolCreditDetailToExcel(allRecords, 'AI School看板详情')
+    exportSchoolCreditDetailToExcel(allRecords, 'AI学分看板详情')
     ElMessage.success(`导出成功，共 ${allRecords.length} 条`)
   } catch (error) {
     console.error('导出失败:', error)
@@ -330,7 +330,7 @@ onActivated(() => {
           返回列表页
         </el-button>
         <div class="header-content">
-          <h2>AI School 看板详情</h2>
+          <h2>AI学分看板详情</h2>
           <p>查看学分数据明细与规则说明，支持多维度筛选。</p>
         </div>
       </div>
@@ -429,11 +429,11 @@ onActivated(() => {
     </el-card>
 
     <template v-if="detailData">
-      <!-- AI School学分数据明细 -->
+      <!-- AI学分数据明细 -->
       <el-card shadow="hover" class="detail-block" v-loading="loading">
         <template #header>
           <div class="detail-block-header">
-            <h3>AI School学分数据明细</h3>
+            <h3>AI学分数据明细</h3>
             <div class="header-actions">
               <div class="filter-area">
                 <div class="filter-input-wrapper" ref="filterWrapperRef">

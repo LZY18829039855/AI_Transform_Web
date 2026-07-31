@@ -1082,7 +1082,7 @@ export interface CreditStatisticsResponseVO {
 }
 
 /**
- * AI School学分数据明细查询响应VO
+ * AI学分数据明细查询响应VO
  */
 export interface SchoolCreditDetailResponseVO {
   records: SchoolCreditRecord[]
@@ -1093,7 +1093,7 @@ export interface SchoolCreditDetailResponseVO {
 }
 
 /**
- * AI School学分数据明细查询请求参数
+ * AI学分数据明细查询请求参数
  */
 export interface SchoolCreditDetailRequest {
   deptCode: string
