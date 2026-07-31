@@ -307,12 +307,20 @@ const fetchDetail = async () => {
     // 干部：currentRole === '1' 且满足查询条件
     // 专家：currentRole === '2'
     // 全员：currentRole === '0'
+    const cadreDrillDownColumns = [
+      'appointed',
+      'appointedByRequirement',
+      'baseline',
+      'aiCertificateHolders',
+      'certification',
+      'subjectTwoPassed',
+    ]
     const shouldUseNewApi = 
       currentRole === '0' || // 全员
       currentRole === '2' || // 专家
       (currentRole === '1' && 
        (isUserQuery.value || route.query.column) && 
-       (isUserQuery.value || ['appointed', 'appointedByRequirement', 'baseline', 'aiCertificateHolders', 'certification'].includes(route.query.column as string))) // 干部
+       (isUserQuery.value || cadreDrillDownColumns.includes(route.query.column as string))) // 干部
 
     if (shouldUseNewApi) {
       // 干部、专家、全员角色：同时加载任职和认证数据
@@ -366,13 +374,14 @@ const fetchDetail = async () => {
       }
 
       // 确定queryType：
-      // 1. 如果是从看板跳转过来的（有route.query.column），根据column决定：baseline=2，其他=1
+      // 1. 如果是从看板跳转过来的（有route.query.column），根据column决定：
+      //    baseline / subjectTwoPassed = 2（基线口径），其他 = 1（认证/任职口径）
       // 2. 如果是在详情页面点击查询按钮（没有route.query.column），默认为2
       const column = route.query.column as string | undefined
       let queryType = 2 // 默认值：在详情页面点击查询按钮时使用
       if (column) {
-        // 从看板跳转过来，根据点击的列决定queryType
-        queryType = column === 'baseline' ? 2 : 1
+        // 科目二通过人数统计基于基线干部，下钻需用 queryType=2 再前端过滤已通过科目二人员
+        queryType = column === 'baseline' || column === 'subjectTwoPassed' ? 2 : 1
       }
       const [qualifiedResponse, certResponse] = await Promise.all([
         // 加载任职数据，queryType默认为2
@@ -432,6 +441,12 @@ const fetchDetail = async () => {
             isCertStandard: emp.isCertStandard !== undefined ? emp.isCertStandard === 1 : undefined,
           })
         )
+        // 科目二通过人数下钻：仅保留已通过科目二的人员，与看板统计口径一致
+        if (column === 'subjectTwoPassed') {
+          certificationRecords = certificationRecords.filter(
+            (record) => record.subjectTwoPassed === true
+          )
+        }
       }
 
       // 构建detailData对象，同时包含任职和认证数据
@@ -465,8 +480,8 @@ const fetchDetail = async () => {
       if (column === 'appointed' || column === 'appointedByRequirement') {
         // 明确是任职相关列，默认显示任职tab
         activeTab.value = 'appointment'
-      } else if (column === 'aiCertificateHolders' || column === 'certification') {
-        // 明确是认证相关列，默认显示认证tab
+      } else if (column === 'aiCertificateHolders' || column === 'certification' || column === 'subjectTwoPassed') {
+        // 明确是认证相关列（含科目二通过），默认显示认证tab
         activeTab.value = 'certification'
       } else if (column === 'baseline') {
         // baseline在两个表格中都存在，根据source参数判断
@@ -485,7 +500,7 @@ const fetchDetail = async () => {
           const isCadreCertOnlyQuery = 
             currentRole === '1' && 
             route.query.column && 
-            ['aiCertificateHolders', 'certification'].includes(route.query.column as string)
+            ['aiCertificateHolders', 'certification', 'subjectTwoPassed'].includes(route.query.column as string)
           
           if (isCadreQualifiedOnlyQuery) {
             activeTab.value = 'appointment'
@@ -1108,8 +1123,8 @@ onMounted(() => {
   if (column === 'appointed' || column === 'appointedByRequirement') {
     // 明确是任职相关列，默认显示任职tab
     activeTab.value = 'appointment'
-  } else if (column === 'aiCertificateHolders' || column === 'certification') {
-    // 明确是认证相关列，默认显示认证tab
+  } else if (column === 'aiCertificateHolders' || column === 'certification' || column === 'subjectTwoPassed') {
+    // 明确是认证相关列（含科目二通过），默认显示认证tab
     activeTab.value = 'certification'
   } else if (column === 'baseline') {
     // baseline在两个表格中都存在，根据source参数判断
