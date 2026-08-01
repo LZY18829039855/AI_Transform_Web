@@ -928,19 +928,6 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <el-alert
-                v-if="!filterDeptCode"
-                type="info"
-                :closable="false"
-                show-icon
-                :title="
-                  canEditCredit
-                    ? '当前为全部部门选课总览（同训战课程规划表）；选择部门后可查看并编辑该部门目标课程'
-                    : '当前为全部部门选课总览（同训战课程规划表）；选择部门后可查看该部门目标课程'
-                "
-                class="dept-filter-tip"
-              />
-
               <!-- 未选部门：规划表总览 -->
               <el-table
                 v-if="!filterDeptCode"
@@ -1282,10 +1269,6 @@ onMounted(async () => {
 
 .dept-filter-bar {
   flex-wrap: wrap;
-}
-
-.dept-filter-tip {
-  margin-bottom: $spacing-md;
 }
 
 .form-hint {
