@@ -12,14 +12,9 @@ import {
 } from '@/api/trainingCourseManage'
 import type { DepartmentSelection } from '@/types/dashboard'
 import type { TrainingCourseRecord } from '@/types/trainingCourseManage'
-import {
-  fetchCreditWritePermission,
-  guardCreditWriteAccess,
-} from '@/utils/permissions'
 
 const activeTab = ref<'courses' | 'deptSelections'>('courses')
 const loading = ref(false)
-const canEdit = ref(false)
 
 /** ---------- 课程管理 ---------- */
 const courseRows = ref<TrainingCourseRecord[]>([])
@@ -94,7 +89,7 @@ const courseSpanMethod = ({
   rowIndex: number
   columnIndex: number
 }) => {
-  const bigTypeColIndex = canEdit.value ? 1 : 0
+  const bigTypeColIndex = 1
   if (columnIndex !== bigTypeColIndex) {
     return { rowspan: 1, colspan: 1 }
   }
@@ -148,29 +143,19 @@ function handleCourseSelectionChange(rows: TrainingCourseRecord[]) {
 
 const hasCourseSelection = computed(() => selectedCourses.value.length > 0)
 
-async function handleAddCourse() {
-  if (!(await guardCreditWriteAccess())) {
-    return
-  }
+function handleAddCourse() {
   courseDialogTitle.value = '新增训战课程'
   courseForm.value = emptyCourse()
   courseDialogVisible.value = true
 }
 
-async function handleEditCourse(row: TrainingCourseRecord) {
-  if (!(await guardCreditWriteAccess())) {
-    return
-  }
+function handleEditCourse(row: TrainingCourseRecord) {
   courseDialogTitle.value = '编辑训战课程'
   courseForm.value = { ...row, selectedDepts: [...(row.selectedDepts ?? [])] }
   courseDialogVisible.value = true
 }
 
 async function handleSubmitCourse() {
-  if (!(await guardCreditWriteAccess())) {
-    courseDialogVisible.value = false
-    return
-  }
   if (!courseFormRef.value) {
     return
   }
@@ -204,9 +189,6 @@ async function handleSubmitCourse() {
 }
 
 async function handleDeleteCourse(row: TrainingCourseRecord) {
-  if (!(await guardCreditWriteAccess())) {
-    return
-  }
   try {
     await ElMessageBox.confirm(
       `确定删除课程「${row.courseName || row.id}」吗？`,
@@ -227,9 +209,6 @@ async function handleDeleteCourse(row: TrainingCourseRecord) {
 
 async function handleBatchDeleteCourses() {
   if (!selectedCourses.value.length) {
-    return
-  }
-  if (!(await guardCreditWriteAccess())) {
     return
   }
   try {
@@ -358,9 +337,6 @@ watch(activeTab, (tab) => {
 })
 
 onMounted(async () => {
-  fetchCreditWritePermission().then((allowed) => {
-    canEdit.value = allowed
-  })
   await loadCourses()
 })
 </script>
@@ -372,7 +348,7 @@ onMounted(async () => {
         <div class="header-info">
           <h2>AI训战课程管理</h2>
           <p>
-            统一维护 AI 训战课程主数据，并按四级部门配置目标选课（基础/进阶与实战）。写操作权限与多元化学分管理一致，无更新权限时为只读模式。
+            统一维护 AI 训战课程主数据，并查看各部门目标选课情况（基础/进阶与实战）。白名单成员均可编辑课程信息。
           </p>
         </div>
       </header>
@@ -383,10 +359,9 @@ onMounted(async () => {
           <el-tab-pane label="课程管理" name="courses">
             <div class="manage-toolbar">
               <div class="manage-toolbar__start">
-                <el-button v-if="canEdit" type="success" :icon="DocumentAdd" @click="handleAddCourse">
+                <el-button type="success" :icon="DocumentAdd" @click="handleAddCourse">
                   新增课程
                 </el-button>
-                <el-tag v-if="!canEdit" type="info" effect="plain">只读模式</el-tag>
               </div>
               <div class="manage-toolbar__right">
                 <el-select
@@ -413,7 +388,7 @@ onMounted(async () => {
                     </el-icon>
                   </template>
                 </el-input>
-                <el-tooltip v-if="canEdit" content="批量删除" placement="top">
+                <el-tooltip content="批量删除" placement="top">
                   <span class="manage-toolbar__batch-wrap">
                     <el-button
                       type="danger"
@@ -437,7 +412,6 @@ onMounted(async () => {
               @selection-change="handleCourseSelectionChange"
             >
               <el-table-column
-                v-if="canEdit"
                 type="selection"
                 width="48"
                 header-align="center"
@@ -445,8 +419,11 @@ onMounted(async () => {
               />
               <el-table-column prop="bigType" label="课程主分类" width="120" header-align="center" align="center" />
               <el-table-column prop="courseLevel" label="训战分类" width="100" header-align="center" align="center" />
-              <el-table-column prop="courseName" label="课程名称" min-width="280" header-align="center" align="center" show-overflow-tooltip />
-              <el-table-column label="课程编码" min-width="200" header-align="center" align="center">
+              <el-table-column prop="sybType" label="课程子类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+              <el-table-column prop="courseName" label="课程名称" min-width="200" header-align="center" align="center" show-overflow-tooltip />
+              <el-table-column prop="knowledgePoint" label="知识点" min-width="140" header-align="center" align="center" show-overflow-tooltip />
+              <el-table-column prop="courseExplain" label="课程说明" min-width="160" header-align="center" align="center" show-overflow-tooltip />
+              <el-table-column label="课程编码" min-width="160" header-align="center" align="center">
                 <template #default="{ row }">
                   <el-tooltip
                     v-if="row.courseLink && row.courseNumber"
@@ -468,7 +445,6 @@ onMounted(async () => {
               </el-table-column>
               <el-table-column prop="credit" label="学分" width="80" header-align="center" align="center" />
               <el-table-column
-                v-if="canEdit"
                 label="操作"
                 min-width="140"
                 header-align="center"
@@ -480,7 +456,7 @@ onMounted(async () => {
                 </template>
               </el-table-column>
               <template #empty>
-                <el-empty :description="canEdit ? '暂无数据，请点击「新增课程」' : '暂无数据'" />
+                <el-empty description="暂无数据，请点击「新增课程」" />
               </template>
             </el-table>
 

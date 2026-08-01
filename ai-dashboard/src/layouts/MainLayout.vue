@@ -28,10 +28,7 @@ const handleGoCreditManagement = async () => {
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
-const handleGoTrainingCourseManagement = async () => {
-  if (!(await guardAdminAccess())) {
-    return
-  }
+const handleGoTrainingCourseManagement = () => {
   const resolved = router.resolve({ name: 'TrainingCourseManagement' })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
