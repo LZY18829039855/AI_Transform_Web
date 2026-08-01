@@ -27,6 +27,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/training-course-management',
+    name: 'TrainingCourseManagement',
+    component: () => import('@/views/TrainingCourseManagement.vue'),
+    meta: {
+      title: 'AI训战课程管理',
+      requiresAuth: true,
+      requiresAdmin: true,
+      keepAlive: false,
+    },
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     redirect: '/dashboard/maturity',

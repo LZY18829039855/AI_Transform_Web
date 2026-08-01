@@ -11,6 +11,7 @@ export const ADMIN_ONLY_ROUTE_NAMES = new Set<string>([
   'CertificationDashboard',
   'CertificationDetail',
   'ManualCreditManagement',
+  'TrainingCourseManagement',
 ])
 
 export const NO_ACCESS_MESSAGE = '暂无访问权限'

@@ -150,11 +150,11 @@ export const fetchCreditWritePermission = async (): Promise<boolean> => {
   return permissions.canEditCredit
 }
 
-/** 无多元化学分更新权限时提示并返回 false */
+/** 无多元化学分 / 训战课程管理更新权限时提示并返回 false（复用 canEditCredit） */
 export const guardCreditWriteAccess = async (): Promise<boolean> => {
   const canEdit = await fetchCreditWritePermission()
   if (!canEdit) {
-    ElMessage.warning('暂无多元化学分更新权限')
+    ElMessage.warning('暂无数据更新权限')
     return false
   }
   return true
