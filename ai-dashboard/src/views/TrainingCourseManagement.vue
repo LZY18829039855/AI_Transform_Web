@@ -146,18 +146,17 @@ function sortCourseRows(rows: TrainingCourseRecord[], preferBigType?: string): T
 const pinnedBigType = ref('')
 
 
-/** 课程主分类列合并（对齐训战课程规划表） */
+/** 课程主分类列合并（对齐训战课程规划表；按 property 判断，避免多选列显隐导致列下标错位） */
 const courseSpanMethod = ({
   row,
+  column,
   rowIndex,
-  columnIndex,
 }: {
   row: TrainingCourseRecord
+  column: { property?: string }
   rowIndex: number
-  columnIndex: number
 }) => {
-  const bigTypeColIndex = 1
-  if (columnIndex !== bigTypeColIndex) {
+  if (column.property !== 'bigType') {
     return { rowspan: 1, colspan: 1 }
   }
   const currentValue = row.bigType
@@ -383,17 +382,17 @@ const courseOptionsForSelect = computed(() =>
   })),
 )
 
-/** 规划表总览：主分类在第 0 列 */
+/** 规划表总览：按主分类合并单元格 */
 const planningOverviewSpanMethod = ({
   row,
+  column,
   rowIndex,
-  columnIndex,
 }: {
   row: TrainingCourseRecord
+  column: { property?: string }
   rowIndex: number
-  columnIndex: number
 }) => {
-  if (columnIndex !== 0) {
+  if (column.property !== 'bigType') {
     return { rowspan: 1, colspan: 1 }
   }
   const currentValue = row.bigType
@@ -412,17 +411,17 @@ const planningOverviewSpanMethod = ({
   return { rowspan, colspan: 1 }
 }
 
-/** 部门明细：有多选列时主分类为第 1 列 */
+/** 部门明细：按主分类合并单元格 */
 const deptSpanMethod = ({
   row,
+  column,
   rowIndex,
-  columnIndex,
 }: {
   row: TrainingCourseRecord
+  column: { property?: string }
   rowIndex: number
-  columnIndex: number
 }) => {
-  if (columnIndex !== 1) {
+  if (column.property !== 'bigType') {
     return { rowspan: 1, colspan: 1 }
   }
   const currentValue = row.bigType
@@ -741,7 +740,6 @@ onMounted(async () => {
                 >
                   新增课程
                 </el-button>
-                <el-tag v-if="!canEditCredit" type="info" effect="plain">只读模式</el-tag>
               </div>
               <div class="manage-toolbar__right">
                 <el-select
@@ -894,7 +892,6 @@ onMounted(async () => {
                       删除部门配置
                     </el-button>
                   </template>
-                  <el-tag v-if="!canEditCredit" type="info" effect="plain">只读模式</el-tag>
                 </div>
                 <div class="manage-toolbar__right dept-filter-bar">
                   <el-select
