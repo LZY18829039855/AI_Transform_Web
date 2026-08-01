@@ -25,6 +25,8 @@ const props = defineProps<{ id: string }>()
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
+/** 仅明细表区域 loading（翻页/姓名工号筛选），避免整页骨架屏刷新 */
+const tableLoading = ref(false)
 const exporting = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
 /** AI训战数据明细表分页（对齐 AI 学分看板详情；下钻走后端分页） */
@@ -125,8 +127,13 @@ const roleSummaryCardTitle = computed(() => {
 
 const formatAvgLearnersInteger = (value: number) => String(Math.round(value ?? 0))
 
-const fetchDetail = async (options?: { resetPage?: boolean }) => {
-  loading.value = true
+const fetchDetail = async (options?: { resetPage?: boolean; tableOnly?: boolean }) => {
+  const tableOnly = options?.tableOnly === true || isDrillDownPage.value
+  if (tableOnly) {
+    tableLoading.value = true
+  } else {
+    loading.value = true
+  }
   try {
     if (options?.resetPage) {
       pageNum.value = 1
@@ -162,13 +169,14 @@ const fetchDetail = async (options?: { resetPage?: boolean }) => {
     }
   } finally {
     loading.value = false
+    tableLoading.value = false
   }
 }
 
 const handlePageChange = (page: number) => {
   pageNum.value = page
   if (isDrillDownPage.value) {
-    fetchDetail()
+    fetchDetail({ tableOnly: true })
   }
 }
 
@@ -176,7 +184,7 @@ const handleSizeChange = (size: number) => {
   pageSize.value = size
   pageNum.value = 1
   if (isDrillDownPage.value) {
-    fetchDetail()
+    fetchDetail({ tableOnly: true })
   }
 }
 
@@ -482,7 +490,7 @@ const handleKeywordConfirm = () => {
   }
   showKeywordDropdown.value = false
   if (isDrillDownPage.value) {
-    fetchDetail({ resetPage: true })
+    fetchDetail({ resetPage: true, tableOnly: true })
   }
   nextTick(() => {
     isFilterBoxUpdating.value = false
@@ -504,7 +512,7 @@ const handleFilterClear = () => {
   showFieldDropdown.value = false
   showKeywordDropdown.value = false
   if (isDrillDownPage.value) {
-    fetchDetail({ resetPage: true })
+    fetchDetail({ resetPage: true, tableOnly: true })
   }
   nextTick(() => {
     isFilterBoxUpdating.value = false
@@ -732,7 +740,7 @@ onBeforeUnmount(() => {
       </el-form>
     </el-card>
 
-    <el-skeleton :rows="8" animated v-if="loading" />
+    <el-skeleton :rows="8" animated v-if="loading && !isDrillDownPage && !detailData" />
     <template v-else-if="isDrillDownPage || detailData">
       <!-- 部门下钻时：本部门训战数据（与部门训战数据表列一致，数据由看板传入） -->
       <el-card
@@ -973,7 +981,7 @@ onBeforeUnmount(() => {
           </el-table-column>
         </el-table>
       </el-card>
-      <!-- AI训战数据明细：drill-down 页默认使用部门全员训战总览列（姓名、工号、职位类…目标课程完课占比） -->
+      <!-- AI训战数据明细：部门 / 专家 / 干部下钻共用后端分页 -->
       <el-card shadow="hover" class="detail-block">
         <template #header>
           <div class="detail-block-header">
@@ -992,7 +1000,7 @@ onBeforeUnmount(() => {
                 v-else-if="isDrillDownPage && !route.query.deptId && !drillDownRoleSummaryRow"
                 class="drill-down-dept drill-down-hint"
               >
-                请从训战课程看板「部门训战数据」表格中点击基线人数进入，以加载该部门全员明细。
+                请从训战课程看板点击部门或专家/干部人数下钻，以加载明细数据。
               </p>
             </div>
             <div class="header-actions">
@@ -1070,7 +1078,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </template>
-        <!-- drill-down 页：始终展示部门全员训战总览表格列 -->
+        <div class="detail-table-loading-wrap" v-loading="tableLoading || loading">
+        <!-- drill-down 页：部门 / 专家 / 干部下钻共用总览表格列与后端分页 -->
         <el-table
           v-if="isDrillDownPage"
           :data="filteredDrillDownRecords"
@@ -1182,13 +1191,15 @@ onBeforeUnmount(() => {
           <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" align="center" header-align="center" />
           <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" fixed="right" align="center" header-align="center" />
         </el-table>
-        <div class="pagination-wrap">
+        </div>
+        <div v-if="isDrillDownPage || detailTableTotal > 0" class="pagination-wrap">
           <el-pagination
             v-model:current-page="pageNum"
             v-model:page-size="pageSize"
             :page-sizes="[10, 20, 50, 100]"
             :total="detailTableTotal"
             layout="total, sizes, prev, pager, next, jumper"
+            background
             @size-change="handleSizeChange"
             @current-change="handlePageChange"
           />
@@ -1539,6 +1550,10 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   padding-top: 16px;
+}
+
+.detail-table-loading-wrap {
+  min-height: 120px;
 }
 
 @media (max-width: 768px) {
