@@ -90,6 +90,25 @@ export interface DepartmentEmployeeTrainingOverviewRow {
   totalCompletionRate: number
 }
 
+/** 部门全员训战总览下钻分页响应（对齐学分明细） */
+export interface DepartmentEmployeeTrainingOverviewPage {
+  records: DepartmentEmployeeTrainingOverviewRow[]
+  total: number
+  pageNum: number
+  pageSize: number
+  pages?: number
+}
+
+export interface DepartmentEmployeeTrainingOverviewQuery {
+  deptId: string
+  personType?: number
+  aiMaturity?: string
+  name?: string
+  employeeNumber?: string
+  pageNum?: number
+  pageSize?: number
+}
+
 /** 部门完课矩阵导出：课程列 */
 export interface CourseCompletionColumn {
   key: string

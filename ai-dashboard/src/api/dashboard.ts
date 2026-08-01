@@ -52,6 +52,8 @@ import type {
   DepartmentCourseCompletionRateRow,
   DepartmentEmployeeCourseCompletionDetail,
   DepartmentEmployeeTrainingOverviewRow,
+  DepartmentEmployeeTrainingOverviewPage,
+  DepartmentEmployeeTrainingOverviewQuery,
   PositionAiMaturityCourseCompletionRateVO,
   TrainingPersonalOverviewRow,
   TrainingPlanningResource,
@@ -1330,28 +1332,76 @@ export const fetchDepartmentEmployeeCourseCompletionDetail = async (
 }
 
 export const fetchDepartmentEmployeeTrainingOverview = async (
-  deptId: string,
-  personType: number = 0,
-  aiMaturity?: string
-): Promise<DepartmentEmployeeTrainingOverviewRow[]> => {
+  query: DepartmentEmployeeTrainingOverviewQuery
+): Promise<DepartmentEmployeeTrainingOverviewPage> => {
+  const empty: DepartmentEmployeeTrainingOverviewPage = {
+    records: [],
+    total: 0,
+    pageNum: query.pageNum ?? 1,
+    pageSize: query.pageSize ?? 50,
+    pages: 0,
+  }
   try {
     const params = new URLSearchParams({
-      deptId,
-      personType: String(personType),
+      deptId: query.deptId,
+      personType: String(query.personType ?? 0),
+      pageNum: String(query.pageNum ?? 1),
+      pageSize: String(query.pageSize ?? 50),
     })
-    if (aiMaturity != null && String(aiMaturity).trim() !== '') {
-      params.set('ai_maturity', String(aiMaturity).trim())
+    if (query.aiMaturity != null && String(query.aiMaturity).trim() !== '') {
+      params.set('ai_maturity', String(query.aiMaturity).trim())
+    }
+    if (query.name != null && String(query.name).trim() !== '') {
+      params.set('name', String(query.name).trim())
+    }
+    if (query.employeeNumber != null && String(query.employeeNumber).trim() !== '') {
+      params.set('employeeNumber', String(query.employeeNumber).trim())
     }
     const url = `/personal-course/department-employee-training-overview?${params.toString()}`
-    const response = await get<Result<DepartmentEmployeeTrainingOverviewRow[]>>(url)
-    if (response.code === 200 && Array.isArray(response.data)) {
-      return response.data
+    const response = await get<Result<DepartmentEmployeeTrainingOverviewPage>>(url)
+    if (response.code === 200 && response.data) {
+      return {
+        records: Array.isArray(response.data.records) ? response.data.records : [],
+        total: Number(response.data.total ?? 0),
+        pageNum: Number(response.data.pageNum ?? query.pageNum ?? 1),
+        pageSize: Number(response.data.pageSize ?? query.pageSize ?? 50),
+        pages: Number(response.data.pages ?? 0),
+      }
     }
-    return []
+    return empty
   } catch (error) {
     console.error('获取部门全员训战总览异常：', error)
+    return empty
+  }
+}
+
+/** 按当前筛选条件拉取全部训战总览明细（导出用） */
+export const fetchAllDepartmentEmployeeTrainingOverview = async (
+  query: Omit<DepartmentEmployeeTrainingOverviewQuery, 'pageNum' | 'pageSize'>
+): Promise<DepartmentEmployeeTrainingOverviewRow[]> => {
+  const probe = await fetchDepartmentEmployeeTrainingOverview({
+    ...query,
+    pageNum: 1,
+    pageSize: 1,
+  })
+  const total = probe.total ?? 0
+  if (total <= 0) {
     return []
   }
+  const pageSize = Math.min(Math.max(total, 1), 5000)
+  const pages = Math.ceil(total / pageSize)
+  const all: DepartmentEmployeeTrainingOverviewRow[] = []
+  for (let page = 1; page <= pages; page++) {
+    const res = await fetchDepartmentEmployeeTrainingOverview({
+      ...query,
+      pageNum: page,
+      pageSize,
+    })
+    if (res.records?.length) {
+      all.push(...res.records)
+    }
+  }
+  return all
 }
 
 const MATURITY_LEVEL_ORDER = ['L1', 'L2', 'L3']

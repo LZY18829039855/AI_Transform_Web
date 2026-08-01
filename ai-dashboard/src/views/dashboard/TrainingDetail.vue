@@ -4,6 +4,7 @@ import { ArrowLeft, Refresh, Search, Close, Download } from '@element-plus/icons
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  fetchAllDepartmentEmployeeTrainingOverview,
   fetchDepartmentEmployeeCourseCompletionDetail,
   fetchDepartmentEmployeeTrainingOverview,
   fetchTrainingDetail,
@@ -14,6 +15,7 @@ import { exportTrainingDetailToExcel } from '@/utils/excelExport'
 import type {
   DepartmentCourseCompletionRateRow,
   DepartmentEmployeeTrainingOverviewRow,
+  TrainingBattleRecord,
   TrainingDetailData,
   TrainingDetailFilters,
   TrainingRoleSummaryRow,
@@ -25,7 +27,11 @@ const route = useRoute()
 const loading = ref(false)
 const exporting = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
-/** 部门下钻时，从「部门全员训战总览」接口返回的明细列表 */
+/** AI训战数据明细表分页（对齐 AI 学分看板详情；下钻走后端分页） */
+const pageNum = ref(1)
+const pageSize = ref(50)
+const drillDownTotal = ref(0)
+/** 部门下钻时，当前页明细列表（后端分页） */
 const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
 /** 部门下钻时，从看板传入的本部门训战数据行（用于展示部门训战数据表，不请求后端） */
 const drillDownDepartmentRow = ref<DepartmentCourseCompletionRateRow | null>(null)
@@ -119,21 +125,30 @@ const roleSummaryCardTitle = computed(() => {
 
 const formatAvgLearnersInteger = (value: number) => String(Math.round(value ?? 0))
 
-const fetchDetail = async () => {
+const fetchDetail = async (options?: { resetPage?: boolean }) => {
   loading.value = true
   try {
+    if (options?.resetPage) {
+      pageNum.value = 1
+    }
     if (isDrillDownPage.value) {
       if (route.query.deptId) {
-        const deptId = route.query.deptId as string
-        const personType = parsePersonTypeFromRouteQuery()
-        const aiMaturity = parseAiMaturityFromRouteQuery()
-        drillDownRecords.value = await fetchDepartmentEmployeeTrainingOverview(
-          deptId,
-          personType,
-          aiMaturity
-        )
+        const page = await fetchDepartmentEmployeeTrainingOverview({
+          deptId: route.query.deptId as string,
+          personType: parsePersonTypeFromRouteQuery(),
+          aiMaturity: parseAiMaturityFromRouteQuery(),
+          name: tableFilterName.value,
+          employeeNumber: tableFilterEmployeeId.value,
+          pageNum: pageNum.value,
+          pageSize: pageSize.value,
+        })
+        drillDownRecords.value = page.records
+        drillDownTotal.value = page.total
+        pageNum.value = page.pageNum
+        pageSize.value = page.pageSize
       } else {
         drillDownRecords.value = []
+        drillDownTotal.value = 0
       }
     } else {
       detailData.value = await fetchTrainingDetail(props.id, {
@@ -143,9 +158,25 @@ const fetchDetail = async () => {
           : undefined,
       })
       drillDownRecords.value = []
+      drillDownTotal.value = 0
     }
   } finally {
     loading.value = false
+  }
+}
+
+const handlePageChange = (page: number) => {
+  pageNum.value = page
+  if (isDrillDownPage.value) {
+    fetchDetail()
+  }
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  pageNum.value = 1
+  if (isDrillDownPage.value) {
+    fetchDetail()
   }
 }
 
@@ -301,15 +332,30 @@ const handleExport = async () => {
   const deptRow = isDrill ? drillDownDepartmentRow.value : null
   const roleRow = isDrill ? drillDownRoleSummaryRow.value : null
   const roleType = isDrill ? drillDownRoleType.value : null
-  const detailList = isDrill ? filteredDrillDownRecords.value : filteredDetailRecords.value
-
-  if (detailList.length === 0 && !deptRow && !(roleRow && roleType)) {
-    ElMessage.warning('暂无数据可导出')
-    return
-  }
 
   exporting.value = true
   try {
+    let detailList: DepartmentEmployeeTrainingOverviewRow[] | TrainingBattleRecord[] = []
+    if (isDrill) {
+      const deptId = route.query.deptId as string | undefined
+      if (deptId) {
+        detailList = await fetchAllDepartmentEmployeeTrainingOverview({
+          deptId,
+          personType: parsePersonTypeFromRouteQuery(),
+          aiMaturity: parseAiMaturityFromRouteQuery(),
+          name: tableFilterName.value,
+          employeeNumber: tableFilterEmployeeId.value,
+        })
+      }
+    } else {
+      detailList = filteredDetailRecords.value
+    }
+
+    if (detailList.length === 0 && !deptRow && !(roleRow && roleType)) {
+      ElMessage.warning('暂无数据可导出')
+      return
+    }
+
     let courseCompletionDetail = null
     const deptId = route.query.deptId as string | undefined
     if (isDrill && deptId) {
@@ -435,6 +481,9 @@ const handleKeywordConfirm = () => {
     selectedField.value = null
   }
   showKeywordDropdown.value = false
+  if (isDrillDownPage.value) {
+    fetchDetail({ resetPage: true })
+  }
   nextTick(() => {
     isFilterBoxUpdating.value = false
   })
@@ -454,6 +503,9 @@ const handleFilterClear = () => {
   tableFilterEmployeeId.value = undefined
   showFieldDropdown.value = false
   showKeywordDropdown.value = false
+  if (isDrillDownPage.value) {
+    fetchDetail({ resetPage: true })
+  }
   nextTick(() => {
     isFilterBoxUpdating.value = false
   })
@@ -488,21 +540,10 @@ watch(
   { immediate: true }
 )
 
-/** 部门下钻表格：按姓名、工号(employeeNumber)过滤 */
-const filteredDrillDownRecords = computed(() => {
-  let list = drillDownRecords.value
-  if (tableFilterName.value && tableFilterName.value.trim()) {
-    const kw = tableFilterName.value.trim().toLowerCase()
-    list = list.filter((row) => row.name && String(row.name).toLowerCase().includes(kw))
-  }
-  if (tableFilterEmployeeId.value && tableFilterEmployeeId.value.trim()) {
-    const kw = tableFilterEmployeeId.value.trim().toLowerCase()
-    list = list.filter((row) => row.employeeNumber && String(row.employeeNumber).toLowerCase().includes(kw))
-  }
-  return list
-})
+/** 部门下钻表格：后端已按姓名/工号过滤，此处直接使用当前页 */
+const filteredDrillDownRecords = computed(() => drillDownRecords.value)
 
-/** 非下钻明细表格：按姓名、工号(employeeId)过滤 */
+/** 非下钻明细表格：按姓名、工号(employeeId)过滤（前端分页兜底） */
 const filteredDetailRecords = computed(() => {
   if (!detailData.value) {
     return []
@@ -519,10 +560,36 @@ const filteredDetailRecords = computed(() => {
   return list
 })
 
+/** 当前明细表总条数（下钻用后端 total，非下钻用前端过滤结果） */
+const detailTableTotal = computed(() =>
+  isDrillDownPage.value ? drillDownTotal.value : filteredDetailRecords.value.length
+)
+
+/** 非下钻明细：当前页数据（前端分页；下钻页直接使用后端当前页） */
+const pagedDetailRecords = computed(() => {
+  const list = filteredDetailRecords.value
+  const start = (pageNum.value - 1) * pageSize.value
+  return list.slice(start, start + pageSize.value)
+})
+
+/** 非下钻场景：过滤结果变化后校正页码 */
+watch(
+  () => (isDrillDownPage.value ? 0 : filteredDetailRecords.value.length),
+  (total) => {
+    if (isDrillDownPage.value) {
+      return
+    }
+    const maxPage = Math.max(1, Math.ceil(total / pageSize.value) || 1)
+    if (pageNum.value > maxPage) {
+      pageNum.value = maxPage
+    }
+  }
+)
+
 watch(
   filters,
   () => {
-    fetchDetail()
+    fetchDetail({ resetPage: true })
   },
   { deep: true }
 )
@@ -578,7 +645,7 @@ onBeforeUnmount(() => {
           type="primary"
           :icon="Download"
           :loading="exporting"
-          :disabled="isDrillDownPage ? (filteredDrillDownRecords.length === 0 && !drillDownDepartmentRow && !drillDownRoleSummaryRow) : filteredDetailRecords.length === 0"
+          :disabled="isDrillDownPage ? (drillDownTotal === 0 && !drillDownDepartmentRow && !drillDownRoleSummaryRow) : filteredDetailRecords.length === 0"
           @click="handleExport"
         >
           导出数据
@@ -1054,7 +1121,7 @@ onBeforeUnmount(() => {
         <!-- 非部门下钻：原有明细表格 -->
         <el-table
           v-else
-          :data="filteredDetailRecords"
+          :data="pagedDetailRecords"
           border
           stripe
           size="small"
@@ -1115,6 +1182,17 @@ onBeforeUnmount(() => {
           <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" align="center" header-align="center" />
           <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" fixed="right" align="center" header-align="center" />
         </el-table>
+        <div class="pagination-wrap">
+          <el-pagination
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="detailTableTotal"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
       </el-card>
 
       <!-- 训战课程规划（部门下钻时不展示，因无课程规划数据） -->
@@ -1455,6 +1533,12 @@ onBeforeUnmount(() => {
   :deep(.el-table .cell) {
     white-space: nowrap;
   }
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
 }
 
 @media (max-width: 768px) {
