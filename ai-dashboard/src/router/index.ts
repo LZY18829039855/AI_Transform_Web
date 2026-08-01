@@ -33,6 +33,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'AI训战课程管理',
       requiresAuth: true,
+      requiresAdmin: true,
       keepAlive: false,
     },
   },

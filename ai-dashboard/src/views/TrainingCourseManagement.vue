@@ -19,6 +19,10 @@ import {
 } from '@/api/trainingCourseManage'
 import type { DepartmentInfoVO } from '@/types/dashboard'
 import type { DeptCourseSelectionRecord, TrainingCourseRecord } from '@/types/trainingCourseManage'
+import {
+  fetchCreditWritePermission,
+  guardCreditWriteAccess,
+} from '@/utils/permissions'
 
 /** 云核心网研发管理部（三级），其下直属子部门为四级部门 */
 const R_D_MANAGEMENT_DEPT_CODE = '030681'
@@ -26,6 +30,8 @@ const R_D_MANAGEMENT_DEPT_CODE = '030681'
 const activeTab = ref<'courses' | 'deptSelections'>('courses')
 const courseLoading = ref(false)
 const deptLoading = ref(false)
+/** 与多元化学分管理一致：canEditCredit 控制配置权限 */
+const canEditCredit = ref(false)
 /** 部门选课是否已加载过，避免切页签重复请求导致整页闪烁 */
 let deptLoaded = false
 
@@ -207,19 +213,28 @@ function handleCourseSelectionChange(rows: TrainingCourseRecord[]) {
 
 const hasCourseSelection = computed(() => selectedCourses.value.length > 0)
 
-function handleAddCourse() {
+async function handleAddCourse() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   courseDialogTitle.value = '新增训战课程'
   courseForm.value = emptyCourse()
   courseDialogVisible.value = true
 }
 
-function handleEditCourse(row: TrainingCourseRecord) {
+async function handleEditCourse(row: TrainingCourseRecord) {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   courseDialogTitle.value = '编辑训战课程'
   courseForm.value = { ...row, selectedDepts: [...(row.selectedDepts ?? [])] }
   courseDialogVisible.value = true
 }
 
 async function handleSubmitCourse() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   if (!courseFormRef.value) {
     return
   }
@@ -257,6 +272,9 @@ async function handleSubmitCourse() {
 }
 
 async function handleDeleteCourse(row: TrainingCourseRecord) {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   try {
     await ElMessageBox.confirm(
       `确定删除课程「${row.courseName || row.id}」吗？`,
@@ -276,6 +294,9 @@ async function handleDeleteCourse(row: TrainingCourseRecord) {
 }
 
 async function handleBatchDeleteCourses() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   if (!selectedCourses.value.length) {
     return
   }
@@ -502,6 +523,9 @@ async function refreshCourseOptions() {
 }
 
 async function openAddDeptDialog() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   addDeptCode.value = ''
   addDeptName.value = ''
   addDeptCourseIds.value = []
@@ -512,6 +536,9 @@ async function openAddDeptDialog() {
 }
 
 async function submitAddDeptSelection() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   const code = addDeptCode.value.trim()
   const name = addDeptName.value.trim() || code
   if (!code) {
@@ -542,7 +569,10 @@ async function submitAddDeptSelection() {
   }
 }
 
-function openEditCoursesDialog() {
+async function openEditCoursesDialog() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   if (!filterDeptCode.value) {
     ElMessage.warning('请先选择部门')
     return
@@ -557,6 +587,9 @@ function openEditCoursesDialog() {
 }
 
 async function submitEditCourses() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   if (!filterDeptCode.value) {
     return
   }
@@ -589,6 +622,9 @@ async function submitEditCourses() {
 }
 
 async function handleRemoveDeptCourses(rows: TrainingCourseRecord[]) {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   if (!filterDeptCode.value || !rows.length) {
     return
   }
@@ -630,6 +666,9 @@ async function handleRemoveDeptCourses(rows: TrainingCourseRecord[]) {
 }
 
 async function handleDeleteDeptConfig() {
+  if (!(await guardCreditWriteAccess())) {
+    return
+  }
   if (!filterDeptCode.value) {
     ElMessage.warning('请先选择部门')
     return
@@ -668,6 +707,9 @@ watch(activeTab, (tab) => {
 })
 
 onMounted(async () => {
+  fetchCreditWritePermission().then((allowed) => {
+    canEditCredit.value = allowed
+  })
   await loadCourses()
 })
 </script>
@@ -691,9 +733,15 @@ onMounted(async () => {
             <div v-loading="courseLoading">
             <div class="manage-toolbar">
               <div class="manage-toolbar__start">
-                <el-button type="success" :icon="DocumentAdd" @click="handleAddCourse">
+                <el-button
+                  v-if="canEditCredit"
+                  type="success"
+                  :icon="DocumentAdd"
+                  @click="handleAddCourse"
+                >
                   新增课程
                 </el-button>
+                <el-tag v-if="!canEditCredit" type="info" effect="plain">只读模式</el-tag>
               </div>
               <div class="manage-toolbar__right">
                 <el-select
@@ -720,7 +768,7 @@ onMounted(async () => {
                     </el-icon>
                   </template>
                 </el-input>
-                <el-tooltip content="批量删除" placement="top">
+                <el-tooltip v-if="canEditCredit" content="批量删除" placement="top">
                   <span class="manage-toolbar__batch-wrap">
                     <el-button
                       type="danger"
@@ -744,6 +792,7 @@ onMounted(async () => {
               @selection-change="handleCourseSelectionChange"
             >
               <el-table-column
+                v-if="canEditCredit"
                 type="selection"
                 width="48"
                 header-align="center"
@@ -777,6 +826,7 @@ onMounted(async () => {
               </el-table-column>
               <el-table-column prop="credit" label="学分" width="80" header-align="center" align="center" />
               <el-table-column
+                v-if="canEditCredit"
                 label="操作"
                 width="100"
                 header-align="center"
@@ -792,7 +842,9 @@ onMounted(async () => {
                 </template>
               </el-table-column>
               <template #empty>
-                <el-empty description="暂无数据，请点击「新增课程」" />
+                <el-empty
+                  :description="canEditCredit ? '暂无数据，请点击「新增课程」' : '暂无数据'"
+                />
               </template>
             </el-table>
 
@@ -816,10 +868,15 @@ onMounted(async () => {
             <div v-loading="deptLoading || deptSaving">
               <div class="manage-toolbar">
                 <div class="manage-toolbar__start">
-                  <el-button type="success" :icon="Plus" @click="openAddDeptDialog">
+                  <el-button
+                    v-if="canEditCredit"
+                    type="success"
+                    :icon="Plus"
+                    @click="openAddDeptDialog"
+                  >
                     新增部门选课
                   </el-button>
-                  <template v-if="filterDeptCode">
+                  <template v-if="canEditCredit && filterDeptCode">
                     <el-button
                       type="primary"
                       :icon="EditPen"
@@ -837,6 +894,7 @@ onMounted(async () => {
                       删除部门配置
                     </el-button>
                   </template>
+                  <el-tag v-if="!canEditCredit" type="info" effect="plain">只读模式</el-tag>
                 </div>
                 <div class="manage-toolbar__right dept-filter-bar">
                   <el-select
@@ -855,7 +913,11 @@ onMounted(async () => {
                       :value="d.deptCode"
                     />
                   </el-select>
-                  <el-tooltip v-if="filterDeptCode" content="批量移除选中课程" placement="top">
+                  <el-tooltip
+                    v-if="canEditCredit && filterDeptCode"
+                    content="批量移除选中课程"
+                    placement="top"
+                  >
                     <span class="manage-toolbar__batch-wrap">
                       <el-button
                         type="danger"
@@ -874,7 +936,11 @@ onMounted(async () => {
                 type="info"
                 :closable="false"
                 show-icon
-                title="当前为全部部门选课总览（同训战课程规划表）；选择部门后可查看并编辑该部门目标课程"
+                :title="
+                  canEditCredit
+                    ? '当前为全部部门选课总览（同训战课程规划表）；选择部门后可查看并编辑该部门目标课程'
+                    : '当前为全部部门选课总览（同训战课程规划表）；选择部门后可查看该部门目标课程'
+                "
                 class="dept-filter-tip"
               />
 
@@ -944,13 +1010,20 @@ onMounted(async () => {
                 :span-method="deptSpanMethod"
                 @selection-change="(rows: TrainingCourseRecord[]) => (selectedDeptCourseRows = rows)"
               >
-                <el-table-column type="selection" width="48" header-align="center" align="center" />
+                <el-table-column
+                  v-if="canEditCredit"
+                  type="selection"
+                  width="48"
+                  header-align="center"
+                  align="center"
+                />
                 <el-table-column prop="bigType" label="课程主分类" width="120" header-align="center" align="center" />
                 <el-table-column prop="courseLevel" label="训战分类" width="100" header-align="center" align="center" />
                 <el-table-column prop="sybType" label="课程子类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
                 <el-table-column prop="courseName" label="课程名称" min-width="200" header-align="center" align="center" show-overflow-tooltip />
                 <el-table-column prop="credit" label="学分" width="80" header-align="center" align="center" />
                 <el-table-column
+                  v-if="canEditCredit"
                   label="操作"
                   width="80"
                   header-align="center"
@@ -970,9 +1043,13 @@ onMounted(async () => {
                 <template #empty>
                   <el-empty
                     :description="
-                      currentDeptSelection
-                        ? '该部门暂无目标课程，可点击「编辑目标课程」添加'
-                        : '该部门尚无选课配置，请点击「新增部门选课」'
+                      !currentDeptSelection
+                        ? canEditCredit
+                          ? '该部门尚无选课配置，请点击「新增部门选课」'
+                          : '该部门尚无选课配置'
+                        : canEditCredit
+                          ? '该部门暂无目标课程，可点击「编辑目标课程」添加'
+                          : '该部门暂无目标课程'
                     "
                   />
                 </template>
