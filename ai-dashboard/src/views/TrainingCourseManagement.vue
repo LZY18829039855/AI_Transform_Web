@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Delete, DocumentAdd, EditPen, Plus, Search } from '@element-plus/icons-vue'
+import { Check, Delete, DocumentAdd, EditPen, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import DepartmentCascader from '@/components/department/DepartmentCascader.vue'
+import { fetchDepartmentChildren } from '@/api/dashboard'
 import {
   calcTargetNums,
   createDeptCourseSelection,
@@ -17,7 +17,11 @@ import {
   updateDeptCourseSelection,
   updateTrainingCourse,
 } from '@/api/trainingCourseManage'
+import type { DepartmentInfoVO } from '@/types/dashboard'
 import type { DeptCourseSelectionRecord, TrainingCourseRecord } from '@/types/trainingCourseManage'
+
+/** 云核心网研发管理部（三级），其下直属子部门为四级部门 */
+const R_D_MANAGEMENT_DEPT_CODE = '030681'
 
 const activeTab = ref<'courses' | 'deptSelections'>('courses')
 const courseLoading = ref(false)
@@ -298,17 +302,17 @@ async function handleBatchDeleteCourses() {
 /** ---------- 部门目标选课 ---------- */
 const allCoursesForDept = ref<TrainingCourseRecord[]>([])
 const deptSelectionList = ref<DeptCourseSelectionRecord[]>([])
-const filterDeptPath = ref<string[]>([])
 const filterDeptCode = ref('')
 const filterDeptName = ref('')
 const selectedDeptCourseRows = ref<TrainingCourseRecord[]>([])
 const deptSaving = ref(false)
 
 const addDeptDialogVisible = ref(false)
-const addDeptPath = ref<string[]>([])
 const addDeptCode = ref('')
 const addDeptName = ref('')
 const addDeptCourseIds = ref<number[]>([])
+const level4DeptOptions = ref<DepartmentInfoVO[]>([])
+const level4DeptLoading = ref(false)
 
 const editCoursesDialogVisible = ref(false)
 const editCourseIds = ref<number[]>([])
@@ -316,6 +320,27 @@ const editCourseIds = ref<number[]>([])
 const currentDeptSelection = computed(() =>
   deptSelectionList.value.find((d) => d.deptCode === filterDeptCode.value) ?? null,
 )
+
+/** 总览：与训战课程规划表一致的部门列 */
+const departmentColumns = computed(() =>
+  [...deptSelectionList.value]
+    .map((d) => ({ deptCode: d.deptCode, deptName: d.deptName || d.deptCode }))
+    .sort((a, b) => a.deptCode.localeCompare(b.deptCode)),
+)
+
+/** 总览矩阵：全部课程行 */
+const planningOverviewRows = computed(() => sortCourseRows(allCoursesForDept.value))
+
+function isSelectedByDept(row: TrainingCourseRecord, deptCode: string): boolean {
+  if (!row.id || !deptCode) {
+    return false
+  }
+  const sel = deptSelectionList.value.find((d) => d.deptCode === deptCode)
+  if (!sel) {
+    return false
+  }
+  return sel.courseIds.includes(row.id) || sel.practicalCourseIds.includes(row.id)
+}
 
 /** 当前部门下的目标课程（仅展示已选课程） */
 const filteredDeptCourses = computed(() => {
@@ -337,6 +362,36 @@ const courseOptionsForSelect = computed(() =>
   })),
 )
 
+/** 规划表总览：主分类在第 0 列 */
+const planningOverviewSpanMethod = ({
+  row,
+  rowIndex,
+  columnIndex,
+}: {
+  row: TrainingCourseRecord
+  rowIndex: number
+  columnIndex: number
+}) => {
+  if (columnIndex !== 0) {
+    return { rowspan: 1, colspan: 1 }
+  }
+  const currentValue = row.bigType
+  const rows = planningOverviewRows.value
+  if (rowIndex > 0 && rows[rowIndex - 1]?.bigType === currentValue) {
+    return { rowspan: 0, colspan: 0 }
+  }
+  let rowspan = 1
+  for (let i = rowIndex + 1; i < rows.length; i++) {
+    if (rows[i]?.bigType === currentValue) {
+      rowspan++
+    } else {
+      break
+    }
+  }
+  return { rowspan, colspan: 1 }
+}
+
+/** 部门明细：有多选列时主分类为第 1 列 */
 const deptSpanMethod = ({
   row,
   rowIndex,
@@ -346,7 +401,6 @@ const deptSpanMethod = ({
   rowIndex: number
   columnIndex: number
 }) => {
-  // 有多选列时主分类为第 1 列
   if (columnIndex !== 1) {
     return { rowspan: 1, colspan: 1 }
   }
@@ -366,28 +420,34 @@ const deptSpanMethod = ({
   return { rowspan, colspan: 1 }
 }
 
-function resolveDeptCodeFromPath(path: string[]): string {
-  if (!path?.length) {
-    return ''
-  }
-  return path.length >= 4 ? path[3] : path[path.length - 1]
-}
-
-function handleFilterDeptPathChange(path: string[]) {
-  filterDeptPath.value = path || []
-  filterDeptCode.value = resolveDeptCodeFromPath(path || [])
-  // 名称优先用已有配置，否则先用工号编码占位，用户可在新增时填写
+function handleQuickSelectDept(deptCode: string) {
+  filterDeptCode.value = deptCode || ''
   const existing = deptSelectionList.value.find((d) => d.deptCode === filterDeptCode.value)
   filterDeptName.value = existing?.deptName || filterDeptCode.value
   selectedDeptCourseRows.value = []
 }
 
-function handleQuickSelectDept(deptCode: string) {
-  filterDeptCode.value = deptCode
-  const existing = deptSelectionList.value.find((d) => d.deptCode === deptCode)
-  filterDeptName.value = existing?.deptName || deptCode
-  filterDeptPath.value = deptCode ? [deptCode] : []
-  selectedDeptCourseRows.value = []
+async function loadLevel4DeptOptions() {
+  level4DeptLoading.value = true
+  try {
+    const children = await fetchDepartmentChildren(R_D_MANAGEMENT_DEPT_CODE)
+    // 研发管理部下直属子部门即为四级；再按层级过滤兜底
+    level4DeptOptions.value = (children || [])
+      .filter((d) => !d.deptLevel || String(d.deptLevel) === '4')
+      .sort((a, b) => a.deptCode.localeCompare(b.deptCode))
+  } catch (e) {
+    console.error(e)
+    level4DeptOptions.value = []
+    ElMessage.error(e instanceof Error ? e.message : '加载四级部门失败')
+  } finally {
+    level4DeptLoading.value = false
+  }
+}
+
+function handleAddDeptSelect(deptCode: string) {
+  const selected = level4DeptOptions.value.find((d) => d.deptCode === deptCode)
+  addDeptCode.value = selected?.deptCode || ''
+  addDeptName.value = selected?.deptName || ''
 }
 
 function buildRecordFromSelectedIds(
@@ -441,24 +501,21 @@ async function refreshCourseOptions() {
   }
 }
 
-function openAddDeptDialog() {
-  addDeptPath.value = []
+async function openAddDeptDialog() {
   addDeptCode.value = ''
   addDeptName.value = ''
   addDeptCourseIds.value = []
   addDeptDialogVisible.value = true
-}
-
-function handleAddDeptPathChange(path: string[]) {
-  addDeptPath.value = path || []
-  addDeptCode.value = resolveDeptCodeFromPath(path || [])
+  if (!level4DeptOptions.value.length) {
+    await loadLevel4DeptOptions()
+  }
 }
 
 async function submitAddDeptSelection() {
   const code = addDeptCode.value.trim()
   const name = addDeptName.value.trim() || code
   if (!code) {
-    ElMessage.warning('请选择或填写部门编码')
+    ElMessage.warning('请选择四级部门')
     return
   }
   if (deptSelectionList.value.some((d) => d.deptCode === code)) {
@@ -596,7 +653,6 @@ async function handleDeleteDeptConfig() {
     ElMessage.success('已删除部门选课配置')
     filterDeptCode.value = ''
     filterDeptName.value = ''
-    filterDeptPath.value = []
     await loadDeptSelections(true)
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '删除失败')
@@ -763,22 +819,24 @@ onMounted(async () => {
                   <el-button type="success" :icon="Plus" @click="openAddDeptDialog">
                     新增部门选课
                   </el-button>
-                  <el-button
-                    type="primary"
-                    :icon="EditPen"
-                    :disabled="!filterDeptCode || !currentDeptSelection"
-                    @click="openEditCoursesDialog"
-                  >
-                    编辑目标课程
-                  </el-button>
-                  <el-button
-                    type="danger"
-                    :icon="Delete"
-                    :disabled="!filterDeptCode || !currentDeptSelection"
-                    @click="handleDeleteDeptConfig"
-                  >
-                    删除部门配置
-                  </el-button>
+                  <template v-if="filterDeptCode">
+                    <el-button
+                      type="primary"
+                      :icon="EditPen"
+                      :disabled="!currentDeptSelection"
+                      @click="openEditCoursesDialog"
+                    >
+                      编辑目标课程
+                    </el-button>
+                    <el-button
+                      type="danger"
+                      :icon="Delete"
+                      :disabled="!currentDeptSelection"
+                      @click="handleDeleteDeptConfig"
+                    >
+                      删除部门配置
+                    </el-button>
+                  </template>
                 </div>
                 <div class="manage-toolbar__right dept-filter-bar">
                   <el-select
@@ -797,13 +855,7 @@ onMounted(async () => {
                       :value="d.deptCode"
                     />
                   </el-select>
-                  <div class="dept-cascader-wrap">
-                    <DepartmentCascader
-                      v-model="filterDeptPath"
-                      @change="handleFilterDeptPathChange"
-                    />
-                  </div>
-                  <el-tooltip content="批量移除选中课程" placement="top">
+                  <el-tooltip v-if="filterDeptCode" content="批量移除选中课程" placement="top">
                     <span class="manage-toolbar__batch-wrap">
                       <el-button
                         type="danger"
@@ -822,10 +874,66 @@ onMounted(async () => {
                 type="info"
                 :closable="false"
                 show-icon
-                title="请先选择部门，将仅展示该部门的目标课程"
+                title="当前为全部部门选课总览（同训战课程规划表）；选择部门后可查看并编辑该部门目标课程"
                 class="dept-filter-tip"
               />
 
+              <!-- 未选部门：规划表总览 -->
+              <el-table
+                v-if="!filterDeptCode"
+                class="planning-table"
+                :data="planningOverviewRows"
+                border
+                style="width: 100%"
+                max-height="620"
+                empty-text="暂无数据"
+                :span-method="planningOverviewSpanMethod"
+              >
+                <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
+                <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
+                <el-table-column prop="courseName" label="课程名称" width="500" align="center" show-overflow-tooltip />
+                <el-table-column label="课程编码（线上课程涉及）" min-width="200" align="center">
+                  <template #default="{ row }">
+                    <el-tooltip
+                      v-if="row.courseLink && row.courseNumber"
+                      content="点击进入iLearning课程"
+                      placement="top"
+                    >
+                      <el-link
+                        type="primary"
+                        :href="row.courseLink"
+                        target="_blank"
+                        class="course-link"
+                      >
+                        {{ row.courseNumber }}
+                      </el-link>
+                    </el-tooltip>
+                    <span v-else class="cell-placeholder">-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="目标人群" width="100" align="center">
+                  <template #default>
+                    <span>ALL</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="credit" label="学分" width="80" align="center" />
+                <el-table-column
+                  v-for="dept in departmentColumns"
+                  :key="dept.deptCode"
+                  :label="dept.deptName"
+                  width="120"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <el-icon v-if="isSelectedByDept(row, dept.deptCode)" class="check-icon">
+                      <Check />
+                    </el-icon>
+                    <span v-else class="cell-placeholder">-</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+
+              <!-- 已选部门：该部门目标课程明细（可增删改） -->
               <el-table
                 v-else
                 class="manage-table planning-like-table"
@@ -927,16 +1035,31 @@ onMounted(async () => {
 
     <!-- 新增部门选课 -->
     <el-dialog v-model="addDeptDialogVisible" title="新增部门选课" width="640px" destroy-on-close>
-      <el-form label-width="110px" v-loading="deptSaving">
-        <el-form-item label="选择部门">
-          <DepartmentCascader v-model="addDeptPath" @change="handleAddDeptPathChange" />
-          <p class="form-hint">建议选择四级部门；选择后将自动填充部门编码。</p>
+      <el-form label-width="110px" v-loading="deptSaving || level4DeptLoading">
+        <el-form-item label="四级部门" required>
+          <el-select
+            :model-value="addDeptCode"
+            filterable
+            clearable
+            placeholder="请选择云核心网研发管理部下的四级部门"
+            style="width: 100%"
+            @change="handleAddDeptSelect"
+            @clear="handleAddDeptSelect('')"
+          >
+            <el-option
+              v-for="opt in level4DeptOptions"
+              :key="opt.deptCode"
+              :label="`${opt.deptName}（${opt.deptCode}）`"
+              :value="opt.deptCode"
+            />
+          </el-select>
+          <p class="form-hint">仅支持选择研发管理部下的四级部门；选择后自动带出部门编码。</p>
         </el-form-item>
         <el-form-item label="部门编码" required>
-          <el-input v-model="addDeptCode" placeholder="部门编码" clearable />
+          <el-input v-model="addDeptCode" placeholder="选择部门后自动带出" disabled />
         </el-form-item>
         <el-form-item label="部门名称" required>
-          <el-input v-model="addDeptName" placeholder="部门名称" clearable />
+          <el-input v-model="addDeptName" placeholder="选择部门后自动带出" disabled />
         </el-form-item>
         <el-form-item label="目标课程">
           <el-select
@@ -1079,17 +1202,12 @@ onMounted(async () => {
 }
 
 .manage-toolbar__dept-select {
-  width: 240px;
-  max-width: min(240px, 100%);
+  width: 280px;
+  max-width: min(280px, 100%);
 }
 
 .dept-filter-bar {
   flex-wrap: wrap;
-}
-
-.dept-cascader-wrap {
-  width: 280px;
-  max-width: min(280px, 100%);
 }
 
 .dept-filter-tip {
