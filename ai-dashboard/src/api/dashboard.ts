@@ -24,6 +24,7 @@ import type {
   DepartmentNode,
   EmployeeCertStatisticsResponse,
   EmployeeDrillDownResponseVO,
+  EmployeeDetailVO,
   EmployeePersonalCertQualifiedInfo,
   ExpertAppointmentSummaryRow,
   ExpertCertificationSummaryRow,
@@ -1865,32 +1866,40 @@ export const fetchDepartmentChildren = (
   return requestPromise
 }
 /**
- * 查询干部或专家认证数据详情
- * @param deptCode 部门ID（部门编码）
- * @param aiMaturity 岗位AI成熟度（可选，L5代表查询L2和L3的数据）
- * @param jobCategory 职位类（可选）
- * @param personType 人员类型（1-干部，2-专家）
- * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1，仅对干部类型有效
- * @returns 员工详细信息列表
+ * 查询干部或专家认证数据详情（后端分页）
  */
 export const fetchPersonCertDetails = async (
   deptCode: string,
   aiMaturity?: string,
   jobCategory?: string,
   personType: number = 1,
-  queryType: number = 1
+  queryType: number = 1,
+  options?: {
+    name?: string
+    employeeNumber?: string
+    pageNum?: number
+    pageSize?: number
+  }
 ): Promise<EmployeeDrillDownResponseVO | null> => {
   try {
     const query = new URLSearchParams({
       deptCode: deptCode || '0',
       personType: String(personType),
       queryType: String(queryType),
+      pageNum: String(options?.pageNum ?? 1),
+      pageSize: String(options?.pageSize ?? 50),
     })
     if (aiMaturity && aiMaturity.trim().length) {
       query.append('aiMaturity', aiMaturity)
     }
     if (jobCategory && jobCategory.trim().length) {
       query.append('jobCategory', jobCategory)
+    }
+    if (options?.name && options.name.trim().length) {
+      query.append('name', options.name.trim())
+    }
+    if (options?.employeeNumber && options.employeeNumber.trim().length) {
+      query.append('employeeNumber', options.employeeNumber.trim())
     }
     const response = await get<Result<EmployeeDrillDownResponseVO>>(
       `/expert-cert-statistics/person-cert-details?${query.toString()}`
@@ -1907,32 +1916,40 @@ export const fetchPersonCertDetails = async (
 }
 
 /**
- * 查询干部任职数据详情
- * @param deptCode 部门ID（部门编码）
- * @param aiMaturity 岗位AI成熟度（可选）
- * @param jobCategory 职位类（可选）
- * @param personType 人员类型（1-干部）
- * @param queryType 查询类型（1-任职人数，2-基线人数），默认为1
- * @returns 员工详细信息列表
+ * 查询干部/专家任职数据详情（后端分页）
  */
 export const fetchCadreQualifiedDetails = async (
   deptCode: string,
   aiMaturity?: string,
   jobCategory?: string,
   personType: number = 1,
-  queryType: number = 1
+  queryType: number = 1,
+  options?: {
+    name?: string
+    employeeNumber?: string
+    pageNum?: number
+    pageSize?: number
+  }
 ): Promise<EmployeeDrillDownResponseVO | null> => {
   try {
     const query = new URLSearchParams({
       deptCode: deptCode || '0',
       personType: String(personType),
       queryType: String(queryType),
+      pageNum: String(options?.pageNum ?? 1),
+      pageSize: String(options?.pageSize ?? 50),
     })
     if (aiMaturity && aiMaturity.trim().length) {
       query.append('aiMaturity', aiMaturity)
     }
     if (jobCategory && jobCategory.trim().length) {
       query.append('jobCategory', jobCategory)
+    }
+    if (options?.name && options.name.trim().length) {
+      query.append('name', options.name.trim())
+    }
+    if (options?.employeeNumber && options.employeeNumber.trim().length) {
+      query.append('employeeNumber', options.employeeNumber.trim())
     }
     const response = await get<Result<EmployeeDrillDownResponseVO>>(
       `/expert-cert-statistics/cadre-qualified-details?${query.toString()}`
@@ -1946,6 +1963,80 @@ export const fetchCadreQualifiedDetails = async (
     console.error('获取干部任职数据详情异常：', error)
     return null
   }
+}
+
+/** 导出用：按当前筛选拉取全部认证明细 */
+export const fetchAllPersonCertDetails = async (
+  deptCode: string,
+  aiMaturity?: string,
+  jobCategory?: string,
+  personType: number = 1,
+  queryType: number = 1,
+  name?: string,
+  employeeNumber?: string
+): Promise<EmployeeDetailVO[]> => {
+  const probe = await fetchPersonCertDetails(deptCode, aiMaturity, jobCategory, personType, queryType, {
+    name,
+    employeeNumber,
+    pageNum: 1,
+    pageSize: 1,
+  })
+  const total = Number(probe?.total ?? 0)
+  if (total <= 0) {
+    return []
+  }
+  const pageSize = Math.min(Math.max(total, 1), 5000)
+  const pages = Math.ceil(total / pageSize)
+  const all: EmployeeDetailVO[] = []
+  for (let page = 1; page <= pages; page++) {
+    const res = await fetchPersonCertDetails(deptCode, aiMaturity, jobCategory, personType, queryType, {
+      name,
+      employeeNumber,
+      pageNum: page,
+      pageSize,
+    })
+    if (res?.employeeDetails?.length) {
+      all.push(...res.employeeDetails)
+    }
+  }
+  return all
+}
+
+/** 导出用：按当前筛选拉取全部任职明细 */
+export const fetchAllCadreQualifiedDetails = async (
+  deptCode: string,
+  aiMaturity?: string,
+  jobCategory?: string,
+  personType: number = 1,
+  queryType: number = 1,
+  name?: string,
+  employeeNumber?: string
+): Promise<EmployeeDetailVO[]> => {
+  const probe = await fetchCadreQualifiedDetails(deptCode, aiMaturity, jobCategory, personType, queryType, {
+    name,
+    employeeNumber,
+    pageNum: 1,
+    pageSize: 1,
+  })
+  const total = Number(probe?.total ?? 0)
+  if (total <= 0) {
+    return []
+  }
+  const pageSize = Math.min(Math.max(total, 1), 5000)
+  const pages = Math.ceil(total / pageSize)
+  const all: EmployeeDetailVO[] = []
+  for (let page = 1; page <= pages; page++) {
+    const res = await fetchCadreQualifiedDetails(deptCode, aiMaturity, jobCategory, personType, queryType, {
+      name,
+      employeeNumber,
+      pageNum: page,
+      pageSize,
+    })
+    if (res?.employeeDetails?.length) {
+      all.push(...res.employeeDetails)
+    }
+  }
+  return all
 }
 
 /**

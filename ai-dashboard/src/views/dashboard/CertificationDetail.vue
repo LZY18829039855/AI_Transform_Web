@@ -3,7 +3,7 @@ import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch
 import { ArrowLeft, QuestionFilled, Download, ArrowDown, ArrowUp, Search, Close } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails } from '@/api/dashboard'
+import { fetchCertificationDetailData, fetchCadreQualifiedDetails, fetchPersonCertDetails, fetchAllCadreQualifiedDetails, fetchAllPersonCertDetails } from '@/api/dashboard'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { exportCertificationDataToExcel } from '@/utils/excelExport'
@@ -20,8 +20,16 @@ const props = defineProps<{ id: string }>()
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
+/** 仅明细表区域 loading（翻页/筛选），避免整页骨架屏 */
+const tableLoading = ref(false)
 const detailData = ref<CertificationDetailData | null>(null)
 const activeTab = ref<'certification' | 'appointment'>('certification')
+/** 是否走后端分页（专家/干部/全员下钻新接口） */
+const serverPaged = ref(false)
+const pageNum = ref(1)
+const pageSize = ref(50)
+const appointmentTotal = ref(0)
+const certificationTotal = ref(0)
 // 标记是否是用户主动点击查询按钮
 const isUserQuery = ref(false)
 // 表格引用
@@ -138,9 +146,28 @@ const getDeptCodeFromPath = (path?: string[]): string => {
   return last && last.trim().length ? last : '0'
 }
 
-const fetchDetail = async () => {
-  loading.value = true
+const buildDrillPageOptions = () => ({
+  name: filters.value.name,
+  employeeNumber: filters.value.employeeId,
+  pageNum: pageNum.value,
+  pageSize: pageSize.value,
+})
+
+const detailTableTotal = computed(() =>
+  activeTab.value === 'appointment' ? appointmentTotal.value : certificationTotal.value
+)
+
+const fetchDetail = async (options?: { resetPage?: boolean; tableOnly?: boolean }) => {
+  const tableOnly = options?.tableOnly === true
+  if (tableOnly) {
+    tableLoading.value = true
+  } else {
+    loading.value = true
+  }
   try {
+    if (options?.resetPage) {
+      pageNum.value = 1
+    }
     // 检查是否是从部门柱状图或职位类柱状图点击跳转过来的（有deptCode、personType、queryType参数）
     const deptCodeFromRoute = route.query.deptCode as string | undefined
     const personTypeFromRoute = route.query.personType as string | undefined
@@ -157,6 +184,7 @@ const fetchDetail = async () => {
       // 不再对专家固定传 L6（L6 表示含 L1 的「全部岗位成熟度」，会覆盖看板表格下钻传入的 L2/L3/L5）
       const maturityParam: string | undefined = undefined
       const jobCategory: string | undefined = jobCategoryFromRoute || undefined // 从路由参数中读取职位类
+      const pageOptions = buildDrillPageOptions()
       
       // 并行加载任职和认证数据
       const [qualifiedResponse, certResponse] = await Promise.all([
@@ -165,14 +193,16 @@ const fetchDetail = async () => {
           maturityParam,
           jobCategory,
           personType,
-          queryType
+          queryType,
+          pageOptions
         ),
         fetchPersonCertDetails(
           deptCode,
           maturityParam,
           jobCategory,
           personType,
-          queryType
+          queryType,
+          pageOptions
         ),
       ])
       
@@ -216,6 +246,12 @@ const fetchDetail = async () => {
           })
         )
       }
+
+      serverPaged.value = true
+      appointmentTotal.value = Number(qualifiedResponse?.total ?? appointmentRecords.length)
+      certificationTotal.value = Number(certResponse?.total ?? certificationRecords.length)
+      if (qualifiedResponse?.pageNum) pageNum.value = qualifiedResponse.pageNum
+      if (qualifiedResponse?.pageSize) pageSize.value = qualifiedResponse.pageSize
       
       // 设置详情数据
       detailData.value = {
@@ -297,6 +333,7 @@ const fetchDetail = async () => {
       }
       
       loading.value = false
+      tableLoading.value = false
       return
     }
     
@@ -383,6 +420,7 @@ const fetchDetail = async () => {
         // 科目二通过人数统计基于基线干部，下钻需用 queryType=2 再前端过滤已通过科目二人员
         queryType = column === 'baseline' || column === 'subjectTwoPassed' ? 2 : 1
       }
+      const pageOptions = buildDrillPageOptions()
       const [qualifiedResponse, certResponse] = await Promise.all([
         // 加载任职数据，queryType默认为2
         fetchCadreQualifiedDetails(
@@ -390,7 +428,8 @@ const fetchDetail = async () => {
           maturityParam,
           jobCategory,
           personType,
-          queryType
+          queryType,
+          pageOptions
         ),
         // 加载认证数据，queryType默认为2
         fetchPersonCertDetails(
@@ -398,7 +437,8 @@ const fetchDetail = async () => {
           maturityParam,
           jobCategory,
           personType,
-          queryType
+          queryType,
+          pageOptions
         ),
       ])
 
@@ -448,6 +488,16 @@ const fetchDetail = async () => {
           )
         }
       }
+
+      serverPaged.value = true
+      appointmentTotal.value = Number(qualifiedResponse?.total ?? appointmentRecords.length)
+      certificationTotal.value = Number(
+        column === 'subjectTwoPassed'
+          ? certificationRecords.length
+          : (certResponse?.total ?? certificationRecords.length)
+      )
+      if (qualifiedResponse?.pageNum) pageNum.value = qualifiedResponse.pageNum
+      if (qualifiedResponse?.pageSize) pageSize.value = qualifiedResponse.pageSize
 
       // 构建detailData对象，同时包含任职和认证数据
       detailData.value = {
@@ -530,6 +580,9 @@ const fetchDetail = async () => {
           ? [...(filters.value.departmentPath ?? [])]
           : undefined,
       })
+      serverPaged.value = false
+      appointmentTotal.value = detailData.value?.appointmentRecords?.length ?? 0
+      certificationTotal.value = detailData.value?.certificationRecords?.length ?? 0
     }
   } catch (error) {
     console.error('加载详情数据失败:', error)
@@ -551,6 +604,7 @@ const fetchDetail = async () => {
     }
   } finally {
     loading.value = false
+    tableLoading.value = false
     // 保存用户查询标志，用于判断是否需要重置角色值
     const wasUserQuery = isUserQuery.value
     // 查询完成后，重置用户查询标志（下次如果是首次加载，会使用路由参数）
@@ -681,11 +735,16 @@ const handleExport = () => {
   }
 }
 
-// 处理tab切换，防止页面滚动到顶部
+// 处理tab切换，防止页面滚动到顶部；后端分页时按当前页总数校正页码
 const handleTabClick = async () => {
-  // 保存当前滚动位置
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-  // 使用nextTick确保在DOM更新后恢复滚动位置
+  if (serverPaged.value) {
+    const maxPage = Math.max(1, Math.ceil(detailTableTotal.value / pageSize.value) || 1)
+    if (pageNum.value > maxPage) {
+      pageNum.value = maxPage
+      fetchDetail({ tableOnly: true })
+    }
+  }
   await nextTick()
   requestAnimationFrame(() => {
     window.scrollTo({
@@ -765,6 +824,9 @@ const handleKeywordConfirm = () => {
     selectedField.value = null
   }
   showKeywordDropdown.value = false
+  if (serverPaged.value) {
+    fetchDetail({ resetPage: true, tableOnly: true })
+  }
   nextTick(() => {
     isFilterBoxUpdating.value = false
   })
@@ -786,6 +848,9 @@ const handleFilterClear = () => {
   filters.value.employeeId = undefined
   showFieldDropdown.value = false
   showKeywordDropdown.value = false
+  if (serverPaged.value) {
+    fetchDetail({ resetPage: true, tableOnly: true })
+  }
   nextTick(() => {
     isFilterBoxUpdating.value = false
   })
@@ -819,67 +884,62 @@ watch(
 )
 
 
-// 过滤认证记录（根据姓名和工号）
+// 过滤认证记录（后端分页时仅排序；旧接口仍前端过滤姓名工号）
 const filteredCertificationRecords = computed(() => {
   if (!detailData.value) {
     return []
   }
-  let records = detailData.value.certificationRecords
-  
-  // 根据姓名筛选
-  if (filters.value.name && filters.value.name.trim()) {
-    const nameFilter = filters.value.name.trim().toLowerCase()
-    records = records.filter((record) => 
-      record.name && record.name.toLowerCase().includes(nameFilter)
-    )
+  let records = [...detailData.value.certificationRecords]
+
+  if (!serverPaged.value) {
+    if (filters.value.name && filters.value.name.trim()) {
+      const nameFilter = filters.value.name.trim().toLowerCase()
+      records = records.filter((record) =>
+        record.name && record.name.toLowerCase().includes(nameFilter)
+      )
+    }
+    if (filters.value.employeeId && filters.value.employeeId.trim()) {
+      const employeeIdFilter = filters.value.employeeId.trim().toLowerCase()
+      records = records.filter((record) =>
+        record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
+      )
+    }
   }
-  
-  // 根据工号筛选
-  if (filters.value.employeeId && filters.value.employeeId.trim()) {
-    const employeeIdFilter = filters.value.employeeId.trim().toLowerCase()
-    records = records.filter((record) => 
-      record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
-    )
-  }
-  
-  // 按是否达标排序：达标（true）排在前面，不达标（false）排在后面，暂无数据（undefined）排在最后
+
   records.sort((a, b) => {
-    // 将 true 映射为 0（最前），false 映射为 1（中间），undefined 映射为 2（最后）
-    const getSortValue = (value) => {
+    const getSortValue = (value: boolean | undefined) => {
       if (value === true) return 0
       if (value === false) return 1
-      return 2 // undefined
+      return 2
     }
     return getSortValue(a.isCertStandard) - getSortValue(b.isCertStandard)
   })
-  
+
   return records
 })
 
-// 过滤任职记录（根据姓名和工号）
+// 过滤任职记录（后端分页时仅排序；旧接口仍前端过滤姓名工号）
 const filteredAppointmentRecords = computed(() => {
   if (!detailData.value) {
     return []
   }
-  let records = detailData.value.appointmentRecords
-  
-  // 根据姓名筛选
-  if (filters.value.name && filters.value.name.trim()) {
-    const nameFilter = filters.value.name.trim().toLowerCase()
-    records = records.filter((record) => 
-      record.name && record.name.toLowerCase().includes(nameFilter)
-    )
+  let records = [...detailData.value.appointmentRecords]
+
+  if (!serverPaged.value) {
+    if (filters.value.name && filters.value.name.trim()) {
+      const nameFilter = filters.value.name.trim().toLowerCase()
+      records = records.filter((record) =>
+        record.name && record.name.toLowerCase().includes(nameFilter)
+      )
+    }
+    if (filters.value.employeeId && filters.value.employeeId.trim()) {
+      const employeeIdFilter = filters.value.employeeId.trim().toLowerCase()
+      records = records.filter((record) =>
+        record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
+      )
+    }
   }
-  
-  // 根据工号筛选
-  if (filters.value.employeeId && filters.value.employeeId.trim()) {
-    const employeeIdFilter = filters.value.employeeId.trim().toLowerCase()
-    records = records.filter((record) => 
-      record.employeeId && record.employeeId.toLowerCase().includes(employeeIdFilter)
-    )
-  }
-  
-  // 按是否达标排序：达标（true）> 不达标（false）> 暂无数据（undefined）
+
   records.sort((a, b) => {
     if (a.isQualified === true && b.isQualified !== true) return -1
     if (a.isQualified !== true && b.isQualified === true) return 1
@@ -887,9 +947,24 @@ const filteredAppointmentRecords = computed(() => {
     if (a.isQualified === undefined && b.isQualified === false) return 1
     return 0
   })
-  
+
   return records
 })
+
+const handlePageChange = (page: number) => {
+  pageNum.value = page
+  if (serverPaged.value) {
+    fetchDetail({ tableOnly: true })
+  }
+}
+
+const handleSizeChange = (size: number) => {
+  pageSize.value = size
+  pageNum.value = 1
+  if (serverPaged.value) {
+    fetchDetail({ tableOnly: true })
+  }
+}
 
 const summaryMetrics = computed(() => {
   if (!detailData.value) return []
@@ -1276,7 +1351,7 @@ onBeforeUnmount(() => {
     </el-card>
     -->
 
-    <el-skeleton :rows="8" animated v-if="loading" />
+    <el-skeleton :rows="8" animated v-if="loading && !detailData" />
     <template v-else-if="detailData">
       <el-card shadow="hover" class="summary-card">
         <el-row :gutter="16">
@@ -1397,6 +1472,7 @@ onBeforeUnmount(() => {
                 </el-icon>
               </el-tooltip>
             </template>
+            <div class="detail-table-loading-wrap" v-loading="tableLoading || loading">
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small" :default-sort="appointmentTableDefaultSort">
               <el-table-column 
                 v-if="actualRole !== '0'"
@@ -1639,6 +1715,7 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
             </el-table>
+            </div>
           </el-tab-pane>
           <el-tab-pane name="certification">
             <template #label>
@@ -1661,6 +1738,7 @@ onBeforeUnmount(() => {
                 </el-icon>
               </el-tooltip>
             </template>
+            <div class="detail-table-loading-wrap" v-loading="tableLoading || loading">
             <el-table 
               :data="filteredCertificationRecords" 
               border 
@@ -1903,8 +1981,21 @@ onBeforeUnmount(() => {
                 </template>
               </el-table-column>
             </el-table>
+            </div>
           </el-tab-pane>
         </el-tabs>
+        <div v-if="serverPaged" class="pagination-wrap">
+          <el-pagination
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="detailTableTotal"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
       </el-card>
     </template>
     <el-empty v-else description="暂无详情数据" />
@@ -2250,6 +2341,15 @@ onBeforeUnmount(() => {
   }
 }
 
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.detail-table-loading-wrap {
+  min-height: 120px;
+}
 
 @media (max-width: 768px) {
   .glass-card {

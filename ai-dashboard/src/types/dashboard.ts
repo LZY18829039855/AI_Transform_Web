@@ -948,6 +948,22 @@ export interface EmployeePersonalCertQualifiedInfo {
  */
 export interface EmployeeDrillDownResponseVO {
   employeeDetails?: EmployeeDetailVO[]
+  total?: number
+  pageNum?: number
+  pageSize?: number
+  pages?: number
+}
+
+export interface EmployeeDrillDownQuery {
+  deptCode: string
+  aiMaturity?: string
+  jobCategory?: string
+  personType?: number
+  queryType?: number
+  name?: string
+  employeeNumber?: string
+  pageNum?: number
+  pageSize?: number
 }
 
 export interface DepartmentSelection {
