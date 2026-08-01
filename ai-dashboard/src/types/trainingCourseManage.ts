@@ -57,4 +57,7 @@ export interface FetchTrainingCourseListParams {
   courseName?: string
   courseLevel?: string
   bigType?: string
+  /** 将该课程主分类排到列表最前（增改后定位用） */
+  preferBigType?: string
 }
+

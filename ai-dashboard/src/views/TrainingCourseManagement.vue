@@ -1,20 +1,29 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Check, Delete, DocumentAdd, EditPen, Search } from '@element-plus/icons-vue'
+import { Delete, DocumentAdd, EditPen, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import DepartmentCascader from '@/components/department/DepartmentCascader.vue'
 import {
+  calcTargetNums,
+  createDeptCourseSelection,
   createTrainingCourse,
+  deleteDeptCourseSelection,
   deleteTrainingCourse,
-  fetchCoursePlanningWithDeptSelections,
+  fetchAllTrainingCourses,
+  fetchDeptCourseSelectionList,
   fetchTrainingCourseList,
+  splitCourseIdsByLevel,
+  updateDeptCourseSelection,
   updateTrainingCourse,
 } from '@/api/trainingCourseManage'
-import type { DepartmentSelection } from '@/types/dashboard'
-import type { TrainingCourseRecord } from '@/types/trainingCourseManage'
+import type { DeptCourseSelectionRecord, TrainingCourseRecord } from '@/types/trainingCourseManage'
 
 const activeTab = ref<'courses' | 'deptSelections'>('courses')
-const loading = ref(false)
+const courseLoading = ref(false)
+const deptLoading = ref(false)
+/** 部门选课是否已加载过，避免切页签重复请求导致整页闪烁 */
+let deptLoaded = false
 
 /** ---------- 课程管理 ---------- */
 const courseRows = ref<TrainingCourseRecord[]>([])
@@ -56,6 +65,42 @@ function emptyCourse(): TrainingCourseRecord {
 const courseRules: FormRules = {
   courseName: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
   courseLevel: [{ required: true, message: '请选择训战分类', trigger: 'change' }],
+  bigType: [{ required: true, message: '请输入课程主分类', trigger: 'blur' }],
+  courseNumber: [{ required: true, message: '请输入课程编码', trigger: 'blur' }],
+  courseLink: [{ required: true, message: '请输入课程链接', trigger: 'blur' }],
+  credit: [
+    { required: true, message: '请输入学分', trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        const text = String(value ?? '').trim()
+        if (!text) {
+          callback(new Error('请输入学分'))
+          return
+        }
+        // 仅允许非负整数或小数（如 1、1.5），禁止文字及其他格式
+        if (!/^\d+(\.\d+)?$/.test(text)) {
+          callback(new Error('学分仅支持整数或小数'))
+          return
+        }
+        if (!Number.isFinite(Number(text))) {
+          callback(new Error('学分仅支持整数或小数'))
+          return
+        }
+        callback()
+      },
+      trigger: ['blur', 'change'],
+    },
+  ],
+}
+
+/** 输入时过滤非法字符，仅保留数字与一个小数点 */
+function onCreditInput(value: string) {
+  let next = String(value ?? '').replace(/[^\d.]/g, '')
+  const firstDot = next.indexOf('.')
+  if (firstDot !== -1) {
+    next = `${next.slice(0, firstDot + 1)}${next.slice(firstDot + 1).replace(/\./g, '')}`
+  }
+  courseForm.value.credit = next
 }
 
 const COURSE_LEVEL_ORDER: Record<string, number> = {
@@ -64,8 +109,16 @@ const COURSE_LEVEL_ORDER: Record<string, number> = {
   实战: 3,
 }
 
-function sortCourseRows(rows: TrainingCourseRecord[]): TrainingCourseRecord[] {
+function sortCourseRows(rows: TrainingCourseRecord[], preferBigType?: string): TrainingCourseRecord[] {
+  const prefer = preferBigType?.trim() || ''
   return [...rows].sort((a, b) => {
+    if (prefer) {
+      const aPin = (a.bigType || '') === prefer ? 0 : 1
+      const bPin = (b.bigType || '') === prefer ? 0 : 1
+      if (aPin !== bPin) {
+        return aPin - bPin
+      }
+    }
     const typeCompare = (a.bigType || '').localeCompare(b.bigType || '')
     if (typeCompare !== 0) {
       return typeCompare
@@ -78,6 +131,10 @@ function sortCourseRows(rows: TrainingCourseRecord[]): TrainingCourseRecord[] {
     return (a.courseName || '').localeCompare(b.courseName || '')
   })
 }
+
+/** 增改成功后置顶的课程主分类 */
+const pinnedBigType = ref('')
+
 
 /** 课程主分类列合并（对齐训战课程规划表） */
 const courseSpanMethod = ({
@@ -109,25 +166,28 @@ const courseSpanMethod = ({
 }
 
 async function loadCourses() {
-  loading.value = true
+  courseLoading.value = true
   try {
     const page = await fetchTrainingCourseList({
       pageNum: coursePageNum.value,
       pageSize: coursePageSize.value,
       courseName: courseNameFilter.value.trim() || undefined,
       courseLevel: courseLevelFilter.value || undefined,
+      preferBigType: pinnedBigType.value || undefined,
     })
-    courseRows.value = sortCourseRows(page.rows)
+    // API 内已按 preferBigType 排序分页；此处再排一次保证页内合并单元格稳定
+    courseRows.value = sortCourseRows(page.rows, pinnedBigType.value || undefined)
     courseTotal.value = page.total
   } catch (e) {
     console.error(e)
     ElMessage.error(e instanceof Error ? e.message : '加载课程列表失败')
   } finally {
-    loading.value = false
+    courseLoading.value = false
   }
 }
 
 function handleCourseSearch() {
+  pinnedBigType.value = ''
   coursePageNum.value = 1
   loadCourses()
 }
@@ -167,10 +227,12 @@ async function handleSubmitCourse() {
   courseSaving.value = true
   try {
     const m = courseForm.value
+    const preferType = (m.bigType || '').trim()
     if (!m.id) {
       await createTrainingCourse(m)
       ElMessage.success('新增成功')
       courseDialogVisible.value = false
+      pinnedBigType.value = preferType
       coursePageNum.value = 1
       await loadCourses()
       await refreshCourseOptions()
@@ -178,6 +240,8 @@ async function handleSubmitCourse() {
       await updateTrainingCourse(m.id, m)
       ElMessage.success('保存成功')
       courseDialogVisible.value = false
+      pinnedBigType.value = preferType
+      coursePageNum.value = 1
       await loadCourses()
       await refreshCourseOptions()
     }
@@ -231,21 +295,49 @@ async function handleBatchDeleteCourses() {
   }
 }
 
-/** ---------- 部门目标选课（对齐训战课程规划表，查询复用 /course-planning-info/list） ---------- */
-const planningRows = ref<TrainingCourseRecord[]>([])
-const departmentColumns = ref<DepartmentSelection[]>([])
-/** courseId -> 已选部门编码集合 */
-const selectionByCourse = ref<Map<number, Set<string>>>(new Map())
+/** ---------- 部门目标选课 ---------- */
+const allCoursesForDept = ref<TrainingCourseRecord[]>([])
+const deptSelectionList = ref<DeptCourseSelectionRecord[]>([])
+const filterDeptPath = ref<string[]>([])
+const filterDeptCode = ref('')
+const filterDeptName = ref('')
+const selectedDeptCourseRows = ref<TrainingCourseRecord[]>([])
+const deptSaving = ref(false)
 
-function isSelectedByDept(row: TrainingCourseRecord, deptCode: string): boolean {
-  if (!row.id) {
-    return false
+const addDeptDialogVisible = ref(false)
+const addDeptPath = ref<string[]>([])
+const addDeptCode = ref('')
+const addDeptName = ref('')
+const addDeptCourseIds = ref<number[]>([])
+
+const editCoursesDialogVisible = ref(false)
+const editCourseIds = ref<number[]>([])
+
+const currentDeptSelection = computed(() =>
+  deptSelectionList.value.find((d) => d.deptCode === filterDeptCode.value) ?? null,
+)
+
+/** 当前部门下的目标课程（仅展示已选课程） */
+const filteredDeptCourses = computed(() => {
+  if (!filterDeptCode.value) {
+    return []
   }
-  return selectionByCourse.value.get(row.id)?.has(deptCode) ?? false
-}
+  const sel = currentDeptSelection.value
+  if (!sel) {
+    return []
+  }
+  const idSet = new Set([...sel.courseIds, ...sel.practicalCourseIds])
+  return sortCourseRows(allCoursesForDept.value.filter((c) => idSet.has(c.id)))
+})
 
-/** 规划表课程主分类合并（无多选列，主分类固定第 0 列） */
-const planningSpanMethod = ({
+const courseOptionsForSelect = computed(() =>
+  allCoursesForDept.value.map((c) => ({
+    value: c.id,
+    label: `[${c.courseLevel || '-'}] ${c.courseName || c.courseNumber || c.id}`,
+  })),
+)
+
+const deptSpanMethod = ({
   row,
   rowIndex,
   columnIndex,
@@ -254,16 +346,18 @@ const planningSpanMethod = ({
   rowIndex: number
   columnIndex: number
 }) => {
-  if (columnIndex !== 0) {
+  // 有多选列时主分类为第 1 列
+  if (columnIndex !== 1) {
     return { rowspan: 1, colspan: 1 }
   }
   const currentValue = row.bigType
-  if (rowIndex > 0 && planningRows.value[rowIndex - 1]?.bigType === currentValue) {
+  const rows = filteredDeptCourses.value
+  if (rowIndex > 0 && rows[rowIndex - 1]?.bigType === currentValue) {
     return { rowspan: 0, colspan: 0 }
   }
   let rowspan = 1
-  for (let i = rowIndex + 1; i < planningRows.value.length; i++) {
-    if (planningRows.value[i]?.bigType === currentValue) {
+  for (let i = rowIndex + 1; i < rows.length; i++) {
+    if (rows[i]?.bigType === currentValue) {
       rowspan++
     } else {
       break
@@ -272,66 +366,247 @@ const planningSpanMethod = ({
   return { rowspan, colspan: 1 }
 }
 
-function buildDepartmentColumnsFromCourses(courses: TrainingCourseRecord[]): DepartmentSelection[] {
-  const deptMap = new Map<string, string>()
-  for (const course of courses) {
-    for (const dept of course.selectedDepts ?? []) {
-      if (dept.deptCode) {
-        deptMap.set(dept.deptCode, dept.deptName || dept.deptCode)
-      }
-    }
+function resolveDeptCodeFromPath(path: string[]): string {
+  if (!path?.length) {
+    return ''
   }
-  return Array.from(deptMap.entries())
-    .map(([deptCode, deptName]) => ({ deptCode, deptName }))
-    .sort((a, b) => a.deptCode.localeCompare(b.deptCode))
+  return path.length >= 4 ? path[3] : path[path.length - 1]
 }
 
-function buildSelectionMap(courses: TrainingCourseRecord[]): Map<number, Set<string>> {
-  const map = new Map<number, Set<string>>()
-  for (const course of courses) {
-    if (!course.id) {
-      continue
-    }
-    const set = new Set<string>()
-    for (const dept of course.selectedDepts ?? []) {
-      if (dept.deptCode) {
-        set.add(dept.deptCode)
-      }
-    }
-    map.set(course.id, set)
-  }
-  return map
+function handleFilterDeptPathChange(path: string[]) {
+  filterDeptPath.value = path || []
+  filterDeptCode.value = resolveDeptCodeFromPath(path || [])
+  // 名称优先用已有配置，否则先用工号编码占位，用户可在新增时填写
+  const existing = deptSelectionList.value.find((d) => d.deptCode === filterDeptCode.value)
+  filterDeptName.value = existing?.deptName || filterDeptCode.value
+  selectedDeptCourseRows.value = []
 }
 
-async function loadDeptSelections() {
-  loading.value = true
+function handleQuickSelectDept(deptCode: string) {
+  filterDeptCode.value = deptCode
+  const existing = deptSelectionList.value.find((d) => d.deptCode === deptCode)
+  filterDeptName.value = existing?.deptName || deptCode
+  filterDeptPath.value = deptCode ? [deptCode] : []
+  selectedDeptCourseRows.value = []
+}
+
+function buildRecordFromSelectedIds(
+  deptCode: string,
+  deptName: string,
+  selectedIds: number[],
+  prev?: DeptCourseSelectionRecord | null,
+): DeptCourseSelectionRecord {
+  const { courseIds, practicalCourseIds } = splitCourseIdsByLevel(allCoursesForDept.value, selectedIds)
+  const nums = calcTargetNums(allCoursesForDept.value, courseIds, practicalCourseIds)
+  return {
+    deptCode,
+    deptName: deptName || deptCode,
+    courseIds,
+    practicalCourseIds,
+    basicTargetCoursesNum: prev?.basicTargetCoursesNum ?? nums.basicTargetCoursesNum,
+    advancedTargetCoursesNum: prev?.advancedTargetCoursesNum ?? nums.advancedTargetCoursesNum,
+    practicalTargetCoursesNum: prev?.practicalTargetCoursesNum ?? nums.practicalTargetCoursesNum,
+  }
+}
+
+async function loadDeptSelections(force = false) {
+  if (deptLoaded && !force) {
+    return
+  }
+  deptLoading.value = true
   try {
-    const courses = await fetchCoursePlanningWithDeptSelections()
-    planningRows.value = sortCourseRows(courses)
-    departmentColumns.value = buildDepartmentColumnsFromCourses(courses)
-    selectionByCourse.value = buildSelectionMap(courses)
+    const [courses, depts] = await Promise.all([
+      fetchAllTrainingCourses(),
+      fetchDeptCourseSelectionList(),
+    ])
+    allCoursesForDept.value = sortCourseRows(courses)
+    deptSelectionList.value = depts.sort((a, b) => a.deptCode.localeCompare(b.deptCode))
+    deptLoaded = true
   } catch (e) {
     console.error(e)
     ElMessage.error(e instanceof Error ? e.message : '加载部门选课失败')
   } finally {
-    loading.value = false
+    deptLoading.value = false
   }
 }
 
 async function refreshCourseOptions() {
+  deptLoaded = false
   try {
     if (activeTab.value === 'deptSelections') {
-      await loadDeptSelections()
+      await loadDeptSelections(true)
     }
   } catch (e) {
     console.error(e)
   }
 }
 
+function openAddDeptDialog() {
+  addDeptPath.value = []
+  addDeptCode.value = ''
+  addDeptName.value = ''
+  addDeptCourseIds.value = []
+  addDeptDialogVisible.value = true
+}
+
+function handleAddDeptPathChange(path: string[]) {
+  addDeptPath.value = path || []
+  addDeptCode.value = resolveDeptCodeFromPath(path || [])
+}
+
+async function submitAddDeptSelection() {
+  const code = addDeptCode.value.trim()
+  const name = addDeptName.value.trim() || code
+  if (!code) {
+    ElMessage.warning('请选择或填写部门编码')
+    return
+  }
+  if (deptSelectionList.value.some((d) => d.deptCode === code)) {
+    ElMessage.warning('该部门选课配置已存在，请直接筛选后编辑')
+    return
+  }
+  deptSaving.value = true
+  try {
+    const record = buildRecordFromSelectedIds(code, name, addDeptCourseIds.value)
+    // 新建时目标数按选课自动计算
+    const nums = calcTargetNums(allCoursesForDept.value, record.courseIds, record.practicalCourseIds)
+    record.basicTargetCoursesNum = nums.basicTargetCoursesNum
+    record.advancedTargetCoursesNum = nums.advancedTargetCoursesNum
+    record.practicalTargetCoursesNum = nums.practicalTargetCoursesNum
+    await createDeptCourseSelection(record)
+    ElMessage.success('新增部门选课成功')
+    addDeptDialogVisible.value = false
+    await loadDeptSelections(true)
+    handleQuickSelectDept(code)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '新增失败')
+  } finally {
+    deptSaving.value = false
+  }
+}
+
+function openEditCoursesDialog() {
+  if (!filterDeptCode.value) {
+    ElMessage.warning('请先选择部门')
+    return
+  }
+  const sel = currentDeptSelection.value
+  if (!sel) {
+    ElMessage.warning('该部门尚无选课配置，请先「新增部门选课」')
+    return
+  }
+  editCourseIds.value = [...sel.courseIds, ...sel.practicalCourseIds]
+  editCoursesDialogVisible.value = true
+}
+
+async function submitEditCourses() {
+  if (!filterDeptCode.value) {
+    return
+  }
+  const prev = currentDeptSelection.value
+  if (!prev) {
+    ElMessage.warning('该部门尚无选课配置')
+    return
+  }
+  deptSaving.value = true
+  try {
+    const record = buildRecordFromSelectedIds(
+      filterDeptCode.value,
+      filterDeptName.value || prev.deptName,
+      editCourseIds.value,
+    )
+    // 编辑选课时同步刷新目标数
+    const nums = calcTargetNums(allCoursesForDept.value, record.courseIds, record.practicalCourseIds)
+    record.basicTargetCoursesNum = nums.basicTargetCoursesNum
+    record.advancedTargetCoursesNum = nums.advancedTargetCoursesNum
+    record.practicalTargetCoursesNum = nums.practicalTargetCoursesNum
+    await updateDeptCourseSelection(filterDeptCode.value, record)
+    ElMessage.success('选课已更新')
+    editCoursesDialogVisible.value = false
+    await loadDeptSelections(true)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '更新失败')
+  } finally {
+    deptSaving.value = false
+  }
+}
+
+async function handleRemoveDeptCourses(rows: TrainingCourseRecord[]) {
+  if (!filterDeptCode.value || !rows.length) {
+    return
+  }
+  const prev = currentDeptSelection.value
+  if (!prev) {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定从该部门目标选课中移除 ${rows.length} 门课程吗？`,
+      '移除确认',
+      { type: 'warning', confirmButtonText: '移除', cancelButtonText: '取消' },
+    )
+  } catch {
+    return
+  }
+  const removeIds = new Set(rows.map((r) => r.id))
+  const remainIds = [...prev.courseIds, ...prev.practicalCourseIds].filter((id) => !removeIds.has(id))
+  deptSaving.value = true
+  try {
+    const record = buildRecordFromSelectedIds(
+      filterDeptCode.value,
+      filterDeptName.value || prev.deptName,
+      remainIds,
+    )
+    const nums = calcTargetNums(allCoursesForDept.value, record.courseIds, record.practicalCourseIds)
+    record.basicTargetCoursesNum = nums.basicTargetCoursesNum
+    record.advancedTargetCoursesNum = nums.advancedTargetCoursesNum
+    record.practicalTargetCoursesNum = nums.practicalTargetCoursesNum
+    await updateDeptCourseSelection(filterDeptCode.value, record)
+    ElMessage.success('已移除')
+    selectedDeptCourseRows.value = []
+    await loadDeptSelections(true)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '移除失败')
+  } finally {
+    deptSaving.value = false
+  }
+}
+
+async function handleDeleteDeptConfig() {
+  if (!filterDeptCode.value) {
+    ElMessage.warning('请先选择部门')
+    return
+  }
+  if (!currentDeptSelection.value) {
+    ElMessage.warning('该部门尚无选课配置')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定删除部门「${filterDeptName.value || filterDeptCode.value}」的全部目标选课配置吗？`,
+      '删除确认',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+    )
+  } catch {
+    return
+  }
+  deptSaving.value = true
+  try {
+    await deleteDeptCourseSelection(filterDeptCode.value)
+    ElMessage.success('已删除部门选课配置')
+    filterDeptCode.value = ''
+    filterDeptName.value = ''
+    filterDeptPath.value = []
+    await loadDeptSelections(true)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '删除失败')
+  } finally {
+    deptSaving.value = false
+  }
+}
+
 watch(activeTab, (tab) => {
-  if (tab === 'courses') {
-    loadCourses()
-  } else {
+  if (tab === 'deptSelections') {
     loadDeptSelections()
   }
 })
@@ -342,13 +617,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="manage-page" v-loading="loading">
+  <div class="manage-page">
     <section class="manage-dashboard">
       <header class="dashboard__header glass-card">
         <div class="header-info">
           <h2>AI训战课程管理</h2>
           <p>
-            统一维护 AI 训战课程主数据，并查看各部门目标选课情况（基础/进阶与实战）。白名单成员均可编辑课程信息。
+            统一维护 AI 训战课程主数据，并查看各部门目标选课情况（基础/进阶与实战）。
           </p>
         </div>
       </header>
@@ -357,6 +632,7 @@ onMounted(async () => {
         <el-tabs v-model="activeTab">
           <!-- 课程 CRUD -->
           <el-tab-pane label="课程管理" name="courses">
+            <div v-loading="courseLoading">
             <div class="manage-toolbar">
               <div class="manage-toolbar__start">
                 <el-button type="success" :icon="DocumentAdd" @click="handleAddCourse">
@@ -446,13 +722,17 @@ onMounted(async () => {
               <el-table-column prop="credit" label="学分" width="80" header-align="center" align="center" />
               <el-table-column
                 label="操作"
-                min-width="140"
+                width="100"
                 header-align="center"
                 align="center"
               >
                 <template #default="{ row }">
-                  <el-button link type="primary" :icon="EditPen" @click="handleEditCourse(row)">编辑</el-button>
-                  <el-button link type="danger" :icon="Delete" @click="handleDeleteCourse(row)">删除</el-button>
+                  <el-tooltip content="编辑" placement="top">
+                    <el-button link type="primary" :icon="EditPen" @click="handleEditCourse(row)" />
+                  </el-tooltip>
+                  <el-tooltip content="删除" placement="top">
+                    <el-button link type="danger" :icon="Delete" @click="handleDeleteCourse(row)" />
+                  </el-tooltip>
                 </template>
               </el-table-column>
               <template #empty>
@@ -472,69 +752,124 @@ onMounted(async () => {
                 @current-change="loadCourses"
               />
             </div>
+            </div>
           </el-tab-pane>
 
-          <!-- 部门目标选课：查询复用训战课程规划表 /course-planning-info/list -->
+          <!-- 部门目标选课：按部门过滤 + 增删改 -->
           <el-tab-pane label="部门目标选课" name="deptSelections">
-            <div class="manage-toolbar">
-              <div class="manage-toolbar__start">
-                <el-tag type="info" effect="plain">当前只读展示，增删改后端待实现</el-tag>
-              </div>
-            </div>
-
-            <el-table
-              class="planning-table"
-              :data="planningRows"
-              border
-              style="width: 100%"
-              max-height="620"
-              empty-text="暂无数据"
-              :span-method="planningSpanMethod"
-            >
-              <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
-              <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
-              <el-table-column prop="courseName" label="课程名称" width="500" align="center" show-overflow-tooltip />
-              <el-table-column label="课程编码（线上课程涉及）" min-width="200" align="center">
-                <template #default="{ row }">
-                  <el-tooltip
-                    v-if="row.courseLink && row.courseNumber"
-                    content="点击进入iLearning课程"
-                    placement="top"
+            <div v-loading="deptLoading || deptSaving">
+              <div class="manage-toolbar">
+                <div class="manage-toolbar__start">
+                  <el-button type="success" :icon="Plus" @click="openAddDeptDialog">
+                    新增部门选课
+                  </el-button>
+                  <el-button
+                    type="primary"
+                    :icon="EditPen"
+                    :disabled="!filterDeptCode || !currentDeptSelection"
+                    @click="openEditCoursesDialog"
                   >
-                    <el-link
-                      type="primary"
-                      :href="row.courseLink"
-                      target="_blank"
-                      class="course-link"
-                    >
-                      {{ row.courseNumber }}
-                    </el-link>
+                    编辑目标课程
+                  </el-button>
+                  <el-button
+                    type="danger"
+                    :icon="Delete"
+                    :disabled="!filterDeptCode || !currentDeptSelection"
+                    @click="handleDeleteDeptConfig"
+                  >
+                    删除部门配置
+                  </el-button>
+                </div>
+                <div class="manage-toolbar__right dept-filter-bar">
+                  <el-select
+                    :model-value="filterDeptCode"
+                    clearable
+                    filterable
+                    placeholder="快捷选择已配置部门"
+                    class="manage-toolbar__dept-select"
+                    @change="handleQuickSelectDept"
+                    @clear="handleQuickSelectDept('')"
+                  >
+                    <el-option
+                      v-for="d in deptSelectionList"
+                      :key="d.deptCode"
+                      :label="`${d.deptName || d.deptCode}（${d.deptCode}）`"
+                      :value="d.deptCode"
+                    />
+                  </el-select>
+                  <div class="dept-cascader-wrap">
+                    <DepartmentCascader
+                      v-model="filterDeptPath"
+                      @change="handleFilterDeptPathChange"
+                    />
+                  </div>
+                  <el-tooltip content="批量移除选中课程" placement="top">
+                    <span class="manage-toolbar__batch-wrap">
+                      <el-button
+                        type="danger"
+                        :icon="Delete"
+                        circle
+                        :disabled="!selectedDeptCourseRows.length"
+                        @click="handleRemoveDeptCourses(selectedDeptCourseRows)"
+                      />
+                    </span>
                   </el-tooltip>
-                  <span v-else class="cell-placeholder">-</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="目标人群" width="100" align="center">
-                <template #default>
-                  <span>ALL</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="credit" label="学分" width="80" align="center" />
+                </div>
+              </div>
 
-              <el-table-column
-                v-for="dept in departmentColumns"
-                :key="dept.deptCode"
-                :label="dept.deptName"
-                width="120"
-                align="center"
+              <el-alert
+                v-if="!filterDeptCode"
+                type="info"
+                :closable="false"
+                show-icon
+                title="请先选择部门，将仅展示该部门的目标课程"
+                class="dept-filter-tip"
+              />
+
+              <el-table
+                v-else
+                class="manage-table planning-like-table"
+                :data="filteredDeptCourses"
+                border
+                style="width: 100%"
+                max-height="560"
+                :span-method="deptSpanMethod"
+                @selection-change="(rows: TrainingCourseRecord[]) => (selectedDeptCourseRows = rows)"
               >
-                <template #default="{ row }">
-                  <el-icon v-if="isSelectedByDept(row, dept.deptCode)" class="check-icon">
-                    <Check />
-                  </el-icon>
-                  <span v-else class="cell-placeholder">-</span>
+                <el-table-column type="selection" width="48" header-align="center" align="center" />
+                <el-table-column prop="bigType" label="课程主分类" width="120" header-align="center" align="center" />
+                <el-table-column prop="courseLevel" label="训战分类" width="100" header-align="center" align="center" />
+                <el-table-column prop="sybType" label="课程子类" min-width="120" header-align="center" align="center" show-overflow-tooltip />
+                <el-table-column prop="courseName" label="课程名称" min-width="200" header-align="center" align="center" show-overflow-tooltip />
+                <el-table-column prop="credit" label="学分" width="80" header-align="center" align="center" />
+                <el-table-column
+                  label="操作"
+                  width="80"
+                  header-align="center"
+                  align="center"
+                >
+                  <template #default="{ row }">
+                    <el-tooltip content="移除" placement="top">
+                      <el-button
+                        link
+                        type="danger"
+                        :icon="Delete"
+                        @click="handleRemoveDeptCourses([row])"
+                      />
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+                <template #empty>
+                  <el-empty
+                    :description="
+                      currentDeptSelection
+                        ? '该部门暂无目标课程，可点击「编辑目标课程」添加'
+                        : '该部门尚无选课配置，请点击「新增部门选课」'
+                    "
+                  />
                 </template>
-              </el-table-column>
-            </el-table>
+              </el-table>
+            </div>
           </el-tab-pane>
         </el-tabs>
       </el-card>
@@ -554,7 +889,7 @@ onMounted(async () => {
         <el-form-item label="课程主分类" prop="bigType">
           <el-input v-model="courseForm.bigType" placeholder="如：通用能力 / 专业能力" clearable />
         </el-form-item>
-        <el-form-item label="子类" prop="sybType">
+        <el-form-item label="课程子类" prop="sybType">
           <el-input v-model="courseForm.sybType" placeholder="子类 / 实战任务类型" clearable />
         </el-form-item>
         <el-form-item label="课程编码" prop="courseNumber">
@@ -564,7 +899,12 @@ onMounted(async () => {
           <el-input v-model="courseForm.courseLink" placeholder="iLearning 等课程链接" clearable />
         </el-form-item>
         <el-form-item label="学分" prop="credit">
-          <el-input v-model="courseForm.credit" placeholder="学分" clearable />
+          <el-input
+            :model-value="courseForm.credit"
+            placeholder="请输入整数或小数，如 1 或 1.5"
+            clearable
+            @update:model-value="onCreditInput"
+          />
         </el-form-item>
         <el-form-item label="课程状态" prop="courseStatus">
           <el-input v-model="courseForm.courseStatus" placeholder="如：有效 / 下线" clearable />
@@ -578,13 +918,79 @@ onMounted(async () => {
         <el-form-item label="课程说明" prop="courseExplain">
           <el-input v-model="courseForm.courseExplain" type="textarea" :rows="3" placeholder="课程说明" />
         </el-form-item>
-        <el-form-item label="随堂测试" prop="inClassTest">
-          <el-input v-model="courseForm.inClassTest" placeholder="随堂测试说明" clearable />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="courseDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="courseSaving" @click="handleSubmitCourse">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新增部门选课 -->
+    <el-dialog v-model="addDeptDialogVisible" title="新增部门选课" width="640px" destroy-on-close>
+      <el-form label-width="110px" v-loading="deptSaving">
+        <el-form-item label="选择部门">
+          <DepartmentCascader v-model="addDeptPath" @change="handleAddDeptPathChange" />
+          <p class="form-hint">建议选择四级部门；选择后将自动填充部门编码。</p>
+        </el-form-item>
+        <el-form-item label="部门编码" required>
+          <el-input v-model="addDeptCode" placeholder="部门编码" clearable />
+        </el-form-item>
+        <el-form-item label="部门名称" required>
+          <el-input v-model="addDeptName" placeholder="部门名称" clearable />
+        </el-form-item>
+        <el-form-item label="目标课程">
+          <el-select
+            v-model="addDeptCourseIds"
+            multiple
+            filterable
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="选择目标课程（可选）"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="opt in courseOptionsForSelect"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addDeptDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="deptSaving" @click="submitAddDeptSelection">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑部门目标课程 -->
+    <el-dialog v-model="editCoursesDialogVisible" title="编辑目标课程" width="640px" destroy-on-close>
+      <el-form label-width="110px" v-loading="deptSaving">
+        <el-form-item label="当前部门">
+          <span>{{ filterDeptName || filterDeptCode }}（{{ filterDeptCode }}）</span>
+        </el-form-item>
+        <el-form-item label="目标课程">
+          <el-select
+            v-model="editCourseIds"
+            multiple
+            filterable
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="选择该部门目标课程"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="opt in courseOptionsForSelect"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editCoursesDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="deptSaving" @click="submitEditCourses">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -670,6 +1076,31 @@ onMounted(async () => {
 
 .manage-toolbar__level {
   width: 120px;
+}
+
+.manage-toolbar__dept-select {
+  width: 240px;
+  max-width: min(240px, 100%);
+}
+
+.dept-filter-bar {
+  flex-wrap: wrap;
+}
+
+.dept-cascader-wrap {
+  width: 280px;
+  max-width: min(280px, 100%);
+}
+
+.dept-filter-tip {
+  margin-bottom: $spacing-md;
+}
+
+.form-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: $text-secondary-color;
+  line-height: 1.5;
 }
 
 .manage-toolbar__search-icon {

@@ -1,5 +1,7 @@
 import type { CoursePlanningInfo, Result } from '@/types/dashboard'
 import type {
+  DeptCourseSelectionApi,
+  DeptCourseSelectionRecord,
   FetchTrainingCourseListParams,
   TrainingCourseRecord,
 } from '@/types/trainingCourseManage'
@@ -41,6 +43,52 @@ function recordToCoursePayload(m: TrainingCourseRecord) {
   }
 }
 
+function parseIdList(raw?: string | null): number[] {
+  if (!raw || !String(raw).trim()) {
+    return []
+  }
+  const ids: number[] = []
+  const seen = new Set<number>()
+  for (const part of String(raw).split(',')) {
+    const n = Number(part.trim())
+    if (!Number.isFinite(n) || seen.has(n)) {
+      continue
+    }
+    seen.add(n)
+    ids.push(n)
+  }
+  return ids
+}
+
+function joinIdList(ids: number[]): string | null {
+  const unique = [...new Set(ids.filter((id) => Number.isFinite(id)))]
+  return unique.length ? unique.join(',') : null
+}
+
+export function mapDeptSelectionApiToRecord(r: DeptCourseSelectionApi): DeptCourseSelectionRecord {
+  return {
+    deptCode: r.deptCode ?? '',
+    deptName: r.deptName ?? '',
+    courseIds: parseIdList(r.courseSelections),
+    practicalCourseIds: parseIdList(r.practicalSelections),
+    basicTargetCoursesNum: r.basicTargetCoursesNum ?? null,
+    advancedTargetCoursesNum: r.advancedTargetCoursesNum ?? null,
+    practicalTargetCoursesNum: r.practicalTargetCoursesNum ?? null,
+  }
+}
+
+function deptRecordToApiPayload(m: DeptCourseSelectionRecord): DeptCourseSelectionApi {
+  return {
+    deptCode: m.deptCode,
+    deptName: m.deptName,
+    courseSelections: joinIdList(m.courseIds),
+    practicalSelections: joinIdList(m.practicalCourseIds),
+    basicTargetCoursesNum: m.basicTargetCoursesNum ?? null,
+    advancedTargetCoursesNum: m.advancedTargetCoursesNum ?? null,
+    practicalTargetCoursesNum: m.practicalTargetCoursesNum ?? null,
+  }
+}
+
 function paginateAndFilterCourses(
   all: TrainingCourseRecord[],
   params: FetchTrainingCourseListParams,
@@ -50,6 +98,13 @@ function paginateAndFilterCourses(
   const nameKw = params.courseName?.trim().toLowerCase() ?? ''
   const levelKw = params.courseLevel?.trim() ?? ''
   const bigTypeKw = params.bigType?.trim() ?? ''
+  const prefer = params.preferBigType?.trim() ?? ''
+
+  const COURSE_LEVEL_ORDER: Record<string, number> = {
+    基础: 1,
+    进阶: 2,
+    实战: 3,
+  }
 
   const filtered = all.filter((row) => {
     if (nameKw && !(row.courseName || '').toLowerCase().includes(nameKw)) {
@@ -62,6 +117,26 @@ function paginateAndFilterCourses(
       return false
     }
     return true
+  })
+
+  filtered.sort((a, b) => {
+    if (prefer) {
+      const aPin = (a.bigType || '') === prefer ? 0 : 1
+      const bPin = (b.bigType || '') === prefer ? 0 : 1
+      if (aPin !== bPin) {
+        return aPin - bPin
+      }
+    }
+    const typeCompare = (a.bigType || '').localeCompare(b.bigType || '')
+    if (typeCompare !== 0) {
+      return typeCompare
+    }
+    const aOrder = COURSE_LEVEL_ORDER[a.courseLevel] ?? 999
+    const bOrder = COURSE_LEVEL_ORDER[b.courseLevel] ?? 999
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder
+    }
+    return (a.courseName || '').localeCompare(b.courseName || '')
   })
 
   const start = (pageNum - 1) * pageSize
@@ -84,13 +159,11 @@ export async function fetchTrainingCourseList(
   return paginateAndFilterCourses((res.data ?? []).map(mapCourseApiToRecord), params)
 }
 
-/**
- * 部门目标选课 / 规划表：复用 GET /course-planning-info/list（含 selectedDepts）
- */
-export async function fetchCoursePlanningWithDeptSelections(): Promise<TrainingCourseRecord[]> {
-  const res = await get<Result<CoursePlanningInfo[]>>('/course-planning-info/list')
+/** 全量课程主数据（部门选课穿梭框 / 过滤用） */
+export async function fetchAllTrainingCourses(): Promise<TrainingCourseRecord[]> {
+  const res = await get<Result<CoursePlanningInfo[]>>('/course-planning-info/manage/list')
   if (res.code !== 200) {
-    throw new Error(res.message || '查询课程规划失败')
+    throw new Error(res.message || '查询课程列表失败')
   }
   return (res.data ?? []).map(mapCourseApiToRecord)
 }
@@ -120,5 +193,114 @@ export async function deleteTrainingCourse(id: number): Promise<void> {
   })
   if (res.code !== 200) {
     throw new Error(res.message || '删除课程失败')
+  }
+}
+
+/** ---------- 部门目标选课 ---------- */
+
+export async function fetchDeptCourseSelectionList(): Promise<DeptCourseSelectionRecord[]> {
+  const res = await get<Result<DeptCourseSelectionApi[]>>('/dept-course-selections/list')
+  if (res.code !== 200) {
+    throw new Error(res.message || '查询部门选课失败')
+  }
+  return (res.data ?? []).map(mapDeptSelectionApiToRecord)
+}
+
+export async function fetchDeptCourseSelection(deptCode: string): Promise<DeptCourseSelectionRecord | null> {
+  const res = await get<Result<DeptCourseSelectionApi>>(
+    `/dept-course-selections/${encodeURIComponent(deptCode)}`,
+  )
+  if (res.code === 404) {
+    return null
+  }
+  if (res.code !== 200) {
+    throw new Error(res.message || '查询部门选课失败')
+  }
+  return res.data ? mapDeptSelectionApiToRecord(res.data) : null
+}
+
+export async function createDeptCourseSelection(
+  record: DeptCourseSelectionRecord,
+): Promise<DeptCourseSelectionRecord> {
+  const res = await post<Result<DeptCourseSelectionApi>>(
+    '/dept-course-selections',
+    deptRecordToApiPayload(record),
+  )
+  if (res.code !== 200 || !res.data) {
+    throw new Error(res.message || '新增部门选课失败')
+  }
+  return mapDeptSelectionApiToRecord(res.data)
+}
+
+export async function updateDeptCourseSelection(
+  deptCode: string,
+  record: DeptCourseSelectionRecord,
+): Promise<DeptCourseSelectionRecord> {
+  const res = await request.request<Result<DeptCourseSelectionApi>>(
+    `/dept-course-selections/${encodeURIComponent(deptCode)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(deptRecordToApiPayload({ ...record, deptCode })),
+    },
+  )
+  if (res.code !== 200 || !res.data) {
+    throw new Error(res.message || '更新部门选课失败')
+  }
+  return mapDeptSelectionApiToRecord(res.data)
+}
+
+export async function deleteDeptCourseSelection(deptCode: string): Promise<void> {
+  const res = await request.request<Result<boolean>>(
+    `/dept-course-selections/${encodeURIComponent(deptCode)}`,
+    { method: 'DELETE' },
+  )
+  if (res.code !== 200) {
+    throw new Error(res.message || '删除部门选课失败')
+  }
+}
+
+/** 按课程级别拆分后保存（基础/进阶 → courseIds，实战 → practicalCourseIds） */
+export function splitCourseIdsByLevel(
+  courses: TrainingCourseRecord[],
+  selectedIds: number[],
+): { courseIds: number[]; practicalCourseIds: number[] } {
+  const idSet = new Set(selectedIds)
+  const courseIds: number[] = []
+  const practicalCourseIds: number[] = []
+  for (const c of courses) {
+    if (!idSet.has(c.id)) {
+      continue
+    }
+    if (c.courseLevel === '实战') {
+      practicalCourseIds.push(c.id)
+    } else {
+      courseIds.push(c.id)
+    }
+  }
+  return { courseIds, practicalCourseIds }
+}
+
+export function calcTargetNums(
+  courses: TrainingCourseRecord[],
+  courseIds: number[],
+  practicalCourseIds: number[],
+) {
+  const idSet = new Set(courseIds)
+  let basic = 0
+  let advanced = 0
+  for (const c of courses) {
+    if (!idSet.has(c.id)) {
+      continue
+    }
+    if (c.courseLevel === '基础') {
+      basic++
+    } else if (c.courseLevel === '进阶') {
+      advanced++
+    }
+  }
+  return {
+    basicTargetCoursesNum: basic,
+    advancedTargetCoursesNum: advanced,
+    practicalTargetCoursesNum: practicalCourseIds.length,
   }
 }
