@@ -317,7 +317,10 @@ onActivated(() => {
       <!-- 个人学分总览 -->
       <el-card shadow="hover" class="summary-card">
         <template #header>
-          <h3>个人学分总览</h3>
+          <div class="summary-card-header">
+            <h3>个人学分总览</h3>
+            <p class="credit-cap-hint">计入个人总分时，理论课（基础+进阶）上限 30 分、实战课上限 30 分；本页仍展示全部完课数据，超出上限的学分不计入总分。</p>
+          </div>
         </template>
         <el-table
           :data="tableDataWithTotal"
@@ -810,10 +813,24 @@ onActivated(() => {
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
 
+  .summary-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+  }
+
+  .credit-cap-hint {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #606266;
   }
 
   :deep(.el-table) {
