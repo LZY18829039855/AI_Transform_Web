@@ -38,6 +38,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/permission-management',
+    name: 'PermissionManagement',
+    component: () => import('@/views/PermissionManagement.vue'),
+    meta: {
+      title: '权限管理',
+      requiresAuth: true,
+      requiresAdmin: true,
+      keepAlive: false,
+    },
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     redirect: '/dashboard/maturity',

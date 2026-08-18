@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Bell, User } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardNavCards from '@/components/common/DashboardNavCards.vue'
 import { useAppStore } from '@/stores/modules/app'
@@ -40,7 +39,8 @@ const handlePermissionManagement = async () => {
   if (!(await guardAdminAccess())) {
     return
   }
-  ElMessage.info('页面开发中')
+  const resolved = router.resolve({ name: 'PermissionManagement' })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 </script>
 

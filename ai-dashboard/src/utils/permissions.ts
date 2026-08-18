@@ -159,3 +159,13 @@ export const guardCreditWriteAccess = async (): Promise<boolean> => {
   }
   return true
 }
+
+/** 无权限配置更新权限时提示并返回 false（与多元化学分超级用户同一标识） */
+export const guardPermissionWriteAccess = async (): Promise<boolean> => {
+  const canEdit = await fetchCreditWritePermission()
+  if (!canEdit) {
+    ElMessage.warning('暂无权限配置更新权限')
+    return false
+  }
+  return true
+}
