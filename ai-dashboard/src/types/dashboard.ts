@@ -941,6 +941,14 @@ export interface EmployeePersonalCertQualifiedInfo {
   certCredit?: number | string
   /** AI任职学分（若后端返回则用于“AI任职”表展示） */
   qualifiedCredit?: number | string
+  /** 科目二通过明细（仅认证未通过时返回） */
+  subject2List?: Subject2ExamDetail[]
+}
+
+/** 个人科目二通过明细 */
+export interface Subject2ExamDetail {
+  examName?: string
+  credit?: number | string
 }
 
 /**
@@ -1089,8 +1097,11 @@ export interface CreditOverviewVO {
   averageCurrentCredit: number
   averageTargetCredit: number
   achievementRate: number
-  timeProgress: number
-  isWarning: boolean
+  timeProgress?: number
+  scheduleTarget?: number
+  status?: '正常' | '轻度预警' | '滞后预警'
+  statusType?: 'success' | 'warning' | 'danger'
+  isWarning?: boolean
 }
 
 export interface CreditStatisticsResponseVO {

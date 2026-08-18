@@ -23,11 +23,6 @@ const categoryLabel = computed(() => {
   return props.type === 'position' ? '职位类别' : '部门'
 })
 
-const formatPercent = (_row: any, _column: any, cellValue: number) => {
-  if (cellValue == null) return '-'
-  return `${Number(cellValue).toFixed(1)}%`
-}
-
 const formatScore = (_row: any, _column: any, cellValue: number) => {
   if (cellValue == null) return '-'
   return cellValue
@@ -78,18 +73,16 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       <el-table-column prop="minScore" label="最低分" min-width="100" :formatter="formatScore" />
       <el-table-column prop="averageCurrentCredit" label="当前平均学分" min-width="120" :formatter="formatScore" />
       <el-table-column prop="averageTargetCredit" label="目标平均学分" min-width="120" :formatter="formatScore" />
-      <el-table-column prop="achievementRate" label="达成率" min-width="120">
+      <el-table-column prop="achievementRate" label="学分达成率" min-width="120">
         <template #default="{ row }">
-          <span :class="{ 'warning-text': row.isWarning }">
-            {{ row.achievementRate != null ? `${Number(row.achievementRate).toFixed(1)}%` : '-' }}
-          </span>
+          {{ row.achievementRate != null ? `${Number(row.achievementRate).toFixed(1)}%` : '-' }}
         </template>
       </el-table-column>
-      <el-table-column prop="timeProgress" label="时间进度" min-width="120" :formatter="formatPercent" />
-      <el-table-column label="状态" min-width="100" fixed="right">
+      <el-table-column prop="scheduleTarget" label="时间进度学分目标" min-width="150" :formatter="formatScore" />
+      <el-table-column prop="status" label="学分状态预警" min-width="120" fixed="right">
         <template #default="{ row }">
-          <el-tag :type="row.isWarning ? 'danger' : 'success'" effect="light">
-            {{ row.isWarning ? '预警' : '正常' }}
+          <el-tag :type="row.statusType || (row.isWarning ? 'danger' : 'success')" effect="light">
+            {{ row.status || (row.isWarning ? '预警' : '正常') }}
           </el-tag>
         </template>
       </el-table-column>
@@ -114,11 +107,6 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       color: #303133;
     }
   }
-}
-
-.warning-text {
-  color: #f56c6c;
-  font-weight: bold;
 }
 
 .drill-link {

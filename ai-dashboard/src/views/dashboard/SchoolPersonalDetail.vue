@@ -18,6 +18,13 @@ const selectedCategory = ref<string>('全部')
 const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
 /** 任职认证详情（基于 t_employee） */
 const certQualifiedDetail = ref<EmployeePersonalCertQualifiedInfo | null>(null)
+/** 科目二详情：仅认证未通过且后端返回 subject2List 时展示 */
+const subject2TableRows = computed(() => {
+  const list = certQualifiedDetail.value?.subject2List
+  if (!list?.length) return []
+  return list
+})
+const showSubject2Section = computed(() => subject2TableRows.value.length > 0)
 const manualCreditTableMaxHeight = computed(() => (manualEnterCreditRows.value.length ? 560 : 80))
 
 // 训战分类排序顺序（支持多种名称映射）
@@ -235,6 +242,11 @@ const formatText = (value: unknown) => {
   if (value == null) return '—'
   const s = String(value).trim()
   return s.length ? s : '—'
+}
+const formatSubject2Credit = (value: unknown) => {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n <= 0) return '—'
+  return String(n)
 }
 
 const avatarUrl = computed(() => {
@@ -558,6 +570,24 @@ onActivated(() => {
               <el-empty description="暂无认证详情数据" />
             </template>
           </el-table>
+
+          <template v-if="showSubject2Section">
+            <div class="cert-qualified-subtitle cert-qualified-subtitle--spaced">科目二详情</div>
+            <el-table
+              class="credit-table"
+              :data="subject2TableRows"
+              border
+              stripe
+              style="width: 100%"
+            >
+              <el-table-column prop="examName" label="科目二名称" min-width="220" header-align="center" align="center" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatText(row.examName) }}</template>
+              </el-table-column>
+              <el-table-column prop="credit" label="学分" min-width="100" header-align="center" align="center" show-overflow-tooltip>
+                <template #default="{ row }">{{ formatSubject2Credit(row.credit) }}</template>
+              </el-table-column>
+            </el-table>
+          </template>
         </div>
       </el-card>
     </template>
