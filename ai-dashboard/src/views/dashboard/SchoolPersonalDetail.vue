@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSelect, ElOption, ElSkeleton, ElSpace, ElTable, ElTableColumn, ElTag, ElTooltip } from 'element-plus'
 import { fetchEmployeePersonalCertQualified, fetchPersonalCourseCompletion } from '@/api/dashboard'
 import { fetchManualEnterCreditListBySession } from '@/api/manualCredit'
-import type { PersonalCourseCompletionResponse, CourseInfo } from '@/types/dashboard'
+import type { PersonalCourseCompletionResponse, CourseInfo, CourseCategoryStatistics } from '@/types/dashboard'
 import type { ManualEnterCreditRecord } from '@/types/manualCredit'
 import type { EmployeePersonalCertQualifiedInfo } from '@/types/dashboard'
 
@@ -249,21 +249,47 @@ const formatSubject2Credit = (value: unknown) => {
   return String(n)
 }
 
+const formatCreditValue = (value: unknown) => {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '—'
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
+const isTheoryLevel = (courseLevel?: string) => {
+  const level = normalizeCategory(courseLevel || '')
+  return level === '基础' || level === '进阶'
+}
+
 const avatarUrl = computed(() => {
   if (!detailData.value?.empNum) return null
   return `https://w3.huawei.com/w3lab/rest/yellowpage/face/${detailData.value.empNum}/120`
 })
 
-const tableDataWithTotal = computed(() => {
+type OverviewTableRow = CourseCategoryStatistics & {
+  courseLevel: string
+}
+
+const tableDataWithTotal = computed<OverviewTableRow[]>(() => {
   if (!detailData.value?.courseStatistics || detailData.value.courseStatistics.length === 0) {
     return []
   }
   const statistics = detailData.value.courseStatistics
-  const totalRow = {
+  const theoryCap = statistics.find((stat) => isTheoryLevel(stat.courseLevel))?.creditCap
+  const practicalCap = statistics.find(
+    (stat) => normalizeCategory(stat.courseLevel || '') === '实战'
+  )?.creditCap
+  const totalCreditCap =
+    (Number.isFinite(Number(theoryCap)) ? Number(theoryCap) : 0) +
+    (Number.isFinite(Number(practicalCap)) ? Number(practicalCap) : 0)
+
+  const totalRow: OverviewTableRow = {
     courseLevel: '总计',
     totalCourses: statistics.reduce((sum, stat) => sum + (stat.totalCourses || 0), 0),
     targetCourses: statistics.reduce((sum, stat) => sum + (stat.targetCourses || 0), 0),
     completedCourses: statistics.reduce((sum, stat) => sum + (stat.completedCourses || 0), 0),
+    creditCap: totalCreditCap,
+    // 总计已获学分：各分类原始求和（不封顶）
+    earnedCredit: statistics.reduce((sum, stat) => sum + (Number(stat.earnedCredit) || 0), 0),
     completionRate: 0,
   }
   if (totalRow.targetCourses > 0) {
@@ -271,6 +297,37 @@ const tableDataWithTotal = computed(() => {
   }
   return [...statistics, totalRow]
 })
+
+/** 学分上限列：基础与进阶合并单元格展示 theory-cap */
+const getOverviewSpanMethod = ({
+  row,
+  column,
+  rowIndex,
+}: {
+  row: OverviewTableRow
+  column: { property?: string }
+  rowIndex: number
+}) => {
+  if (column.property !== 'creditCap') {
+    return { rowspan: 1, colspan: 1 }
+  }
+  const rows = tableDataWithTotal.value
+  if (!isTheoryLevel(row.courseLevel)) {
+    return { rowspan: 1, colspan: 1 }
+  }
+  let startIndex = rowIndex
+  while (startIndex > 0 && isTheoryLevel(rows[startIndex - 1]?.courseLevel)) {
+    startIndex--
+  }
+  let endIndex = rowIndex
+  while (endIndex < rows.length - 1 && isTheoryLevel(rows[endIndex + 1]?.courseLevel)) {
+    endIndex++
+  }
+  if (rowIndex === startIndex) {
+    return { rowspan: endIndex - startIndex + 1, colspan: 1 }
+  }
+  return { rowspan: 0, colspan: 0 }
+}
 
 onMounted(() => {
   fetchDetail()
@@ -328,11 +385,18 @@ onActivated(() => {
           style="width: 100%"
           :header-cell-class-name="() => 'personal-overview-header'"
           :row-class-name="({ row }) => row.courseLevel === '总计' ? 'personal-overview-total-row' : ''"
+          :span-method="getOverviewSpanMethod"
         >
           <el-table-column prop="courseLevel" label="训战分类" min-width="120" align="center" />
           <el-table-column prop="totalCourses" label="课程总数" min-width="140" align="center" />
           <el-table-column prop="targetCourses" label="目标完课数" min-width="140" align="center" />
+          <el-table-column prop="creditCap" label="学分上限" min-width="120" align="center">
+            <template #default="{ row }">{{ formatCreditValue(row.creditCap) }}</template>
+          </el-table-column>
           <el-table-column prop="completedCourses" label="实际完课数" min-width="140" align="center" />
+          <el-table-column prop="earnedCredit" label="已获学分" min-width="120" align="center">
+            <template #default="{ row }">{{ formatCreditValue(row.earnedCredit) }}</template>
+          </el-table-column>
           <el-table-column prop="completionRate" label="目标课程完课占比" min-width="180" align="center">
             <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
           </el-table-column>

@@ -1057,6 +1057,10 @@ export interface CourseCategoryStatistics {
   targetCourses: number // 目标课程数
   completedCourses: number // 实际完课数
   completionRate: number // 完课占比（百分比）
+  /** 该分类计入总分的学分上限；基础/进阶均为 theory-cap，实战为 practical-cap */
+  creditCap?: number | null
+  /** 该分类下已获学分（目标课且已完课原始累加，未封顶） */
+  earnedCredit?: number | null
   courseList?: CourseInfo[] // 该分类下的所有目标课程列表（包含已完成和未完成的课程）
 }
 
