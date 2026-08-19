@@ -2,7 +2,20 @@
 import { onMounted, ref, computed } from 'vue'
 import { ArrowLeft, Check } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { ElButton, ElCard, ElEmpty, ElLink, ElMessage, ElSkeleton, ElTable, ElTableColumn, ElIcon, ElTooltip } from 'element-plus'
+import {
+  ElButton,
+  ElCard,
+  ElEmpty,
+  ElLink,
+  ElMessage,
+  ElOption,
+  ElSelect,
+  ElSkeleton,
+  ElTable,
+  ElTableColumn,
+  ElIcon,
+  ElTooltip,
+} from 'element-plus'
 import { fetchCoursePlanningInfoList } from '@/api/dashboard'
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import type { CoursePlanningInfo, DepartmentSelection } from '@/types/dashboard'
@@ -11,6 +24,22 @@ const router = useRouter()
 const loading = ref(false)
 const planningData = ref<CoursePlanningInfo[]>([])
 const departmentColumns = ref<DepartmentSelection[]>([])
+const filterDeptCode = ref('')
+
+/** 表格最大高度：表头固定，表格内部滚动 */
+const tableMaxHeight = 'calc(100vh - 260px)'
+
+/** 当前部门下的目标课程（仅展示已选课程） */
+const filteredPlanningData = computed(() => {
+  if (!filterDeptCode.value) {
+    return []
+  }
+  return planningData.value.filter((row) => isSelectedByDept(row, filterDeptCode.value))
+})
+
+function handleQuickSelectDept(deptCode: string) {
+  filterDeptCode.value = deptCode || ''
+}
 
 const handleBack = () => {
   router.push({ name: 'TrainingDashboard' })
@@ -68,33 +97,33 @@ const isSelectedByDept = (row: CoursePlanningInfo, deptCode: string) => {
   return row.selectedDepts?.some(dept => dept.deptCode === deptCode) || false
 }
 
-// 单元格合并方法
-const objectSpanMethod = ({ row, column, rowIndex, columnIndex }: any) => {
-  // 只对第一列（课程主分类）进行合并
-  if (columnIndex === 0) {
-    const currentValue = row.bigType
-    // 如果当前行的值与上一行相同，则隐藏当前单元格
-    if (rowIndex > 0 && planningData.value[rowIndex - 1]?.bigType === currentValue) {
-      return {
-        rowspan: 0,
-        colspan: 0,
-      }
-    }
-    // 计算从当前行开始，有多少行具有相同的课程主分类
-    let rowspan = 1
-    for (let i = rowIndex + 1; i < planningData.value.length; i++) {
-      if (planningData.value[i]?.bigType === currentValue) {
-        rowspan++
-      } else {
-        break
-      }
-    }
-    // 返回合并的行数
-    return {
-      rowspan: rowspan,
-      colspan: 1,
+// 单元格合并方法（总览矩阵 / 部门明细共用）
+const objectSpanMethod = ({
+  row,
+  column,
+  rowIndex,
+}: {
+  row: CoursePlanningInfo
+  column: { property?: string }
+  rowIndex: number
+}) => {
+  if (column.property !== 'bigType') {
+    return { rowspan: 1, colspan: 1 }
+  }
+  const rows = filterDeptCode.value ? filteredPlanningData.value : planningData.value
+  const currentValue = row.bigType
+  if (rowIndex > 0 && rows[rowIndex - 1]?.bigType === currentValue) {
+    return { rowspan: 0, colspan: 0 }
+  }
+  let rowspan = 1
+  for (let i = rowIndex + 1; i < rows.length; i++) {
+    if (rows[i]?.bigType === currentValue) {
+      rowspan++
+    } else {
+      break
     }
   }
+  return { rowspan, colspan: 1 }
 }
 
 const handleDownload = async () => {
@@ -133,14 +162,42 @@ onMounted(() => {
       <template #header>
         <div class="table-header">
           <h3>训战课程规划表</h3>
-          <el-button type="primary" @click="handleDownload">下载明细</el-button>
+          <div class="table-header__actions">
+            <el-select
+              :model-value="filterDeptCode"
+              clearable
+              filterable
+              placeholder="快捷选择已配置部门"
+              class="table-header__dept-select"
+              @change="handleQuickSelectDept"
+              @clear="handleQuickSelectDept('')"
+            >
+              <el-option
+                v-for="d in departmentColumns"
+                :key="d.deptCode"
+                :label="`${d.deptName || d.deptCode}（${d.deptCode}）`"
+                :value="d.deptCode"
+              />
+            </el-select>
+            <el-button type="primary" @click="handleDownload">下载明细</el-button>
+          </div>
         </div>
       </template>
       <el-skeleton :rows="8" animated v-if="loading" />
-      <el-table v-else :data="planningData" border style="width: 100%" class="planning-table" empty-text="暂无数据" :span-method="objectSpanMethod">
-        <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
-        <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
-        <el-table-column prop="courseName" label="课程名称" width="500" align="center" />
+      <!-- 未选部门：规划表总览矩阵 -->
+      <el-table
+        v-else-if="!filterDeptCode"
+        :data="planningData"
+        border
+        style="width: 100%"
+        class="planning-table"
+        empty-text="暂无数据"
+        :max-height="tableMaxHeight"
+        :span-method="objectSpanMethod"
+      >
+        <el-table-column prop="bigType" label="课程主分类" width="120" align="center" fixed />
+        <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" fixed />
+        <el-table-column prop="courseName" label="课程名称" width="500" align="center" show-overflow-tooltip />
         <el-table-column label="课程编码（线上课程涉及）" min-width="200" align="center">
           <template #default="{ row }">
             <el-tooltip
@@ -157,7 +214,7 @@ onMounted(() => {
                 {{ row.courseNumber }}
               </el-link>
             </el-tooltip>
-            <span v-else style="color: #999;">-</span>
+            <span v-else class="cell-placeholder">-</span>
           </template>
         </el-table-column>
         <el-table-column label="目标人群" width="100" align="center">
@@ -166,20 +223,62 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column prop="credit" label="学分" width="80" align="center" />
-        
+
         <!-- 动态生成的部门列 -->
-        <el-table-column 
-          v-for="dept in departmentColumns" 
-          :key="dept.deptCode" 
-          :label="dept.deptName" 
-          width="120" 
+        <el-table-column
+          v-for="dept in departmentColumns"
+          :key="dept.deptCode"
+          :label="dept.deptName"
+          width="120"
           align="center"
         >
           <template #default="{ row }">
             <el-icon v-if="isSelectedByDept(row, dept.deptCode)" class="check-icon"><Check /></el-icon>
-            <span v-else>-</span>
+            <span v-else class="cell-placeholder">-</span>
           </template>
         </el-table-column>
+      </el-table>
+      <!-- 已选部门：该部门目标课程明细 -->
+      <el-table
+        v-else
+        :data="filteredPlanningData"
+        border
+        style="width: 100%"
+        class="planning-table"
+        :max-height="tableMaxHeight"
+        :span-method="objectSpanMethod"
+      >
+        <el-table-column prop="bigType" label="课程主分类" width="120" align="center" />
+        <el-table-column prop="courseLevel" label="训战分类" width="100" align="center" />
+        <el-table-column prop="courseName" label="课程名称" min-width="300" align="center" show-overflow-tooltip />
+        <el-table-column label="课程编码（线上课程涉及）" min-width="200" align="center">
+          <template #default="{ row }">
+            <el-tooltip
+              v-if="row.courseLink && row.courseNumber"
+              content="点击进入iLearning课程"
+              placement="top"
+            >
+              <el-link
+                type="primary"
+                :href="row.courseLink"
+                target="_blank"
+                class="course-link"
+              >
+                {{ row.courseNumber }}
+              </el-link>
+            </el-tooltip>
+            <span v-else class="cell-placeholder">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="目标人群" width="100" align="center">
+          <template #default>
+            <span>ALL</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="credit" label="学分" width="80" align="center" />
+        <template #empty>
+          <el-empty description="该部门暂无目标课程" />
+        </template>
       </el-table>
     </el-card>
   </section>
@@ -237,6 +336,20 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  .table-header__actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+  }
+
+  .table-header__dept-select {
+    width: 280px;
+    max-width: min(280px, 100%);
   }
 }
 
@@ -290,6 +403,10 @@ onMounted(() => {
     color: #67c23a;
     font-weight: bold;
     font-size: 16px;
+  }
+
+  .cell-placeholder {
+    color: #999;
   }
 }
 
