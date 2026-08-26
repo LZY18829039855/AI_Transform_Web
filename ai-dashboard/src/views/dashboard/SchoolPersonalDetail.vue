@@ -506,6 +506,9 @@ onActivated(() => {
               </template>
             </el-table-column>
           </el-table>
+          <p class="practical-priority-hint">
+            鼓励 L2 干部、专家优先完成线下大模型训推实战；其余员工优先完成线上 AI Agent 打榜。
+          </p>
         </div>
 
         <div class="target-course-section target-course-section--fixed" v-if="theoryTargetCourses.length">
@@ -842,6 +845,14 @@ onActivated(() => {
     font-size: 16px;
     font-weight: 700;
     color: #000;
+  }
+
+  .practical-priority-hint {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #606266;
   }
 
   :deep(.el-table) {
