@@ -25,6 +25,10 @@ const categoryLabel = computed(() => {
   return props.type === 'position' ? '职位类别' : '部门'
 })
 
+const averageCreditLabel = computed(() => {
+  return props.type === 'department' ? '部门平均学分' : '当前平均学分'
+})
+
 const rowIdentity = (row: CreditOverviewVO) => row.categoryCode ?? row.categoryName
 
 /** 按当前平均学分降序，为非总计行标注 TOP1~TOP3 */
@@ -103,7 +107,7 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       </el-table-column>
       <el-table-column prop="maxScore" label="最高分" min-width="100" :formatter="formatScore" />
       <el-table-column prop="minScore" label="最低分" min-width="100" :formatter="formatScore" />
-      <el-table-column prop="averageCurrentCredit" label="当前平均学分" min-width="120" :formatter="formatScore" />
+      <el-table-column prop="averageCurrentCredit" :label="averageCreditLabel" min-width="120" :formatter="formatScore" />
       <el-table-column prop="averageTargetCredit" label="目标平均学分" min-width="120" :formatter="formatScore" />
       <!-- 部门表专属列 -->
       <el-table-column v-if="isDepartment" label="转型TOP" min-width="100">

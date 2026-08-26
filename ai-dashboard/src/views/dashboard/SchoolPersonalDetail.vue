@@ -469,6 +469,9 @@ onActivated(() => {
 
         <div class="target-course-section" v-if="practicalTargetCourses.length">
           <h4 class="target-course-title">实战目标课程列表</h4>
+          <p class="practical-priority-hint">
+            鼓励 L2 干部、专家优先完成线下大模型训推实战；其余员工优先完成线上 AI Agent 打榜。
+          </p>
           <el-table
             :data="practicalTargetCourses"
             border
@@ -506,9 +509,6 @@ onActivated(() => {
               </template>
             </el-table-column>
           </el-table>
-          <p class="practical-priority-hint">
-            鼓励 L2 干部、专家优先完成线下大模型训推实战；其余员工优先完成线上 AI Agent 打榜。
-          </p>
         </div>
 
         <div class="target-course-section target-course-section--fixed" v-if="theoryTargetCourses.length">
@@ -848,7 +848,7 @@ onActivated(() => {
   }
 
   .practical-priority-hint {
-    margin: 10px 0 0;
+    margin: 8px 0 10px;
     font-size: 13px;
     font-weight: 400;
     line-height: 1.5;
