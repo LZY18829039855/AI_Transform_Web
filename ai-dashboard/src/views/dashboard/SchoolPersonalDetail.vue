@@ -269,46 +269,102 @@ type OverviewTableRow = CourseCategoryStatistics & {
   courseLevel: string
 }
 
+/** 理论课学分上限默认 30（与 credit.theory-cap 一致） */
+const DEFAULT_THEORY_CREDIT_CAP = 30
+
+const toFiniteNumber = (value: unknown): number | null => {
+  if (value == null || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+/** 理论课（基础+进阶）已获学分合计，超过学分上限时按上限封顶 */
+const getTheoryEarnedCreditCapped = (statistics: CourseCategoryStatistics[]) => {
+  const theoryRows = statistics.filter((stat) => isTheoryLevel(stat.courseLevel))
+  const rawSum = theoryRows.reduce((sum, stat) => sum + (Number(stat.earnedCredit) || 0), 0)
+  const capFromData = toFiniteNumber(
+    theoryRows.find((stat) => toFiniteNumber(stat.creditCap) != null)?.creditCap
+  )
+  const cap = capFromData ?? DEFAULT_THEORY_CREDIT_CAP
+  return Math.min(rawSum, cap)
+}
+
+const getTheoryCreditCap = (statistics: CourseCategoryStatistics[]) => {
+  const capFromData = toFiniteNumber(
+    statistics.find((stat) => isTheoryLevel(stat.courseLevel) && toFiniteNumber(stat.creditCap) != null)
+      ?.creditCap
+  )
+  return capFromData ?? DEFAULT_THEORY_CREDIT_CAP
+}
+
 const tableDataWithTotal = computed<OverviewTableRow[]>(() => {
   if (!detailData.value?.courseStatistics || detailData.value.courseStatistics.length === 0) {
     return []
   }
   const statistics = detailData.value.courseStatistics
-  const theoryCap = statistics.find((stat) => isTheoryLevel(stat.courseLevel))?.creditCap
-  const practicalCap = statistics.find(
-    (stat) => normalizeCategory(stat.courseLevel || '') === '实战'
-  )?.creditCap
-  const totalCreditCap =
-    (Number.isFinite(Number(theoryCap)) ? Number(theoryCap) : 0) +
-    (Number.isFinite(Number(practicalCap)) ? Number(practicalCap) : 0)
+  // 保证基础、进阶相邻，便于学分上限 / 已获学分合并单元格
+  const sortedStatistics = [...statistics].sort(
+    (a, b) => getCategoryOrder(a.courseLevel || '') - getCategoryOrder(b.courseLevel || '')
+  )
+  const theoryCap = getTheoryCreditCap(sortedStatistics)
+  const practicalCap = toFiniteNumber(
+    sortedStatistics.find((stat) => normalizeCategory(stat.courseLevel || '') === '实战')?.creditCap
+  )
+  const totalCreditCap = theoryCap + (practicalCap ?? 0)
+
+  const theoryEarnedCapped = getTheoryEarnedCreditCapped(sortedStatistics)
+  const nonTheoryEarned = sortedStatistics
+    .filter((stat) => !isTheoryLevel(stat.courseLevel))
+    .reduce((sum, stat) => sum + (Number(stat.earnedCredit) || 0), 0)
+
+  // 基础/进阶行：已获学分写入合并后的封顶值，与学分上限列展示口径一致
+  const displayRows: OverviewTableRow[] = sortedStatistics.map((stat) => {
+    if (!isTheoryLevel(stat.courseLevel)) {
+      return { ...stat, courseLevel: stat.courseLevel || '未分类' }
+    }
+    return {
+      ...stat,
+      courseLevel: stat.courseLevel || '未分类',
+      creditCap: theoryCap,
+      earnedCredit: theoryEarnedCapped,
+    }
+  })
 
   const totalRow: OverviewTableRow = {
     courseLevel: '总计',
-    totalCourses: statistics.reduce((sum, stat) => sum + (stat.totalCourses || 0), 0),
-    targetCourses: statistics.reduce((sum, stat) => sum + (stat.targetCourses || 0), 0),
-    completedCourses: statistics.reduce((sum, stat) => sum + (stat.completedCourses || 0), 0),
+    totalCourses: sortedStatistics.reduce((sum, stat) => sum + (stat.totalCourses || 0), 0),
+    targetCourses: sortedStatistics.reduce((sum, stat) => sum + (stat.targetCourses || 0), 0),
+    completedCourses: sortedStatistics.reduce((sum, stat) => sum + (stat.completedCourses || 0), 0),
     creditCap: totalCreditCap,
-    // 总计已获学分：各分类原始求和（不封顶）
-    earnedCredit: statistics.reduce((sum, stat) => sum + (Number(stat.earnedCredit) || 0), 0),
+    // 总计已获学分：理论课按上限封顶后与其它分类求和
+    earnedCredit: theoryEarnedCapped + nonTheoryEarned,
     completionRate: 0,
   }
   if (totalRow.targetCourses > 0) {
     totalRow.completionRate = (totalRow.completedCourses / totalRow.targetCourses) * 100
   }
-  return [...statistics, totalRow]
+  return [...displayRows, totalRow]
 })
 
-/** 学分上限列：基础与进阶合并单元格展示 theory-cap */
+/** 学分上限 / 已获学分列：基础与进阶合并单元格展示 */
 const getOverviewSpanMethod = ({
   row,
   column,
   rowIndex,
+  columnIndex,
 }: {
   row: OverviewTableRow
   column: { property?: string }
   rowIndex: number
+  columnIndex: number
 }) => {
-  if (column.property !== 'creditCap') {
+  // property 优先；columnIndex 兜底（学分上限=3，已获学分=5）
+  const isMergeColumn =
+    column.property === 'creditCap' ||
+    column.property === 'earnedCredit' ||
+    columnIndex === 3 ||
+    columnIndex === 5
+  if (!isMergeColumn) {
     return { rowspan: 1, colspan: 1 }
   }
   const rows = tableDataWithTotal.value
@@ -376,7 +432,7 @@ onActivated(() => {
         <template #header>
           <div class="summary-card-header">
             <h3>个人学分总览</h3>
-            <p class="credit-cap-hint">计入个人总分时，理论课（基础+进阶）上限 30 分、实战课上限 30 分；本页仍展示全部完课数据，超出上限的学分不计入总分。</p>
+            <p class="credit-cap-hint">计入个人总分时，理论课（基础+进阶）上限 30 分、实战课上限 30 分；已获学分中理论课按上限合并封顶展示，超出部分不计入总分。</p>
           </div>
         </template>
         <el-table

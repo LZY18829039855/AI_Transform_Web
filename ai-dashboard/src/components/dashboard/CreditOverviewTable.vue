@@ -19,14 +19,46 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
+const isDepartment = computed(() => props.type === 'department')
+
 const categoryLabel = computed(() => {
   return props.type === 'position' ? '职位类别' : '部门'
 })
+
+const rowIdentity = (row: CreditOverviewVO) => row.categoryCode ?? row.categoryName
+
+/** 按当前平均学分降序，为非总计行标注 TOP1~TOP3 */
+const transformTopMap = computed(() => {
+  const map = new Map<string, string>()
+  if (!isDepartment.value) return map
+
+  const topRows = [...props.data]
+    .filter((row) => row.categoryName !== '总计')
+    .sort((a, b) => {
+      const scoreA = Number(a.averageCurrentCredit)
+      const scoreB = Number(b.averageCurrentCredit)
+      const safeA = Number.isFinite(scoreA) ? scoreA : -Infinity
+      const safeB = Number.isFinite(scoreB) ? scoreB : -Infinity
+      return safeB - safeA
+    })
+    .slice(0, 3)
+
+  topRows.forEach((row, index) => {
+    map.set(rowIdentity(row), `TOP${index + 1}`)
+  })
+  return map
+})
+
+const getTransformTop = (row: CreditOverviewVO) => {
+  if (row.categoryName === '总计') return ''
+  return transformTopMap.value.get(rowIdentity(row)) || ''
+}
 
 const formatScore = (_row: any, _column: any, cellValue: number) => {
   if (cellValue == null) return '-'
   return cellValue
 }
+
 const handleDrillDown = (row: CreditOverviewVO, field: string) => {
   emit('drill-down', row, field)
 }
@@ -46,7 +78,7 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
         <h3>{{ title }}</h3>
       </div>
     </template>
-    
+
     <el-table
       v-loading="loading"
       :data="data"
@@ -73,19 +105,22 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       <el-table-column prop="minScore" label="最低分" min-width="100" :formatter="formatScore" />
       <el-table-column prop="averageCurrentCredit" label="当前平均学分" min-width="120" :formatter="formatScore" />
       <el-table-column prop="averageTargetCredit" label="目标平均学分" min-width="120" :formatter="formatScore" />
-      <el-table-column prop="achievementRate" label="学分达成率" min-width="120">
+      <!-- 部门表专属列 -->
+      <el-table-column v-if="isDepartment" label="转型TOP" min-width="100">
         <template #default="{ row }">
-          {{ row.achievementRate != null ? `${Number(row.achievementRate).toFixed(1)}%` : '-' }}
+          <template v-if="getTransformTop(row)">
+            <span class="transform-top-tag">{{ getTransformTop(row) }}</span>
+          </template>
+          <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column prop="scheduleTarget" label="时间进度学分目标" min-width="150" :formatter="formatScore" />
-      <el-table-column prop="status" label="学分状态预警" min-width="120" fixed="right">
-        <template #default="{ row }">
-          <el-tag :type="row.statusType || (row.isWarning ? 'danger' : 'success')" effect="light">
-            {{ row.status || (row.isWarning ? '预警' : '正常') }}
-          </el-tag>
-        </template>
+      <el-table-column v-if="isDepartment" label="干部平均学分" min-width="120">
+        <template #default>—</template>
       </el-table-column>
+      <el-table-column v-if="isDepartment" label="专家平均学分" min-width="120">
+        <template #default>—</template>
+      </el-table-column>
+      <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
     </el-table>
   </el-card>
 </template>
@@ -113,13 +148,19 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
   font-weight: 600;
   padding: 0;
   border-radius: 0;
-  color: #409eff; /* element-plus primary color */
+  color: #409eff;
   background: transparent;
 
   &:hover {
     background: transparent;
     text-decoration: underline;
   }
+}
+
+.transform-top-tag {
+  display: inline-block;
+  font-weight: 700;
+  color: #c45606;
 }
 
 :deep(.el-table .total-row) {

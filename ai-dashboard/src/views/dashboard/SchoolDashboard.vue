@@ -577,15 +577,7 @@ onActivated(() => {
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="completionRate" label="学分达成率" min-width="120">
-            <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
-          </el-table-column>
-          <el-table-column prop="scheduleTarget" label="时间进度学分目标" min-width="150" />
-          <el-table-column prop="status" label="学分状态预警" min-width="120">
-            <template #default="{ row }">
-              <el-tag :type="row.statusType">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
+          <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
         </el-table>
       </el-card>
 
@@ -634,15 +626,7 @@ onActivated(() => {
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="completionRate" label="学分达成率" min-width="120">
-            <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
-          </el-table-column>
-          <el-table-column prop="scheduleTarget" label="时间进度学分目标" min-width="150" />
-          <el-table-column prop="status" label="学分状态预警" min-width="120">
-            <template #default="{ row }">
-              <el-tag :type="row.statusType">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
+          <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
         </el-table>
       </el-card>
 
