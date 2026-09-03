@@ -33,7 +33,14 @@ class Request {
     }
 
     const controller = new AbortController()
-    const timeoutId = window.setTimeout(() => controller.abort(), options.timeout ?? this.timeout)
+    const timeoutMs = options.timeout ?? this.timeout
+    const timeoutId = window.setTimeout(
+      () =>
+        controller.abort(
+          new DOMException(`请求超时（已超过 ${Math.round(timeoutMs / 1000)} 秒）`, 'AbortError'),
+        ),
+      timeoutMs,
+    )
     const { headers: _originalHeaders, ...restOptions } = options
 
     try {

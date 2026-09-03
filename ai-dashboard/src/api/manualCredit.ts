@@ -24,6 +24,9 @@ function mapImportRowsToApiPayload(rows: ManualCreditImportRow[]) {
 /** 单次请求体最大条数（与后端单次上限一致） */
 const CHUNK_SIZE = 500
 
+/** 批量导入含落库与学分同步，单批可能较慢；默认 10s 易超时 */
+const BATCH_IMPORT_TIMEOUT_MS = 120_000
+
 export function mapApiToTableRow(r: ManualEnterCreditApi): ManualEnterCreditRecord {
   return {
     id: r.id,
@@ -170,7 +173,9 @@ export async function batchImportManualCreditsWithProgress(
   for (let ci = 0; ci < chunks.length; ci++) {
     onProgress(Math.round((ci / chunks.length) * 100), `正在提交第 ${ci + 1}/${chunks.length} 批（共 ${total} 条）…`)
     const body = { rows: mapImportRowsToApiPayload(chunks[ci]) }
-    const res = await post<Result<ManualEnterCreditBatchImportResult>>('/manual-enter-credit/batch-import', body)
+    const res = await post<Result<ManualEnterCreditBatchImportResult>>('/manual-enter-credit/batch-import', body, {
+      timeout: BATCH_IMPORT_TIMEOUT_MS,
+    })
     if (res.code !== 200 || res.data == null) {
       throw new Error(res.message || '批量导入失败')
     }
