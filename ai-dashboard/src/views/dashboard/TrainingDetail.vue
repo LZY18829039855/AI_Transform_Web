@@ -207,8 +207,6 @@ const formatBoolean = (value: boolean) => (value ? '是' : '否')
 /** 完课占比展示（接口已为百分比数值，保留 2 位小数） */
 const formatPercent = (value: number | undefined) =>
   value != null ? `${Number(value).toFixed(2)}%` : '-'
-/** 部门训战数据表数字展示（与看板一致） */
-const formatDeptNumber = (value: number | undefined) => (value ?? 0).toFixed(1)
 /** 部门训战数据表百分比展示（与看板一致，一位小数） */
 const formatDeptPercent = (value: number | undefined) => `${(value ?? 0).toFixed(1)}%`
 
@@ -766,7 +764,13 @@ onBeforeUnmount(() => {
             show-overflow-tooltip
             align="center"
             header-align="center"
-          />
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column
             prop="baselineCount"
             label="基线人数"
@@ -774,7 +778,13 @@ onBeforeUnmount(() => {
             show-overflow-tooltip
             align="center"
             header-align="center"
-          />
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column
             prop="basicCourseCount"
             label="基础课程数"
@@ -782,7 +792,13 @@ onBeforeUnmount(() => {
             show-overflow-tooltip
             align="center"
             header-align="center"
-          />
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column
             prop="advancedCourseCount"
             label="进阶课程数"
@@ -790,7 +806,13 @@ onBeforeUnmount(() => {
             show-overflow-tooltip
             align="center"
             header-align="center"
-          />
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column
             prop="practicalCourseCount"
             label="实战课程数"
@@ -798,7 +820,13 @@ onBeforeUnmount(() => {
             show-overflow-tooltip
             align="center"
             header-align="center"
-          />
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column
             prop="basicAvgCompletedCount"
             label="基础课程平均完课人数"
@@ -807,7 +835,12 @@ onBeforeUnmount(() => {
             align="center"
             header-align="center"
           >
-            <template #default="{ row }">{{ formatDeptNumber(row.basicAvgCompletedCount) }}</template>
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+            <template #default="{ row }">{{ formatAvgLearnersInteger(row.basicAvgCompletedCount) }}</template>
           </el-table-column>
           <el-table-column
             prop="advancedAvgCompletedCount"
@@ -817,7 +850,12 @@ onBeforeUnmount(() => {
             align="center"
             header-align="center"
           >
-            <template #default="{ row }">{{ formatDeptNumber(row.advancedAvgCompletedCount) }}</template>
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+            <template #default="{ row }">{{ formatAvgLearnersInteger(row.advancedAvgCompletedCount) }}</template>
           </el-table-column>
           <el-table-column
             prop="practicalAvgCompletedCount"
@@ -827,7 +865,12 @@ onBeforeUnmount(() => {
             align="center"
             header-align="center"
           >
-            <template #default="{ row }">{{ formatDeptNumber(row.practicalAvgCompletedCount) }}</template>
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+            <template #default="{ row }">{{ formatAvgLearnersInteger(row.practicalAvgCompletedCount) }}</template>
           </el-table-column>
           <el-table-column
             prop="basicAvgCompletionRate"
@@ -837,6 +880,11 @@ onBeforeUnmount(() => {
             align="center"
             header-align="center"
           >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatDeptPercent(row.basicAvgCompletionRate) }}</template>
           </el-table-column>
           <el-table-column
@@ -847,6 +895,11 @@ onBeforeUnmount(() => {
             align="center"
             header-align="center"
           >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatDeptPercent(row.advancedAvgCompletionRate) }}</template>
           </el-table-column>
           <el-table-column
@@ -857,6 +910,11 @@ onBeforeUnmount(() => {
             align="center"
             header-align="center"
           >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatDeptPercent(row.practicalAvgCompletionRate) }}</template>
           </el-table-column>
         </el-table>
@@ -1543,6 +1601,16 @@ onBeforeUnmount(() => {
   }
   :deep(.el-table .cell) {
     white-space: nowrap;
+  }
+
+  .table-header-label {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+    cursor: default;
   }
 }
 
