@@ -8,6 +8,7 @@ import { fetchManualEnterCreditListBySession } from '@/api/manualCredit'
 import type { PersonalCourseCompletionResponse, CourseInfo, CourseCategoryStatistics } from '@/types/dashboard'
 import type { ManualEnterCreditRecord } from '@/types/manualCredit'
 import type { EmployeePersonalCertQualifiedInfo } from '@/types/dashboard'
+import { getUserIdFromAccount } from '@/utils/cookie'
 
 const router = useRouter()
 const route = useRoute()
@@ -190,7 +191,9 @@ const getTheorySpanMethod = createSpanMethod(theoryTargetCourses)
 const fetchDetail = async () => {
   loading.value = true
   try {
-    const account = (route.query.account as string) || undefined
+    /** 优先路由 account；否则前端解析 Cookie 工号，保证三个接口入参一致 */
+    const account =
+      ((route.query.account as string) || '').trim() || getUserIdFromAccount() || undefined
 
     /** 与 /personal-course/completion 一致：有 account 则查指定人；无则由服务端从 Cookie 解析工号 */
     const manualEnterCreditPromise = fetchManualEnterCreditListBySession({

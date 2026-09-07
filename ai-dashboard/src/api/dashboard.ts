@@ -1252,23 +1252,34 @@ export const fetchPersonalCourseCompletion = async (
 }
 
 /**
- * 获取个人任职/认证信息
- * @param account 可选，工号；不传时后端从 cookie 获取当前用户
+ * 获取个人任职/认证信息（与 /completion 一致：前端解析 Cookie 工号并支持一次重试）
+ * @param account 可选，工号；不传时从浏览器 Cookie 解析后作为 query 传给后端
  */
+const requestEmployeePersonalCertQualified = async (
+  account?: string,
+): Promise<EmployeePersonalCertQualifiedInfo | null> => {
+  const resolvedAccount = resolvePersonalAccount(account)
+  const url = resolvedAccount
+    ? `/employee/personal-cert-qualified?account=${encodeURIComponent(resolvedAccount)}`
+    : '/employee/personal-cert-qualified'
+  const response = await get<Result<EmployeePersonalCertQualifiedInfo>>(url)
+  if (response.code === 200) {
+    return response.data
+  }
+  console.warn('获取个人任职/认证信息失败：', response.message)
+  return null
+}
+
 export const fetchEmployeePersonalCertQualified = async (
   account?: string
 ): Promise<EmployeePersonalCertQualifiedInfo | null> => {
   try {
-    const url =
-      account != null && account.trim() !== ''
-        ? `/employee/personal-cert-qualified?account=${encodeURIComponent(account.trim())}`
-        : '/employee/personal-cert-qualified'
-    const response = await get<Result<EmployeePersonalCertQualifiedInfo>>(url)
-    if (response.code === 200) {
-      return response.data
+    let data = await requestEmployeePersonalCertQualified(account)
+    if (!data) {
+      await delay(300)
+      data = await requestEmployeePersonalCertQualified(account)
     }
-    console.warn('获取个人任职/认证信息失败：', response.message)
-    return null
+    return data
   } catch (error) {
     console.error('获取个人任职/认证信息异常：', error)
     return null

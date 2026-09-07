@@ -10,6 +10,7 @@ import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import CreditOverviewTable from '@/components/dashboard/CreditOverviewTable.vue'
 import { fetchUserPermissions, guardAdminAccess } from '@/utils/permissions'
+import { getUserIdFromAccount } from '@/utils/cookie'
 import type {
   SchoolAllStaffSummaryRow,
   SchoolDashboardData,
@@ -252,12 +253,13 @@ const handleAllStaffDrill = async (row: SchoolAllStaffSummaryRow, field: string)
 }
 
 /**
- * 个人数据总览下钻：不传 account，详情页与 /completion 一致由服务端从 Cookie 解析工号并查手工录入学分。
+ * 个人数据总览下钻：优先带上当前登录人工号，避免新开页时任职认证等接口仅依赖 Cookie 首次失败。
  */
 const handleOverviewDrill = (_metric: string) => {
+  const account = getUserIdFromAccount()
   const resolved = router.resolve({
     name: 'SchoolPersonalTrainingDetail',
-    query: {},
+    query: account ? { account } : {},
   })
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
