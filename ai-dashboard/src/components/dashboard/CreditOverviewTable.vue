@@ -31,13 +31,28 @@ const averageCreditLabel = computed(() => {
 
 const rowIdentity = (row: CreditOverviewVO) => row.categoryCode ?? row.categoryName
 
-/** 按当前平均学分降序，为非总计行标注 TOP1~TOP3 */
+/** 不参与转型 TOP 排名的部门（取中文名匹配，兼容「中文/英文」格式） */
+const TOP_EXCLUDED_DEPT_NAMES = new Set([
+  '云核心网架构与设计部',
+  '云核心网技术规划部',
+  '云核心网研究部',
+])
+
+const getDeptChineseName = (name?: string) => {
+  if (!name) return ''
+  return name.includes('/') ? name.split('/')[0].trim() : name.trim()
+}
+
+/** 按当前平均学分降序，为非总计行标注 TOP1~TOP3（排除指定部门） */
 const transformTopMap = computed(() => {
   const map = new Map<string, string>()
   if (!isDepartment.value) return map
 
   const topRows = [...props.data]
-    .filter((row) => row.categoryName !== '总计')
+    .filter((row) => {
+      if (row.categoryName === '总计') return false
+      return !TOP_EXCLUDED_DEPT_NAMES.has(getDeptChineseName(row.categoryName))
+    })
     .sort((a, b) => {
       const scoreA = Number(a.averageCurrentCredit)
       const scoreB = Number(b.averageCurrentCredit)
@@ -80,6 +95,9 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
     <template #header>
       <div class="card-header">
         <h3>{{ title }}</h3>
+        <p v-if="isDepartment" class="credit-cap-hint">
+          架设、规划、研究部作为产品线AI龙头组织，不参与TOP排序。
+        </p>
       </div>
     </template>
 
@@ -136,8 +154,8 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
 
   .card-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
 
     h3 {
       margin: 0;
@@ -145,6 +163,14 @@ const tableRowClassName = ({ row }: { row: CreditOverviewVO }) => {
       font-weight: 600;
       color: #303133;
     }
+  }
+
+  .credit-cap-hint {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #606266;
   }
 }
 
