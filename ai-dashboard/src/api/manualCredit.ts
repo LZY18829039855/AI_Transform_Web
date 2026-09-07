@@ -6,6 +6,7 @@ import type {
   ManualEnterCreditRecord,
   PageResult,
 } from '@/types/manualCredit'
+import { getUserIdFromAccount } from '@/utils/cookie'
 import { get, post, request } from '@/utils/request'
 
 function mapImportRowsToApiPayload(rows: ManualCreditImportRow[]) {
@@ -26,6 +27,16 @@ const CHUNK_SIZE = 500
 
 /** 批量导入含落库与学分同步，单批可能较慢；默认 10s 易超时 */
 const BATCH_IMPORT_TIMEOUT_MS = 120_000
+
+const delay = (ms = 300) => new Promise((resolve) => window.setTimeout(resolve, ms))
+
+const resolveSessionAccount = (account?: string): string | undefined => {
+  const trimmed = account?.trim()
+  if (trimmed) {
+    return trimmed
+  }
+  return getUserIdFromAccount() ?? undefined
+}
 
 export function mapApiToTableRow(r: ManualEnterCreditApi): ManualEnterCreditRecord {
   return {
@@ -66,27 +77,28 @@ export interface FetchManualEnterCreditListParams {
 }
 
 /**
- * 个人课程学分场景：与 /personal-course/completion 相同入参（account 可选，否则服务端从 Cookie 解析工号），
- * 复用 /manual-enter-credit/list 同一套查询逻辑。
+ * 个人课程学分场景：与 /personal-course/completion 相同入参（account 可选，否则从前端 Cookie 解析工号），
+ * 复用个人列表接口；失败时与 completion / 任职认证一致重试一次。
  */
 export interface FetchManualEnterCreditBySessionParams {
   pageNum?: number
   pageSize?: number
-  /** 与 completion 的 account 一致；不传则由后端从 Cookie 解析 */
+  /** 与 completion 的 account 一致；不传则由前端 Cookie 解析 */
   account?: string
 }
 
-export async function fetchManualEnterCreditListBySession(
+async function requestManualEnterCreditListBySession(
   params: FetchManualEnterCreditBySessionParams = {},
 ): Promise<PageResult<ManualEnterCreditRecord>> {
   const pageNum = params.pageNum ?? 1
   const pageSize = params.pageSize ?? 20
+  const resolvedAccount = resolveSessionAccount(params.account)
   const q = new URLSearchParams({
     pageNum: String(pageNum),
     pageSize: String(pageSize),
   })
-  if (params.account?.trim()) {
-    q.set('account', params.account.trim())
+  if (resolvedAccount) {
+    q.set('account', resolvedAccount)
   }
   const res = await get<Result<PageResult<ManualEnterCreditApi>>>(
     `/personal-course/manual-enter-credit-list?${q.toString()}`,
@@ -94,10 +106,23 @@ export async function fetchManualEnterCreditListBySession(
   if (res.code !== 200 || !res.data) {
     throw new Error(res.message || '查询失败')
   }
+  const rawRows = Array.isArray(res.data.rows) ? res.data.rows : []
   return {
-    total: res.data.total,
-    rows: res.data.rows.map(mapApiToTableRow),
+    total: res.data.total ?? 0,
+    rows: rawRows.map(mapApiToTableRow),
     totalCredits: res.data.totalCredits ?? 0,
+  }
+}
+
+export async function fetchManualEnterCreditListBySession(
+  params: FetchManualEnterCreditBySessionParams = {},
+): Promise<PageResult<ManualEnterCreditRecord>> {
+  try {
+    return await requestManualEnterCreditListBySession(params)
+  } catch (firstError) {
+    console.warn('获取手工录入学分列表失败，准备重试：', firstError)
+    await delay(300)
+    return requestManualEnterCreditListBySession(params)
   }
 }
 

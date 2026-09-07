@@ -227,7 +227,11 @@ const createSpanMethod = (rows: { value: Array<{ bigType?: string }> }) => {
 const getPracticalSpanMethod = createSpanMethod(practicalTargetCourses)
 const getTheorySpanMethod = createSpanMethod(theoryTargetCourses)
 
+/** 防止 onMounted / onActivated 或连点刷新导致旧请求覆盖新结果 */
+let fetchDetailSeq = 0
+
 const fetchDetail = async () => {
+  const seq = ++fetchDetailSeq
   loading.value = true
   try {
     /** 优先路由 account；否则前端解析 Cookie 工号，保证三个接口入参一致 */
@@ -254,6 +258,9 @@ const fetchDetail = async () => {
       manualEnterCreditPromise,
       certQualifiedPromise,
     ])
+    if (seq !== fetchDetailSeq) {
+      return
+    }
     manualEnterCreditRows.value = manualPage.rows
     const sum = Number(manualPage.totalCredits)
     manualEnterTotalCredits.value = Number.isFinite(sum) ? sum : 0
@@ -268,10 +275,15 @@ const fetchDetail = async () => {
       ElMessage.warning('获取个人课程详情失败')
     }
   } catch (error) {
+    if (seq !== fetchDetailSeq) {
+      return
+    }
     console.error('获取个人课程详情异常：', error)
     ElMessage.error('获取个人课程详情异常')
   } finally {
-    loading.value = false
+    if (seq === fetchDetailSeq) {
+      loading.value = false
+    }
   }
 }
 
