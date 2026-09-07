@@ -97,6 +97,7 @@ export async function fetchManualEnterCreditListBySession(
   return {
     total: res.data.total,
     rows: res.data.rows.map(mapApiToTableRow),
+    totalCredits: res.data.totalCredits ?? 0,
   }
 }
 

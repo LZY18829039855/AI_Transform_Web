@@ -24,6 +24,8 @@ export type ManualCreditImportRow = Omit<ManualEnterCreditRecord, 'id' | 'create
 export interface PageResult<T> {
   total: number
   rows: T[]
+  /** 可选：个人多元化学分列表返回的该工号全量学分合计 */
+  totalCredits?: number | string | null
 }
 
 /** 后端接口驼峰字段（列表/详情） */

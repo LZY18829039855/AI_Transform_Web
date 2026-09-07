@@ -17,6 +17,8 @@ const detailData = ref<PersonalCourseCompletionResponse | null>(null)
 const selectedCategory = ref<string>('全部')
 /** 多元化学分场景列表数据（与学分管理同源，仅只读展示） */
 const manualEnterCreditRows = ref<ManualEnterCreditRecord[]>([])
+/** 该工号多元化学分全量合计（后端 totalCredits） */
+const manualEnterTotalCredits = ref<number | null>(null)
 /** 任职认证详情（基于 t_employee） */
 const certQualifiedDetail = ref<EmployeePersonalCertQualifiedInfo | null>(null)
 /** 科目二详情：仅认证未通过且后端返回 subject2List 时展示 */
@@ -26,7 +28,44 @@ const subject2TableRows = computed(() => {
   return list
 })
 const showSubject2Section = computed(() => subject2TableRows.value.length > 0)
-const manualCreditTableMaxHeight = computed(() => (manualEnterCreditRows.value.length ? 560 : 80))
+
+type ManualCreditTableRow = ManualEnterCreditRecord & { isTotal?: boolean }
+
+/** 多元化学分表：明细 + 总计行（学分取后端 totalCredits） */
+const manualEnterCreditTableRows = computed<ManualCreditTableRow[]>(() => {
+  const rows = manualEnterCreditRows.value
+  if (!rows.length) {
+    return []
+  }
+  const totalCredits = manualEnterTotalCredits.value
+  let creditsText = '—'
+  if (totalCredits != null && Number.isFinite(totalCredits)) {
+    creditsText = Number.isInteger(totalCredits) ? String(totalCredits) : totalCredits.toFixed(1)
+  }
+  return [
+    ...rows,
+    {
+      id: -1,
+      employee_number: '',
+      employee_name: '',
+      credit_type: '总计',
+      activity_name: '',
+      activity_date: null,
+      credits: creditsText,
+      description: '',
+      attachment_url: '',
+      create_time: null,
+      update_time: null,
+      Modifier__number: '',
+      isTotal: true,
+    },
+  ]
+})
+
+const manualCreditTableMaxHeight = computed(() => (manualEnterCreditTableRows.value.length ? 560 : 80))
+
+const getManualCreditRowClassName = ({ row }: { row: ManualCreditTableRow }) =>
+  row.isTotal || row.credit_type === '总计' ? 'personal-overview-total-row' : ''
 
 // 训战分类排序顺序（支持多种名称映射）
 const categoryOrder = ['基础', '进阶', '高阶', '实战']
@@ -202,7 +241,7 @@ const fetchDetail = async () => {
       pageSize: 200,
     }).catch((err) => {
       console.warn('获取手工录入学分列表失败：', err)
-      return { total: 0, rows: [] as ManualEnterCreditRecord[] }
+      return { total: 0, rows: [] as ManualEnterCreditRecord[], totalCredits: 0 }
     })
 
     const certQualifiedPromise = fetchEmployeePersonalCertQualified(account).catch((err) => {
@@ -216,6 +255,8 @@ const fetchDetail = async () => {
       certQualifiedPromise,
     ])
     manualEnterCreditRows.value = manualPage.rows
+    const sum = Number(manualPage.totalCredits)
+    manualEnterTotalCredits.value = Number.isFinite(sum) ? sum : 0
     certQualifiedDetail.value = certQualified
     if (data) {
       detailData.value = data
@@ -576,12 +617,13 @@ onActivated(() => {
         </template>
         <el-table
           class="credit-table"
-          :data="manualEnterCreditRows"
+          :data="manualEnterCreditTableRows"
           empty-text="暂无多元化学分场景数据"
           border
           stripe
           style="width: 100%"
           :max-height="manualCreditTableMaxHeight"
+          :row-class-name="getManualCreditRowClassName"
         >
           <el-table-column
             prop="credit_type"
@@ -598,7 +640,9 @@ onActivated(() => {
             header-align="center"
             align="center"
             show-overflow-tooltip
-          />
+          >
+            <template #default="{ row }">{{ row.isTotal ? '' : row.activity_name }}</template>
+          </el-table-column>
           <el-table-column
             prop="activity_date"
             label="活动日期"
@@ -606,7 +650,9 @@ onActivated(() => {
             header-align="center"
             align="center"
             show-overflow-tooltip
-          />
+          >
+            <template #default="{ row }">{{ row.isTotal ? '' : row.activity_date }}</template>
+          </el-table-column>
           <el-table-column
             prop="credits"
             label="获得学分"
@@ -622,7 +668,9 @@ onActivated(() => {
             header-align="center"
             align="center"
             show-overflow-tooltip
-          />
+          >
+            <template #default="{ row }">{{ row.isTotal ? '' : row.description }}</template>
+          </el-table-column>
           <el-table-column
             prop="attachment_url"
             label="附件URL"
@@ -630,7 +678,9 @@ onActivated(() => {
             header-align="center"
             align="center"
             show-overflow-tooltip
-          />
+          >
+            <template #default="{ row }">{{ row.isTotal ? '' : row.attachment_url }}</template>
+          </el-table-column>
           <el-table-column
             prop="update_time"
             label="更新时间"
@@ -638,7 +688,9 @@ onActivated(() => {
             header-align="center"
             align="center"
             show-overflow-tooltip
-          />
+          >
+            <template #default="{ row }">{{ row.isTotal ? '' : row.update_time }}</template>
+          </el-table-column>
         </el-table>
       </el-card>
 
@@ -888,6 +940,15 @@ onActivated(() => {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+  }
+
+  /* 与个人学分总览总计行一致：加黑加粗 */
+  :deep(tr.personal-overview-total-row) {
+    td {
+      font-weight: 700;
+      font-size: 16px;
+      color: #000;
+    }
   }
 }
 
