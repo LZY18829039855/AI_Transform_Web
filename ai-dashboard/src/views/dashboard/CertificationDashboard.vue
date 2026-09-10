@@ -1750,8 +1750,9 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
                       <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
-                      <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
-                      <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                      <div>软件类L3岗位干部要求26年H2之前获得4+AI任职资格；</div>
+                      <div>软件类L2岗位干部牵引获得3+AI任职资格。</div>
+                      <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -1807,8 +1808,9 @@ onActivated(() => {
                       <template #content>
                         <div style="line-height: 1.8;">
                           <div style="font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
-                          <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
-                          <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                          <div>软件类L3岗位干部要求26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位干部牵引获得3+AI任职资格。</div>
+                          <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                         </div>
                       </template>
                       <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
@@ -1830,8 +1832,9 @@ onActivated(() => {
                       <template #content>
                         <div style="line-height: 1.8;">
                           <div style="font-weight: 500; margin-bottom: 4px;">干部AI任职能力要求：</div>
-                          <div>软件类L3岗位干部牵引26年H2之前获得4+AI任职资格；</div>
-                          <div>软件类L2岗位干部牵引获得3+AI任职资格；</div>
+                          <div>软件类L3岗位干部要求26年H2之前获得4+AI任职资格；</div>
+                          <div>软件类L2岗位干部牵引获得3+AI任职资格。</div>
+                          <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                         </div>
                       </template>
                       <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
@@ -1881,9 +1884,9 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
                       <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">干部AI认证能力要求：</div>
-                      <div>软件类L2/L3干部要求在26年H1之前完成"AI算法技术"专业级认证；</div>
-                      <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
-                      <div>产品线管理团队成员按L2标准要求。</div>
+                      <div>软件类L2/L3岗位干部要求26年H1之前完成"AI算法技术"专业级认证；</div>
+                      <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证中的科目2（算法理论）。</div>
+                      <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                       <div style="margin-top: 8px;">AI专业级持证人数：持有专业级证书，或有效AI任职达到5/6/7/8级（免认证）的人数。</div>
                     </div>
                   </template>
@@ -1979,9 +1982,9 @@ onActivated(() => {
                       <template #content>
                         <div style="line-height: 1.8;">
                           <div style="font-weight: 500; margin-bottom: 4px;">干部AI认证能力要求：</div>
-                          <div>软件类L2/L3干部要求在26年H1之前完成"AI算法技术"专业级认证；</div>
-                          <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
-                          <div>产品线管理团队成员按L2标准要求。</div>
+                          <div>软件类L2/L3岗位干部要求26年H1之前完成"AI算法技术"专业级认证；</div>
+                          <div>其他L2/L3岗位干部要求26年H2之前完成"AI算法技术"工作级认证中的科目2（算法理论）。</div>
+                          <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                         </div>
                       </template>
                       <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
@@ -2263,8 +2266,9 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
                       <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
-                      <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
-                      <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                      <div>L3岗位专家要求26年H2之前获得符合专家岗位要求的AI任职资格；</div>
+                      <div>L2岗位专家要求软件类专家26年H2之前获得3+级AI辅任职，牵引其它职位类L2专家获取AI辅任职，由各部门按照岗位职责自行规划。</div>
+                      <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                     </div>
                   </template>
                   <el-icon style="margin-left: 4px; cursor: pointer; color: #909399;">
@@ -2319,8 +2323,9 @@ onActivated(() => {
                       <template #content>
                         <div style="line-height: 1.8;">
                           <div style="font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
-                          <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
-                          <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                          <div>L3岗位专家要求26年H2之前获得符合专家岗位要求的AI任职资格；</div>
+                          <div>L2岗位专家要求软件类专家26年H2之前获得3+级AI辅任职，牵引其它职位类L2专家获取AI辅任职，由各部门按照岗位职责自行规划。</div>
+                          <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                         </div>
                       </template>
                       <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
@@ -2347,8 +2352,9 @@ onActivated(() => {
                       <template #content>
                         <div style="line-height: 1.8;">
                           <div style="font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
-                          <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
-                          <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                          <div>L3岗位专家要求26年H2之前获得符合专家岗位要求的AI任职资格；</div>
+                          <div>L2岗位专家要求软件类专家26年H2之前获得3+级AI辅任职，牵引其它职位类L2专家获取AI辅任职，由各部门按照岗位职责自行规划。</div>
+                          <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                         </div>
                       </template>
                       <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
@@ -2375,8 +2381,9 @@ onActivated(() => {
                       <template #content>
                         <div style="line-height: 1.8;">
                           <div style="font-weight: 500; margin-bottom: 4px;">专家AI任职能力要求：</div>
-                          <div>软件类L3岗位专家牵引26年H2之前获得4+AI任职资格；</div>
-                          <div>软件类L2岗位专家牵引获得3+AI任职资格；</div>
+                          <div>L3岗位专家要求26年H2之前获得符合专家岗位要求的AI任职资格；</div>
+                          <div>L2岗位专家要求软件类专家26年H2之前获得3+级AI辅任职，牵引其它职位类L2专家获取AI辅任职，由各部门按照岗位职责自行规划。</div>
+                          <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                         </div>
                       </template>
                       <el-icon style="margin-left: 4px; cursor: pointer; color: #909399; vertical-align: middle;">
@@ -2434,9 +2441,10 @@ onActivated(() => {
                       <div style="font-weight: 500; margin-bottom: 4px;">L3，即AI生产者，优化算法框架与AI基础设施，驱动基础模型及生态创新，打造产业原生智能技术底座；</div>
                       <div style="font-weight: 500; margin-bottom: 4px;">L2，即AI产品者，AI融入研发全流程，实现AI能力与产品整合，提升产品解决方案竞争力；</div>
                       <div style="margin-top: 12px; font-weight: 500; margin-bottom: 4px;">专家AI认证能力要求：</div>
-                      <div>软件类L2/L3专家要求在26年H1之前完成"AI算法技术"专业级认证；</div>
-                      <div>其他L2/L3岗位专家要求26年H2之前完成"AI算法技术"工作级认证科目2（算法理论），牵引26H1之前完成；</div>
-                      <div>产品线管理团队成员按L2标准要求。</div>
+                      <div>所有L3岗位的专家要求在26年H1之前完成"AI算法技术"专业级认证；</div>
+                      <div>软件、系统、研究、测试类L2岗位专家要求26年H2之前完成"AI算法技术"专业级认证；</div>
+                      <div>牵引其他职类L2岗位专家获取AI认证，由各部门按照岗位职责自行规划。</div>
+                      <div style="margin-top: 8px;">上述要求针对已在岗的干部和专家，增量干部专家应在上岗后1年内获取相应要求的AI认证，1.5年内获取相应要求的AI任职；获得5+AI任职的干部专家，对AI认证不做要求；对于所有干部专家，鼓励大家自我追求，自我提升，带头AI转型。</div>
                       <div style="margin-top: 8px;">AI专业级持证人数：持有专业级证书，或有效AI任职达到5/6/7/8级（免认证）的人数。</div>
                     </div>
                   </template>
