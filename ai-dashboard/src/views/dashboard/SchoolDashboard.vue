@@ -22,6 +22,8 @@ import type {
 const router = useRouter()
 const loading = ref(false)
 const dashboardData = ref<SchoolDashboardData | null>(null)
+/** 管理员可见部门/专家/干部总览；普通用户仅个人学分总览 */
+const isAdmin = ref(false)
 
 /** 默认选至二级部门：云核心网产品线（与认证看板一致） */
 const DEFAULT_DEPARTMENT_PATH = ['ICT_BG', 'CLOUD_CORE_NETWORK'] as const
@@ -60,6 +62,9 @@ const loadingRoleSummary = ref(false)
 
 // 3. 新增单独刷新方法
 const fetchRoleSummaryOnly = async () => {
+  if (!isAdmin.value) {
+    return
+  }
   loadingRoleSummary.value = true
   const deptCode = resolveDeptIdForStats()
   try {
@@ -96,7 +101,7 @@ const resolveDeptIdForStats = (): string | undefined => {
 
 /** 仅刷新学分统计（切换角色视图时），不重新请求整页看板数据 */
 const fetchCreditStatsOnly = async () => {
-  if (!dashboardData.value) return
+  if (!isAdmin.value || !dashboardData.value) return
   loadingPosition.value = true
   loadingDepartment.value = true
 
@@ -124,11 +129,28 @@ const fetchCreditStatsOnly = async () => {
 const fetchData = async () => {
   loading.value = true
   try {
-    await fetchUserPermissions()
+    const permissions = await fetchUserPermissions()
+    isAdmin.value = permissions.asAdmin
 
     const payload: SchoolDashboardFilters = {
       role: filters.role,
       departmentPath: filters.departmentPath?.length ? [...filters.departmentPath] : undefined,
+    }
+
+    // 普通用户仅加载个人学分总览
+    if (!isAdmin.value) {
+      const schoolData = await fetchSchoolDashboard(payload).catch((err) => {
+        console.error('Dashboard data error:', err)
+        return null
+      })
+      if (schoolData) {
+        dashboardData.value = schoolData
+      }
+      expertSummary.value = []
+      cadreSummary.value = []
+      positionData.value = []
+      departmentData.value = []
+      return
     }
 
     loadingPosition.value = true
@@ -188,7 +210,12 @@ const fetchData = async () => {
 
 watch(
     () => [filters.role, filters.departmentPath],
-    () => { fetchData() },
+    () => {
+      if (!isAdmin.value) {
+        return
+      }
+      fetchData()
+    },
     { deep: true }
 )
 
@@ -432,14 +459,19 @@ const initPageData = async () => {
   await fetchData()
 }
 
-onMounted(() => {
-  void initDepartmentTree()
-  void initPageData()
+onMounted(async () => {
+  await initPageData()
+  if (isAdmin.value) {
+    void initDepartmentTree()
+  }
 })
 
-onActivated(() => {
+onActivated(async () => {
+  await initPageData()
+  if (!isAdmin.value) {
+    return
+  }
   void refreshDepartmentTree()
-  void initPageData()
 })
 </script>
 
@@ -454,7 +486,7 @@ onActivated(() => {
       </div>
     </header>
 
-    <el-card shadow="hover" class="filter-card">
+    <el-card v-if="isAdmin" shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="92">
         <el-form-item label="部门筛选">
           <el-cascader
@@ -504,192 +536,193 @@ onActivated(() => {
         </el-row>
       </el-card>
 
-      <!-- 全员学分总览：放在个人数据总览下面，专家学分总览上面 -->
-      <el-card shadow="hover" class="summary-card">
-        <template #header>
-          <div class="card-header">
-            <h3>全员学分总览</h3>
-            <el-select v-model="creditRole" placeholder="角色视图" style="width: 140px" size="small">
-              <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-            </el-select>
-          </div>
-        </template>
+      <template v-if="isAdmin">
+        <!-- 全员学分总览：放在个人数据总览下面，专家学分总览上面 -->
+        <el-card shadow="hover" class="summary-card">
+          <template #header>
+            <div class="card-header">
+              <h3>全员学分总览</h3>
+              <el-select v-model="creditRole" placeholder="角色视图" style="width: 140px" size="small">
+                <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
+              </el-select>
+            </div>
+          </template>
 
-        <CreditOverviewTable
-            title="部门学分总览"
-            :data="departmentData"
-            :loading="loadingDepartment"
-            type="department"
-            @drill-down="(row, field) => handleCreditDrillDown(row, field, 'department')"
-        />
+          <CreditOverviewTable
+              title="部门学分总览"
+              :data="departmentData"
+              :loading="loadingDepartment"
+              type="department"
+              @drill-down="(row, field) => handleCreditDrillDown(row, field, 'department')"
+          />
 
-        <!-- 暂时隐藏职位学分总览表格，后续可能启用
-        <CreditOverviewTable
-          title="职位学分总览"
-          :data="positionData"
-          :loading="loadingPosition"
-          type="position"
-          @drill-down="(row, field) => handleCreditDrillDown(row, field, 'position')"
-        />
-        -->
-      </el-card>
+          <!-- 暂时隐藏职位学分总览表格，后续可能启用
+          <CreditOverviewTable
+            title="职位学分总览"
+            :data="positionData"
+            :loading="loadingPosition"
+            type="position"
+            @drill-down="(row, field) => handleCreditDrillDown(row, field, 'position')"
+          />
+          -->
+        </el-card>
 
-      <el-card shadow="hover" class="summary-card" v-loading="loadingRoleSummary">
-        <template #header><h3>专家学分总览</h3></template>
-        <el-table
-            :data="expertSummary"
-            border
-            style="width: 100%"
-            :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px', textAlign: 'center' }"
-            :cell-style="{ textAlign: 'center' }"
+        <el-card shadow="hover" class="summary-card" v-loading="loadingRoleSummary">
+          <template #header><h3>专家学分总览</h3></template>
+          <el-table
+              :data="expertSummary"
+              border
+              style="width: 100%"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px', textAlign: 'center' }"
+              :cell-style="{ textAlign: 'center' }"
+          >
+            <el-table-column prop="maturityLevel" label="专家岗位成熟度等级" min-width="180" />
+            <el-table-column prop="baseline" label="专家人数" min-width="120">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'baseline')">
+                  {{ row.baseline }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="maxCredits" label="专家个人最高学分" min-width="150">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'maxCredits')">
+                  {{ row.maxCredits }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="minCredits" label="专家个人最低学分" min-width="150">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'minCredits')">
+                  {{ row.minCredits }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="averageCredits" label="当前平均学分" min-width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'averageCredits')">
+                  {{ formatNumber(row.averageCredits) }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="targetCredits" label="目标平均学分" min-width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'targetCredits')">
+                  {{ formatNumber(row.targetCredits) }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
+          </el-table>
+        </el-card>
+
+        <el-card shadow="hover" class="summary-card" v-loading="loadingRoleSummary">
+          <template #header><h3>干部学分总览</h3></template>
+          <el-table
+              :data="cadreSummary"
+              border
+              style="width: 100%"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px', textAlign: 'center' }"
+              :cell-style="{ textAlign: 'center' }"
+          >
+            <el-table-column prop="maturityLevel" label="干部岗位成熟度等级" min-width="180" />
+            <el-table-column prop="baseline" label="干部人数" min-width="120">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'baseline')">
+                  {{ row.baseline }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="maxCredits" label="干部个人最高学分" min-width="150">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'maxCredits')">
+                  {{ row.maxCredits }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="minCredits" label="干部个人最低学分" min-width="150">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'minCredits')">
+                  {{ row.minCredits }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="averageCredits" label="当前平均学分" min-width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'averageCredits')">
+                  {{ formatNumber(row.averageCredits) }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="targetCredits" label="目标平均学分" min-width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'targetCredits')">
+                  {{ formatNumber(row.targetCredits) }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
+          </el-table>
+        </el-card>
+
+        <el-card
+            v-for="group in dashboardData.allStaffSummary.groups"
+            :key="group.title"
+            shadow="hover"
+            class="summary-card"
         >
-          <el-table-column prop="maturityLevel" label="专家岗位成熟度等级" min-width="180" />
-          <el-table-column prop="baseline" label="专家人数" min-width="120">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'baseline')">
-                {{ row.baseline }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="maxCredits" label="专家个人最高学分" min-width="150">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'maxCredits')">
-                {{ row.maxCredits }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="minCredits" label="专家个人最低学分" min-width="150">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'minCredits')">
-                {{ row.minCredits }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="averageCredits" label="当前平均学分" min-width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'averageCredits')">
-                {{ formatNumber(row.averageCredits) }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="targetCredits" label="目标平均学分" min-width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'targetCredits')">
-                {{ formatNumber(row.targetCredits) }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
-        </el-table>
-      </el-card>
-
-      <el-card shadow="hover" class="summary-card" v-loading="loadingRoleSummary">
-        <template #header><h3>干部学分总览</h3></template>
-        <el-table
-            :data="cadreSummary"
-            border
-            style="width: 100%"
-            :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px', textAlign: 'center' }"
-            :cell-style="{ textAlign: 'center' }"
-        >
-          <el-table-column prop="maturityLevel" label="干部岗位成熟度等级" min-width="180" />
-          <el-table-column prop="baseline" label="干部人数" min-width="120">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'baseline')">
-                {{ row.baseline }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="maxCredits" label="干部个人最高学分" min-width="150">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'maxCredits')">
-                {{ row.maxCredits }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="minCredits" label="干部个人最低学分" min-width="150">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'minCredits')">
-                {{ row.minCredits }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="averageCredits" label="当前平均学分" min-width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'averageCredits')">
-                {{ formatNumber(row.averageCredits) }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="targetCredits" label="目标平均学分" min-width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'targetCredits')">
-                {{ formatNumber(row.targetCredits) }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <!-- 学分达成率 / 时间进度学分目标 / 学分状态预警：暂时隐藏 -->
-        </el-table>
-      </el-card>
-
-      <el-card
-          v-for="group in dashboardData.allStaffSummary.groups"
-          :key="group.title"
-          shadow="hover"
-          class="summary-card"
-      >
-        <template #header>
-          <h3>全员学分总览表 - {{ group.title }}</h3>
-        </template>
-        <el-table :data="group.rows" border style="width: 100%">
-          <el-table-column prop="dimension" :label="group.dimensionLabel" width="180" />
-          <el-table-column prop="baseline" label="基线人数" width="120">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'baseline')">
-                {{ row.baseline }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="maxCredits" label="个人最高学分" width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'maxCredits')">
-                {{ row.maxCredits }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="minCredits" label="个人最低学分" width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'minCredits')">
-                {{ row.minCredits }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="averageCredits" label="平均学分" width="120">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'averageCredits')">
-                {{ formatNumber(row.averageCredits) }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="targetCredits" label="目标平均学分" width="130">
-            <template #default="{ row }">
-              <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'targetCredits')">
-                {{ formatNumber(row.targetCredits) }}
-              </el-button>
-            </template>
-          </el-table-column>
-          <el-table-column prop="completionRate" label="学分达成率" width="120">
-            <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
-          </el-table-column>
-          <el-table-column prop="scheduleTarget" label="时间进度学分目标" width="150" />
-          <el-table-column prop="status" label="学分状态预警" width="120">
-            <template #default="{ row }">
-              <el-tag :type="row.statusType">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
-
+          <template #header>
+            <h3>全员学分总览表 - {{ group.title }}</h3>
+          </template>
+          <el-table :data="group.rows" border style="width: 100%">
+            <el-table-column prop="dimension" :label="group.dimensionLabel" width="180" />
+            <el-table-column prop="baseline" label="基线人数" width="120">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'baseline')">
+                  {{ row.baseline }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="maxCredits" label="个人最高学分" width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'maxCredits')">
+                  {{ row.maxCredits }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="minCredits" label="个人最低学分" width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'minCredits')">
+                  {{ row.minCredits }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="averageCredits" label="平均学分" width="120">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'averageCredits')">
+                  {{ formatNumber(row.averageCredits) }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="targetCredits" label="目标平均学分" width="130">
+              <template #default="{ row }">
+                <el-button link class="drill-link" @click="handleAllStaffDrill(row, 'targetCredits')">
+                  {{ formatNumber(row.targetCredits) }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="completionRate" label="学分达成率" width="120">
+              <template #default="{ row }">{{ formatPercent(row.completionRate) }}</template>
+            </el-table-column>
+            <el-table-column prop="scheduleTarget" label="时间进度学分目标" width="150" />
+            <el-table-column prop="status" label="学分状态预警" width="120">
+              <template #default="{ row }">
+                <el-tag :type="row.statusType">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </template>
     </template>
 
     <!-- 基线人数下钻明细弹窗 -->

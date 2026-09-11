@@ -12,7 +12,7 @@ import {
 import { exportCoursePlanningToExcel } from '@/utils/excelExport'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
-import { guardAdminAccess } from '@/utils/permissions'
+import { fetchUserPermissions, guardAdminAccess } from '@/utils/permissions'
 import type {
   DepartmentCourseCompletionRateRow,
   TrainingAllStaffSummaryGroup,
@@ -26,6 +26,8 @@ import type {
 
 const router = useRouter()
 const loading = ref(false)
+/** 管理员可见部门/专家/干部总览；普通用户仅个人训战总览 */
+const isAdmin = ref(false)
 /** 仅「部门训战数据」表刷新（切换角色视图时），不触发整页骨架屏 */
 const departmentCompletionLoading = ref(false)
 const dashboardData = ref<TrainingDashboardData | null>(null)
@@ -123,11 +125,22 @@ const resolveDeptIdForCompletionRate = (): string => {
 const fetchData = async () => {
   loading.value = true
   try {
+    const permissions = await fetchUserPermissions()
+    isAdmin.value = permissions.asAdmin
+
     const payload: TrainingDashboardFilters = {
       role: filters.role,
       departmentPath: filters.departmentPath?.length ? [...filters.departmentPath] : undefined,
     }
     dashboardData.value = await fetchTrainingDashboard(payload)
+
+    // 普通用户仅加载个人训战总览，不请求部门/专家/干部聚合数据
+    if (!isAdmin.value) {
+      departmentCompletionList.value = []
+      expertSummaryRows.value = []
+      cadreSummaryRows.value = []
+      return
+    }
 
     const deptId = resolveDeptIdForCompletionRate()
     const personType = parseInt(departmentCompletionRole.value, 10) || 0
@@ -149,7 +162,7 @@ const fetchData = async () => {
 
 /** 仅刷新部门训战数据表（与全员训战总览表「角色视图」联动），不重新请求整页看板数据 */
 const fetchDepartmentCompletionOnly = async () => {
-  if (!dashboardData.value) {
+  if (!isAdmin.value || !dashboardData.value) {
     return
   }
   departmentCompletionLoading.value = true
@@ -168,6 +181,9 @@ const fetchDepartmentCompletionOnly = async () => {
 watch(
   () => [filters.role, filters.departmentPath],
   () => {
+    if (!isAdmin.value) {
+      return
+    }
     fetchData()
   },
   { deep: true }
@@ -315,26 +331,31 @@ const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatNumber = (value: number) => (value ?? 0).toFixed(1)
 const formatAvgLearnersInteger = (value: number) => String(Math.round(value ?? 0))
 
-onMounted(() => {
-  initDepartmentTree()
-  fetchData()
+onMounted(async () => {
+  await fetchData()
+  if (isAdmin.value) {
+    initDepartmentTree()
+  }
 })
 
-onActivated(() => {
+onActivated(async () => {
+  await fetchData()
+  if (!isAdmin.value) {
+    return
+  }
   // 确保在组件激活时也初始化部门树（如果还未初始化）
   if (!departmentOptions.value || departmentOptions.value.length === 0) {
     initDepartmentTree()
   } else {
     refreshDepartmentTree()
   }
-  // 确保每次激活时都重新获取数据
-  fetchData()
 })
 
 defineExpose({
   filters,
   departmentOptions,
   loading,
+  isAdmin,
   departmentCompletionLoading,
   dashboardData,
   expertSummaryRows,
@@ -362,7 +383,7 @@ defineExpose({
       </div>
     </header>
 
-    <el-card shadow="hover" class="download-resource-card" @click="handlePlanningDetailClick">
+    <el-card v-if="isAdmin" shadow="hover" class="download-resource-card" @click="handlePlanningDetailClick">
       <article class="download-resource-card__item">
         <h4>{{ DOWNLOAD_RESOURCES[0].title }}</h4>
         <p>{{ DOWNLOAD_RESOURCES[0].description }}</p>
@@ -370,7 +391,7 @@ defineExpose({
       </article>
     </el-card>
 
-    <el-card shadow="hover" class="filter-card">
+    <el-card v-if="isAdmin" shadow="hover" class="filter-card">
       <el-form :inline="true" :model="filters" label-width="92">
         <el-form-item label="部门筛选">
           <el-cascader
@@ -431,284 +452,286 @@ defineExpose({
           </el-table>
         </el-card>
 
-        <!-- 全员训战总览表：样式参考任职认证看板-全员任职/认证趋势 -->
-        <el-card shadow="hover" class="charts-section">
-          <template #header>
-            <div class="charts-header">
-              <div class="charts-title">
-                <el-icon><Medal /></el-icon>
-                <div>
-                  <h3>全员训战总览表</h3>
-                  <p>聚焦专家、干部与全员的训战执行态势，通过部门与角色筛选快速定位短板，支持关键指标下钻查看详情。</p>
+        <template v-if="isAdmin">
+          <!-- 全员训战总览表：样式参考任职认证看板-全员任职/认证趋势 -->
+          <el-card shadow="hover" class="charts-section">
+            <template #header>
+              <div class="charts-header">
+                <div class="charts-title">
+                  <el-icon><Medal /></el-icon>
+                  <div>
+                    <h3>全员训战总览表</h3>
+                    <p>聚焦专家、干部与全员的训战执行态势，通过部门与角色筛选快速定位短板，支持关键指标下钻查看详情。</p>
+                  </div>
+                </div>
+                <div class="charts-filter">
+                  <el-form :inline="true" label-width="80">
+                    <el-form-item label="角色视图">
+                      <el-select v-model="departmentCompletionRole" placeholder="请选择" style="width: 200px">
+                        <el-option label="全员" value="0" />
+                        <el-option label="干部" value="1" />
+                        <el-option label="专家" value="2" />
+                      </el-select>
+                    </el-form-item>
+                  </el-form>
                 </div>
               </div>
-              <div class="charts-filter">
-                <el-form :inline="true" label-width="80">
-                  <el-form-item label="角色视图">
-                    <el-select v-model="departmentCompletionRole" placeholder="请选择" style="width: 200px">
-                      <el-option label="全员" value="0" />
-                      <el-option label="干部" value="1" />
-                      <el-option label="专家" value="2" />
-                    </el-select>
-                  </el-form-item>
-                </el-form>
-              </div>
-            </div>
-          </template>
-          <el-row :gutter="16">
-            <el-col :xs="24" :sm="24" :md="24" :lg="24">
-              <el-card shadow="hover" class="chart-card" v-loading="departmentCompletionLoading">
-                <template #header>
-                  <div class="card-header">
-                    <h3>部门训战数据</h3>
-                  </div>
+            </template>
+            <el-row :gutter="16">
+              <el-col :xs="24" :sm="24" :md="24" :lg="24">
+                <el-card shadow="hover" class="chart-card" v-loading="departmentCompletionLoading">
+                  <template #header>
+                    <div class="card-header">
+                      <h3>部门训战数据</h3>
+                    </div>
+                  </template>
+                  <el-table
+                    v-if="departmentCompletionList.length > 0"
+                    :data="departmentCompletionList"
+                    border
+                    stripe
+                    size="small"
+                    :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px' }"
+                    :row-class-name="trainingSummaryRowClassName"
+                    style="width: 100%"
+                  >
+                    <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
+                    <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center">
+                      <template #default="{ row }">
+                        <el-button link type="primary" class="drill-link" @click="handleDepartmentBaselineDrill(row)">
+                          {{ row.baselineCount }}
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="basicCourseCount" label="基础课程数" min-width="76" align="center" header-align="center" />
+                    <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="76" align="center" header-align="center" />
+                    <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="76" align="center" header-align="center" />
+                    <el-table-column prop="basicAvgCompletedCount" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+                      <template #default="{ row }">{{ formatAvgLearnersInteger(row.basicAvgCompletedCount) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="advancedAvgCompletedCount" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+                      <template #default="{ row }">{{ formatAvgLearnersInteger(row.advancedAvgCompletedCount) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="practicalAvgCompletedCount" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+                      <template #default="{ row }">{{ formatAvgLearnersInteger(row.practicalAvgCompletedCount) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="basicAvgCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
+                      <template #default="{ row }">{{ formatPercent(row.basicAvgCompletionRate) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="advancedAvgCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
+                      <template #default="{ row }">{{ formatPercent(row.advancedAvgCompletionRate) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="practicalAvgCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
+                      <template #default="{ row }">{{ formatPercent(row.practicalAvgCompletionRate) }}</template>
+                    </el-table-column>
+                  </el-table>
+                  <el-empty
+                    v-else-if="!loading && !departmentCompletionLoading"
+                    description="暂无数据"
+                    :image-size="80"
+                  />
+                </el-card>
+              </el-col>
+            </el-row>
+          </el-card>
+
+          <el-card shadow="hover" class="summary-card">
+            <template #header>
+              <h3>专家训战总览</h3>
+            </template>
+            <div class="role-summary-table-wrap">
+            <el-table
+              :data="expertSummaryRows"
+              border
+              stripe
+              size="small"
+              :header-cell-style="deptTrainTableHeaderStyle"
+              :cell-style="{ textAlign: 'center' }"
+              :row-class-name="trainingSummaryRowClassName"
+              style="width: 100%"
+            >
+              <el-table-column
+                prop="maturityLevel"
+                label="专家岗位成熟度等级"
+                min-width="112"
+                align="center"
+                header-align="center"
+              />
+              <el-table-column prop="personCount" label="专家人数" min-width="68" align="center" header-align="center">
+                <template #default="{ row }">
+                  <el-button link type="primary" class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'personCount')">
+                    {{ row.personCount }}
+                  </el-button>
                 </template>
-                <el-table
-                  v-if="departmentCompletionList.length > 0"
-                  :data="departmentCompletionList"
-                  border
-                  stripe
-                  size="small"
-                  :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52', fontSize: '12px' }"
-                  :row-class-name="trainingSummaryRowClassName"
-                  style="width: 100%"
-                >
-                  <el-table-column prop="deptName" label="部门" min-width="100" align="center" header-align="center" />
-                  <el-table-column prop="baselineCount" label="基线人数" min-width="80" align="center" header-align="center">
-                    <template #default="{ row }">
-                      <el-button link type="primary" class="drill-link" @click="handleDepartmentBaselineDrill(row)">
-                        {{ row.baselineCount }}
-                      </el-button>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="basicCourseCount" label="基础课程数" min-width="76" align="center" header-align="center" />
-                  <el-table-column prop="advancedCourseCount" label="进阶课程数" min-width="76" align="center" header-align="center" />
-                  <el-table-column prop="practicalCourseCount" label="实战课程数" min-width="76" align="center" header-align="center" />
-                  <el-table-column prop="basicAvgCompletedCount" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
-                    <template #default="{ row }">{{ formatAvgLearnersInteger(row.basicAvgCompletedCount) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="advancedAvgCompletedCount" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
-                    <template #default="{ row }">{{ formatAvgLearnersInteger(row.advancedAvgCompletedCount) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="practicalAvgCompletedCount" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
-                    <template #default="{ row }">{{ formatAvgLearnersInteger(row.practicalAvgCompletedCount) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="basicAvgCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
-                    <template #default="{ row }">{{ formatPercent(row.basicAvgCompletionRate) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="advancedAvgCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
-                    <template #default="{ row }">{{ formatPercent(row.advancedAvgCompletionRate) }}</template>
-                  </el-table-column>
-                  <el-table-column prop="practicalAvgCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
-                    <template #default="{ row }">{{ formatPercent(row.practicalAvgCompletionRate) }}</template>
-                  </el-table-column>
-                </el-table>
-                <el-empty
-                  v-else-if="!loading && !departmentCompletionLoading"
-                  description="暂无数据"
-                  :image-size="80"
-                />
-              </el-card>
-            </el-col>
-          </el-row>
-        </el-card>
+              </el-table-column>
+              <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
+              <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
+              <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
+              <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+                <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
+              </el-table-column>
+              <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+                <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
+              </el-table-column>
+              <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+                <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
+              </el-table-column>
+              <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
+                <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
+                <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
+                <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
+              </el-table-column>
+            </el-table>
+            </div>
+          </el-card>
 
-        <el-card shadow="hover" class="summary-card">
-          <template #header>
-            <h3>专家训战总览</h3>
-          </template>
-          <div class="role-summary-table-wrap">
-          <el-table
-            :data="expertSummaryRows"
-            border
-            stripe
-            size="small"
-            :header-cell-style="deptTrainTableHeaderStyle"
-            :cell-style="{ textAlign: 'center' }"
-            :row-class-name="trainingSummaryRowClassName"
-            style="width: 100%"
+          <el-card shadow="hover" class="summary-card">
+            <template #header>
+              <h3>干部训战总览</h3>
+            </template>
+            <div class="role-summary-table-wrap">
+            <el-table
+              :data="cadreSummaryRows"
+              border
+              stripe
+              size="small"
+              :header-cell-style="deptTrainTableHeaderStyle"
+              :cell-style="{ textAlign: 'center' }"
+              :row-class-name="trainingSummaryRowClassName"
+              style="width: 100%"
+            >
+              <el-table-column
+                prop="maturityLevel"
+                label="干部岗位成熟度等级"
+                min-width="112"
+                align="center"
+                header-align="center"
+              />
+              <el-table-column prop="personCount" label="干部人数" min-width="68" align="center" header-align="center">
+                <template #default="{ row }">
+                  <el-button link type="primary" class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'personCount')">
+                    {{ row.personCount }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
+              <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
+              <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
+              <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
+                <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
+              </el-table-column>
+              <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
+                <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
+              </el-table-column>
+              <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
+                <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
+              </el-table-column>
+              <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
+                <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
+                <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
+                <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
+              </el-table-column>
+            </el-table>
+            </div>
+          </el-card>
+
+          <el-card
+            v-for="group in dashboardData.allStaffSummary.groups"
+            :key="group.title"
+            shadow="hover"
+            class="summary-card"
           >
-            <el-table-column
-              prop="maturityLevel"
-              label="专家岗位成熟度等级"
-              min-width="112"
-              align="center"
-              header-align="center"
-            />
-            <el-table-column prop="personCount" label="专家人数" min-width="68" align="center" header-align="center">
-              <template #default="{ row }">
-                <el-button link type="primary" class="drill-link" @click="handleRoleSummaryDrill(row, 'expert', 'personCount')">
-                  {{ row.personCount }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
-            </el-table-column>
-          </el-table>
-          </div>
-        </el-card>
-
-        <el-card shadow="hover" class="summary-card">
-          <template #header>
-            <h3>干部训战总览</h3>
-          </template>
-          <div class="role-summary-table-wrap">
-          <el-table
-            :data="cadreSummaryRows"
-            border
-            stripe
-            size="small"
-            :header-cell-style="deptTrainTableHeaderStyle"
-            :cell-style="{ textAlign: 'center' }"
-            :row-class-name="trainingSummaryRowClassName"
-            style="width: 100%"
-          >
-            <el-table-column
-              prop="maturityLevel"
-              label="干部岗位成熟度等级"
-              min-width="112"
-              align="center"
-              header-align="center"
-            />
-            <el-table-column prop="personCount" label="干部人数" min-width="68" align="center" header-align="center">
-              <template #default="{ row }">
-                <el-button link type="primary" class="drill-link" @click="handleRoleSummaryDrill(row, 'cadre', 'personCount')">
-                  {{ row.personCount }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="beginnerCourses" label="基础课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="intermediateCourses" label="进阶课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="practiceCourses" label="实战课程数" min-width="76" align="center" header-align="center" />
-            <el-table-column prop="beginnerAvgLearners" label="基础课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="intermediateAvgLearners" label="进阶课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="practiceAvgLearners" label="实战课程平均完课人数" min-width="130" align="center" header-align="center">
-              <template #default="{ row }">{{ formatAvgLearnersInteger(row.practiceAvgLearners) }}</template>
-            </el-table-column>
-            <el-table-column prop="beginnerCompletionRate" label="基础课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="intermediateCompletionRate" label="进阶课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="practiceCompletionRate" label="实战课程平均完课率" min-width="124" align="center" header-align="center">
-              <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
-            </el-table-column>
-          </el-table>
-          </div>
-        </el-card>
-
-        <el-card
-          v-for="group in dashboardData.allStaffSummary.groups"
-          :key="group.title"
-          shadow="hover"
-          class="summary-card"
-        >
-          <template #header>
-            <h3>全员训战总览 - {{ group.title }}</h3>
-          </template>
-          <el-table :data="group.rows" border>
-            <el-table-column :label="group.dimensionLabel" prop="dimension" width="140" />
-            <el-table-column prop="baseline" label="基线人数" width="120">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'baseline')">
-                  {{ row.baseline }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="beginnerCourses" label="初阶课程数" width="130">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'beginnerCourses')">
-                  {{ row.beginnerCourses }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="intermediateCourses" label="中阶课程数" width="130">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'intermediateCourses')">
-                  {{ row.intermediateCourses }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="advancedCourses" label="高阶课程数" width="130">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'advancedCourses')">
-                  {{ row.advancedCourses }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="practiceCourses" label="实战课程数" width="130">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'practiceCourses')">
-                  {{ row.practiceCourses }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="beginnerAvgLearners" label="初阶平均完课人数" width="160">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'beginnerAvgLearners')">
-                  {{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="intermediateAvgLearners" label="中阶平均完课人数" width="160">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'intermediateAvgLearners')">
-                  {{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="advancedAvgLearners" label="高阶平均完课人数" width="160">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'advancedAvgLearners')">
-                  {{ formatAvgLearnersInteger(row.advancedAvgLearners) }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="practiceAvgLearners" label="实战平均完课人数" width="160">
-              <template #default="{ row }">
-                <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'practiceAvgLearners')">
-                  {{ formatAvgLearnersInteger(row.practiceAvgLearners) }}
-                </el-button>
-              </template>
-            </el-table-column>
-            <el-table-column prop="beginnerCompletionRate" label="初阶平均完课率" width="150">
-              <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="intermediateCompletionRate" label="中阶平均完课率" width="150">
-              <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="advancedCompletionRate" label="高阶平均完课率" width="150">
-              <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
-            </el-table-column>
-            <el-table-column prop="practiceCompletionRate" label="实战平均完课率" width="150">
-              <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
-            </el-table-column>
-          </el-table>
-      </el-card>
+            <template #header>
+              <h3>全员训战总览 - {{ group.title }}</h3>
+            </template>
+            <el-table :data="group.rows" border>
+              <el-table-column :label="group.dimensionLabel" prop="dimension" width="140" />
+              <el-table-column prop="baseline" label="基线人数" width="120">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'baseline')">
+                    {{ row.baseline }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="beginnerCourses" label="初阶课程数" width="130">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'beginnerCourses')">
+                    {{ row.beginnerCourses }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="intermediateCourses" label="中阶课程数" width="130">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'intermediateCourses')">
+                    {{ row.intermediateCourses }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="advancedCourses" label="高阶课程数" width="130">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'advancedCourses')">
+                    {{ row.advancedCourses }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="practiceCourses" label="实战课程数" width="130">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'practiceCourses')">
+                    {{ row.practiceCourses }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="beginnerAvgLearners" label="初阶平均完课人数" width="160">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'beginnerAvgLearners')">
+                    {{ formatAvgLearnersInteger(row.beginnerAvgLearners) }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="intermediateAvgLearners" label="中阶平均完课人数" width="160">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'intermediateAvgLearners')">
+                    {{ formatAvgLearnersInteger(row.intermediateAvgLearners) }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="advancedAvgLearners" label="高阶平均完课人数" width="160">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'advancedAvgLearners')">
+                    {{ formatAvgLearnersInteger(row.advancedAvgLearners) }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="practiceAvgLearners" label="实战平均完课人数" width="160">
+                <template #default="{ row }">
+                  <el-button link class="drill-link" @click="handleAllStaffDrill(group, row, 'practiceAvgLearners')">
+                    {{ formatAvgLearnersInteger(row.practiceAvgLearners) }}
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column prop="beginnerCompletionRate" label="初阶平均完课率" width="150">
+                <template #default="{ row }">{{ formatPercent(row.beginnerCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="intermediateCompletionRate" label="中阶平均完课率" width="150">
+                <template #default="{ row }">{{ formatPercent(row.intermediateCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="advancedCompletionRate" label="高阶平均完课率" width="150">
+                <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
+              </el-table-column>
+              <el-table-column prop="practiceCompletionRate" label="实战平均完课率" width="150">
+                <template #default="{ row }">{{ formatPercent(row.practiceCompletionRate) }}</template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </template>
       </template>
       <el-empty v-else description="暂无数据，请调整筛选条件后重试" />
     </template>
