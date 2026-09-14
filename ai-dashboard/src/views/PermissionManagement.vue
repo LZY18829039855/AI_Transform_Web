@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { Delete, DocumentAdd, EditPen, Search } from '@element-plus/icons-vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { Delete, DocumentAdd, EditPen, Search, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import DepartmentCascader from '@/components/department/DepartmentCascader.vue'
 import {
+  batchUpsertUserConfig,
   createUserConfig,
   deleteUserConfig,
+  fetchUserConfigDeptMembers,
   fetchUserConfigList,
   updateUserConfig,
 } from '@/api/userConfig'
-import type { PermissionRole, UserConfigRecord } from '@/types/permission'
+import type { PermissionRole, UserConfigDeptMember, UserConfigRecord } from '@/types/permission'
 import {
   fetchCreditWritePermission,
   guardPermissionWriteAccess,
@@ -23,6 +26,8 @@ const total = ref(0)
 const pageSizeOptions = [10, 20, 50, 100, 200] as const
 const canEditCredit = ref(false)
 const filterKeyword = ref('')
+/** 全部 / 超级用户 / 管理员 / 普通用户 */
+const filterRole = ref<PermissionRole | ''>('')
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增权限')
@@ -34,6 +39,26 @@ const formModel = ref({
 const editingId = ref(0)
 const saving = ref(false)
 const accountLocked = ref(false)
+
+/** 按部门批量添加 */
+const batchDialogVisible = ref(false)
+const batchSaving = ref(false)
+const batchDeptPath = ref<string[]>([])
+const batchKeyword = ref('')
+const batchRole = ref<PermissionRole>('admin')
+const batchMemberLoading = ref(false)
+const batchMembers = ref<UserConfigDeptMember[]>([])
+const batchMemberTotal = ref(0)
+const batchPageNum = ref(1)
+const batchPageSize = ref(20)
+const batchTableRef = ref<{
+  clearSelection: () => void
+  toggleRowSelection: (row: UserConfigDeptMember, selected?: boolean) => void
+} | null>(null)
+/** 跨页勾选：account -> member */
+const selectedMemberMap = reactive(new Map<string, UserConfigDeptMember>())
+/** 避免程序化恢复勾选时误清空跨页选择 */
+const restoringSelection = ref(false)
 
 function emptyRecord(): UserConfigRecord {
   return {
@@ -85,6 +110,20 @@ function toRecordFromForm(): UserConfigRecord {
   }
 }
 
+function resolveDeptId(path: string[]): string | null {
+  if (!path || path.length === 0) {
+    return null
+  }
+  const last = path[path.length - 1]
+  if (!last || last === 'ICT_BG') {
+    return null
+  }
+  if (last === 'CLOUD_CORE_NETWORK') {
+    return '0'
+  }
+  return last
+}
+
 async function loadList() {
   loading.value = true
   try {
@@ -92,6 +131,7 @@ async function loadList() {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
       ...(filterKeyword.value.trim() ? { account: filterKeyword.value.trim() } : {}),
+      ...(filterRole.value ? { role: filterRole.value } : {}),
     })
     tableData.value = page.rows
     total.value = page.total
@@ -118,6 +158,11 @@ function handleFilterClear() {
   loadList()
 }
 
+function handleRoleFilterChange() {
+  pageNum.value = 1
+  loadList()
+}
+
 onMounted(() => {
   loadList()
   fetchCreditWritePermission().then((allowed) => {
@@ -139,6 +184,21 @@ async function handleAdd() {
   formModel.value = { account: '', role: 'member' }
   accountLocked.value = false
   dialogVisible.value = true
+}
+
+async function handleOpenBatch() {
+  if (!(await guardPermissionWriteAccess())) {
+    return
+  }
+  batchDeptPath.value = []
+  batchKeyword.value = ''
+  batchRole.value = 'admin'
+  batchPageNum.value = 1
+  batchPageSize.value = 20
+  batchMembers.value = []
+  batchMemberTotal.value = 0
+  selectedMemberMap.clear()
+  batchDialogVisible.value = true
 }
 
 async function handleEdit(row: UserConfigRecord) {
@@ -207,6 +267,121 @@ async function handleDelete(row: UserConfigRecord) {
     })
     .catch(() => {})
 }
+
+async function restoreBatchSelection() {
+  const table = batchTableRef.value
+  if (!table) {
+    return
+  }
+  restoringSelection.value = true
+  try {
+    table.clearSelection()
+    for (const row of batchMembers.value) {
+      if (selectedMemberMap.has(row.account)) {
+        table.toggleRowSelection(row, true)
+      }
+    }
+  } finally {
+    restoringSelection.value = false
+  }
+}
+
+async function loadBatchMembers() {
+  const deptId = resolveDeptId(batchDeptPath.value)
+  if (!deptId) {
+    batchMembers.value = []
+    batchMemberTotal.value = 0
+    return
+  }
+  batchMemberLoading.value = true
+  try {
+    const page = await fetchUserConfigDeptMembers({
+      deptId,
+      keyword: batchKeyword.value.trim() || undefined,
+      pageNum: batchPageNum.value,
+      pageSize: batchPageSize.value,
+    })
+    batchMembers.value = page.rows
+    batchMemberTotal.value = page.total
+    await nextTick()
+    await restoreBatchSelection()
+  } catch (e) {
+    console.error(e)
+    ElMessage.error(e instanceof Error ? e.message : '加载部门成员失败')
+    batchMembers.value = []
+    batchMemberTotal.value = 0
+  } finally {
+    batchMemberLoading.value = false
+  }
+}
+
+function handleBatchDeptChange() {
+  batchPageNum.value = 1
+  selectedMemberMap.clear()
+  loadBatchMembers()
+}
+
+function handleBatchKeywordSearch() {
+  batchPageNum.value = 1
+  loadBatchMembers()
+}
+
+function handleBatchPageSizeChange() {
+  batchPageNum.value = 1
+  loadBatchMembers()
+}
+
+function handleBatchSelectionChange(rows: UserConfigDeptMember[]) {
+  if (restoringSelection.value) {
+    return
+  }
+  const pageAccounts = new Set(batchMembers.value.map((m) => m.account))
+  for (const acc of pageAccounts) {
+    selectedMemberMap.delete(acc)
+  }
+  for (const row of rows) {
+    if (row?.account) {
+      selectedMemberMap.set(row.account, row)
+    }
+  }
+}
+
+const selectedCount = computed(() => selectedMemberMap.size)
+
+watch(batchDialogVisible, (visible) => {
+  if (!visible) {
+    selectedMemberMap.clear()
+  }
+})
+
+async function handleBatchSubmit() {
+  if (!(await guardPermissionWriteAccess())) {
+    batchDialogVisible.value = false
+    return
+  }
+  if (selectedMemberMap.size === 0) {
+    ElMessage.warning('请先勾选要添加权限的成员')
+    return
+  }
+  batchSaving.value = true
+  try {
+    const result = await batchUpsertUserConfig({
+      accounts: Array.from(selectedMemberMap.keys()),
+      asAdmin: batchRole.value !== 'member',
+      canEditCredit: batchRole.value === 'super',
+    })
+    ElMessage.success(
+      `批量完成：新增 ${result.createdCount}，覆盖 ${result.updatedCount}，失败 ${result.failedCount}`,
+    )
+    batchDialogVisible.value = false
+    pageNum.value = 1
+    await loadList()
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '批量添加失败')
+  } finally {
+    batchSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -216,7 +391,7 @@ async function handleDelete(row: UserConfigRecord) {
         <div class="header-info">
           <h2>权限管理</h2>
           <p>
-            普通用户访问权限仅对云核心网产品线成员开放；本页主要用于配置管理员与超级用户。管理员可查看本页及管理类页面，超级用户可新增、编辑、删除权限配置（逻辑与多元化学分管理一致）。云核心网成员无需额外配置即为普通用户。
+            普通用户访问权限仅对云核心网产品线成员开放；本页主要用于配置管理员与超级用户。管理员可查看本页及管理类页面，超级用户可新增、编辑、删除权限配置（逻辑与多元化学分管理一致）。云核心网成员无需额外配置即为普通用户。支持按部门批量勾选成员并统一授权。
           </p>
         </div>
       </header>
@@ -227,9 +402,24 @@ async function handleDelete(row: UserConfigRecord) {
             <el-button v-if="canEditCredit" type="success" :icon="DocumentAdd" @click="handleAdd">
               新增权限
             </el-button>
+            <el-button v-if="canEditCredit" type="primary" :icon="UserFilled" @click="handleOpenBatch">
+              按部门批量添加
+            </el-button>
             <el-tag v-if="!canEditCredit" type="info" effect="plain">只读模式</el-tag>
           </div>
           <div class="permission-toolbar__right">
+            <el-select
+              v-model="filterRole"
+              class="permission-toolbar__role"
+              clearable
+              placeholder="角色筛选"
+              @change="handleRoleFilterChange"
+              @clear="handleRoleFilterChange"
+            >
+              <el-option label="超级用户" value="super" />
+              <el-option label="管理员" value="admin" />
+              <el-option label="普通用户" value="member" />
+            </el-select>
             <el-input
               v-model="filterKeyword"
               class="permission-toolbar__filter"
@@ -304,7 +494,7 @@ async function handleDelete(row: UserConfigRecord) {
           </el-table-column>
           <template #empty>
             <el-empty
-              :description="canEditCredit ? '暂无数据，请点击「新增权限」' : '暂无数据'"
+              :description="canEditCredit ? '暂无数据，请点击「新增权限」或「按部门批量添加」' : '暂无数据'"
             />
           </template>
         </el-table>
@@ -345,6 +535,96 @@ async function handleDelete(row: UserConfigRecord) {
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="handleSubmit">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="batchDialogVisible"
+      title="按部门批量添加权限"
+      width="860px"
+      destroy-on-close
+      class="batch-dialog"
+    >
+      <div class="batch-form" v-loading="batchSaving">
+        <div class="batch-form__row">
+          <span class="batch-form__label">部门</span>
+          <DepartmentCascader
+            v-model="batchDeptPath"
+            class="batch-form__cascader"
+            @change="handleBatchDeptChange"
+          />
+        </div>
+        <div class="batch-form__row">
+          <span class="batch-form__label">统一角色</span>
+          <el-select v-model="batchRole" placeholder="请选择角色" style="width: 220px">
+            <el-option label="普通用户" value="member" />
+            <el-option label="管理员" value="admin" />
+            <el-option label="超级用户" value="super" />
+          </el-select>
+          <el-input
+            v-model="batchKeyword"
+            class="batch-form__keyword"
+            clearable
+            placeholder="姓名/工号筛选"
+            @clear="handleBatchKeywordSearch"
+            @keyup.enter="handleBatchKeywordSearch"
+          >
+            <template #suffix>
+              <el-icon
+                class="permission-toolbar__filter-search-icon"
+                title="查询"
+                @click.stop="handleBatchKeywordSearch"
+              >
+                <Search />
+              </el-icon>
+            </template>
+          </el-input>
+          <el-tag type="info" effect="plain">已选 {{ selectedCount }} 人</el-tag>
+        </div>
+
+        <el-table
+          ref="batchTableRef"
+          v-loading="batchMemberLoading"
+          class="permission-table batch-member-table"
+          :data="batchMembers"
+          border
+          stripe
+          height="360"
+          row-key="account"
+          @selection-change="handleBatchSelectionChange"
+        >
+          <el-table-column type="selection" width="48" :reserve-selection="false" />
+          <el-table-column label="工号" prop="account" min-width="120" align="center" show-overflow-tooltip />
+          <el-table-column label="姓名" prop="employeeName" min-width="100" align="center" show-overflow-tooltip />
+          <el-table-column label="已有配置" min-width="100" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="row.alreadyConfigured" type="warning" effect="plain">已配置</el-tag>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty :description="resolveDeptId(batchDeptPath) ? '该部门暂无成员' : '请先选择部门'" />
+          </template>
+        </el-table>
+
+        <div class="permission-pagination">
+          <el-pagination
+            v-model:current-page="batchPageNum"
+            v-model:page-size="batchPageSize"
+            :total="batchMemberTotal"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next"
+            background
+            @size-change="handleBatchPageSizeChange"
+            @current-change="loadBatchMembers"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="batchDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchSaving" @click="handleBatchSubmit">
+          批量授权（已选 {{ selectedCount }}）
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -420,6 +700,11 @@ async function handleDelete(row: UserConfigRecord) {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.permission-toolbar__role {
+  width: 140px;
 }
 
 .permission-toolbar__filter {
@@ -486,5 +771,38 @@ async function handleDelete(row: UserConfigRecord) {
   gap: $spacing-sm;
   margin-top: $spacing-md;
   width: 100%;
+}
+
+.batch-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.batch-form__row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.batch-form__label {
+  width: 72px;
+  flex-shrink: 0;
+  color: #303133;
+  font-weight: 600;
+}
+
+.batch-form__cascader {
+  flex: 1;
+  min-width: 240px;
+}
+
+.batch-form__keyword {
+  width: 220px;
+}
+
+.batch-member-table {
+  margin-top: $spacing-xs;
 }
 </style>

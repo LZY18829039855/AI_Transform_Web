@@ -29,3 +29,28 @@ export interface UserConfigApi {
   asAdmin?: boolean
   canEditCredit?: boolean
 }
+
+/** 部门成员候选项 */
+export interface UserConfigDeptMember {
+  account: string
+  employeeName: string
+  alreadyConfigured: boolean
+}
+
+export interface UserConfigDeptMemberApi {
+  account?: string
+  employeeName?: string | null
+  alreadyConfigured?: boolean
+}
+
+/** 批量权限结果 */
+export interface UserConfigBatchResult {
+  createdCount: number
+  updatedCount: number
+  failedCount: number
+  items: Array<{
+    account: string
+    status: 'created' | 'updated' | 'failed' | string
+    message: string
+  }>
+}
