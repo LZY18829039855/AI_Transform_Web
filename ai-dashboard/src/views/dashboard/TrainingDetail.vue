@@ -33,6 +33,14 @@ const detailData = ref<TrainingDetailData | null>(null)
 const pageNum = ref(1)
 const pageSize = ref(50)
 const drillDownTotal = ref(0)
+/** 部门下钻明细：完课数排序（后端分页排序） */
+const tableSortField = ref<string | undefined>(undefined)
+const tableSortOrder = ref<'asc' | 'desc' | undefined>(undefined)
+const COMPLETED_COUNT_SORT_FIELDS = new Set([
+  'basicCompletedCount',
+  'advancedCompletedCount',
+  'practicalCompletedCount',
+])
 /** 部门下钻时，当前页明细列表（后端分页） */
 const drillDownRecords = ref<DepartmentEmployeeTrainingOverviewRow[]>([])
 /** 部门下钻时，从看板传入的本部门训战数据行（用于展示部门训战数据表，不请求后端） */
@@ -146,6 +154,8 @@ const fetchDetail = async (options?: { resetPage?: boolean; tableOnly?: boolean 
           aiMaturity: parseAiMaturityFromRouteQuery(),
           name: tableFilterName.value,
           employeeNumber: tableFilterEmployeeId.value,
+          sortField: tableSortField.value,
+          sortOrder: tableSortOrder.value,
           pageNum: pageNum.value,
           pageSize: pageSize.value,
         })
@@ -351,6 +361,8 @@ const handleExport = async () => {
           aiMaturity: parseAiMaturityFromRouteQuery(),
           name: tableFilterName.value,
           employeeNumber: tableFilterEmployeeId.value,
+          sortField: tableSortField.value,
+          sortOrder: tableSortOrder.value,
         })
       }
     } else {
@@ -427,6 +439,21 @@ const filterInputValue = ref('')
 const tableFilterName = ref<string | undefined>(undefined)
 const tableFilterEmployeeId = ref<string | undefined>(undefined)
 const isFilterBoxUpdating = ref(false)
+
+const handleDrillDownSortChange = (payload: { prop: string; order: string | null }) => {
+  if (!isDrillDownPage.value) {
+    return
+  }
+  const { prop, order } = payload
+  if (!order || !COMPLETED_COUNT_SORT_FIELDS.has(prop)) {
+    tableSortField.value = undefined
+    tableSortOrder.value = undefined
+  } else {
+    tableSortField.value = prop
+    tableSortOrder.value = order === 'ascending' ? 'asc' : 'desc'
+  }
+  fetchDetail({ resetPage: true, tableOnly: true })
+}
 
 const handleFilterInputFocus = (event: Event) => {
   event.stopPropagation()
@@ -1147,41 +1174,190 @@ onBeforeUnmount(() => {
           style="width: 100%"
           max-height="600"
           highlight-current-row
+          @sort-change="handleDrillDownSortChange"
         >
           <el-table-column label="姓名" width="100" fixed="left" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">
               <el-link type="primary" :underline="false" @click="goToPersonalDetail(row.employeeNumber)">
                 {{ row.name }}
               </el-link>
             </template>
           </el-table-column>
-          <el-table-column prop="employeeNumber" label="工号" width="120" align="center" header-align="center" />
-          <el-table-column prop="jobCategory" label="职位类" width="100" align="center" header-align="center" />
-          <el-table-column prop="jobSubcategory" label="职位子类" width="100" align="center" header-align="center" />
-          <el-table-column prop="firstDept" label="一级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
-          <el-table-column prop="secondDept" label="二级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
-          <el-table-column prop="thirdDept" label="三级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
-          <el-table-column prop="fourthDept" label="四级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
-          <el-table-column prop="fifthDept" label="五级部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
-          <el-table-column prop="lowestDept" label="最小部门" min-width="120" show-overflow-tooltip align="center" header-align="center" />
-          <el-table-column prop="basicTargetCourseCount" label="基础目标课程数" width="120" align="center" header-align="center" />
-          <el-table-column prop="basicCompletedCount" label="基础目标课程完课数" width="140" align="center" header-align="center" />
+          <el-table-column prop="employeeNumber" label="工号" width="120" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="jobCategory" label="职位类" width="100" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="jobSubcategory" label="职位子类" width="100" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="firstDept" label="一级部门" min-width="120" show-overflow-tooltip align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="secondDept" label="二级部门" min-width="120" show-overflow-tooltip align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="thirdDept" label="三级部门" min-width="120" show-overflow-tooltip align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="fourthDept" label="四级部门" min-width="120" show-overflow-tooltip align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="fifthDept" label="五级部门" min-width="120" show-overflow-tooltip align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="lowestDept" label="最小部门" min-width="120" show-overflow-tooltip align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="basicTargetCourseCount" label="基础目标课程数" width="120" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="basicCompletedCount"
+            label="基础目标课程完课数"
+            width="160"
+            align="center"
+            header-align="center"
+            sortable="custom"
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column label="基础目标课程完课占比" width="160" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatPercent(row.basicCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="advancedTargetCourseCount" label="进阶目标课程数" width="120" align="center" header-align="center" />
-          <el-table-column prop="advancedCompletedCount" label="进阶目标课程完课数" width="140" align="center" header-align="center" />
+          <el-table-column prop="advancedTargetCourseCount" label="进阶目标课程数" width="120" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="advancedCompletedCount"
+            label="进阶目标课程完课数"
+            width="160"
+            align="center"
+            header-align="center"
+            sortable="custom"
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column label="进阶目标课程完课占比" width="160" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatPercent(row.advancedCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="practicalTargetCourseCount" label="实战目标课程数" width="120" align="center" header-align="center" />
-          <el-table-column prop="practicalCompletedCount" label="实战目标课程完课数" width="140" align="center" header-align="center" />
+          <el-table-column prop="practicalTargetCourseCount" label="实战目标课程数" width="120" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="practicalCompletedCount"
+            label="实战目标课程完课数"
+            width="160"
+            align="center"
+            header-align="center"
+            sortable="custom"
+          >
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column label="实战目标课程完课占比" width="160" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatPercent(row.practicalCompletionRate) }}</template>
           </el-table-column>
-          <el-table-column prop="totalTargetCourseCount" label="总目标课程数" width="120" align="center" header-align="center" />
-          <el-table-column prop="totalCompletedCount" label="目标课程完课数" width="120" align="center" header-align="center" />
+          <el-table-column prop="totalTargetCourseCount" label="总目标课程数" width="120" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+          <el-table-column prop="totalCompletedCount" label="目标课程完课数" width="120" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
           <el-table-column label="目标课程完课占比" width="140" align="center" header-align="center">
+            <template #header="{ column }">
+              <el-tooltip :content="String(column.label)" placement="top">
+                <span class="table-header-label">{{ column.label }}</span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ formatPercent(row.totalCompletionRate) }}</template>
           </el-table-column>
         </el-table>

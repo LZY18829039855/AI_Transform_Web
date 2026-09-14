@@ -1368,6 +1368,12 @@ export const fetchDepartmentEmployeeTrainingOverview = async (
     if (query.employeeNumber != null && String(query.employeeNumber).trim() !== '') {
       params.set('employeeNumber', String(query.employeeNumber).trim())
     }
+    if (query.sortField != null && String(query.sortField).trim() !== '') {
+      params.set('sortField', String(query.sortField).trim())
+    }
+    if (query.sortOrder != null && String(query.sortOrder).trim() !== '') {
+      params.set('sortOrder', String(query.sortOrder).trim())
+    }
     const url = `/personal-course/department-employee-training-overview?${params.toString()}`
     const response = await get<Result<DepartmentEmployeeTrainingOverviewPage>>(url)
     if (response.code === 200 && response.data) {

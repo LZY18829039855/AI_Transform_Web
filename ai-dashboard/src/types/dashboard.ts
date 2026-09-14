@@ -105,6 +105,10 @@ export interface DepartmentEmployeeTrainingOverviewQuery {
   aiMaturity?: string
   name?: string
   employeeNumber?: string
+  /** 排序字段：basicCompletedCount / advancedCompletedCount / practicalCompletedCount */
+  sortField?: string
+  /** 排序方向：asc / desc */
+  sortOrder?: 'asc' | 'desc'
   pageNum?: number
   pageSize?: number
 }
