@@ -1402,6 +1402,15 @@ onBeforeUnmount(() => {
               </el-tooltip>
             </template>
             <el-table ref="appointmentTableRef" :data="filteredAppointmentRecords" border stripe height="520" highlight-current-row size="small" :default-sort="appointmentTableDefaultSort">
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                fixed="left"
+                align="center"
+                header-align="center"
+                :index="(index) => index + 1"
+              />
               <el-table-column 
                 v-if="actualRole !== '0'"
                 label="是否达标" 
@@ -1678,6 +1687,15 @@ onBeforeUnmount(() => {
               size="small"
               :default-sort="certificationTableDefaultSort"
             >
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                fixed="left"
+                align="center"
+                header-align="center"
+                :index="(index) => index + 1"
+              />
               <el-table-column 
                 v-if="actualRole !== '0'"
                 label="是否达标" 
