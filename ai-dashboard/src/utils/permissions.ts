@@ -82,7 +82,7 @@ export const fetchUserPermissionsForNavigation = async (): Promise<UserPermissio
   return permissions
 }
 
-/** 是否具备普通用户访问权限（全员开放后：有登录工号即为 true） */
+/** 是否具备普通用户访问权限（云核心网产品线成员） */
 export const checkUserPermissions = async (): Promise<boolean> => {
   const permissions = await fetchUserPermissions()
   return permissions.member
