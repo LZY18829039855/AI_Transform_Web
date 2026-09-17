@@ -50,36 +50,29 @@ const rules: FormRules<MaintenanceForm> = {
 function emptyForm(): MaintenanceForm {
   return {
     account: '',
-    employeeName: '',
+    name: '',
     positionAiMaturity: '',
-    isQualificationsStandard: false,
-    isCertStandard: false,
+    newOnJob: 'N',
     origPositionGrade: null,
-    jobCategory: '',
+    origPositionName: '',
     miniDepartnameId: '',
     cadreCompetenceCategory: '',
     cadreType: '',
-    newOnJob: 'N',
     departname1: '',
     departname2: '',
     departname3: '',
     departname4: '',
     departname5: '',
-    l2DepartmentCode: '',
-    l3DepartmentCode: '',
-    l4DepartmentCode: '',
-    l5DepartmentCode: '',
   }
 }
 
 function normalizeRecord(row: ExpertCadreRecord): DisplayRecord {
   return {
     ...row,
-    employeeName: row.employeeName ?? '',
+    name: row.name ?? '',
     positionAiMaturity: row.positionAiMaturity ?? '',
-    isQualificationsStandard: Boolean(row.isQualificationsStandard),
-    isCertStandard: Boolean(row.isCertStandard),
-    ...('newOnJob' in row ? { newOnJob: row.newOnJob === 'Y' ? 'Y' : 'N' } : {}),
+    newOnJob: row.newOnJob === 'Y' ? 'Y' : 'N',
+    ...('origPositionName' in row ? { origPositionName: row.origPositionName ?? '' } : {}),
   }
 }
 
@@ -142,16 +135,15 @@ async function handleEdit(row: DisplayRecord) {
 function toPayload(): ExpertCadreRecord {
   const common = {
     account: formModel.value.account.trim(),
-    employeeName: formModel.value.employeeName,
+    name: formModel.value.name.trim(),
     positionAiMaturity: formModel.value.positionAiMaturity,
-    isQualificationsStandard: formModel.value.isQualificationsStandard,
-    isCertStandard: formModel.value.isCertStandard,
+    newOnJob: formModel.value.newOnJob,
   }
   if (activeTab.value === 'expert') {
     return {
       ...common,
       origPositionGrade: formModel.value.origPositionGrade,
-      jobCategory: formModel.value.jobCategory,
+      origPositionName: formModel.value.origPositionName,
     }
   }
   return {
@@ -159,16 +151,11 @@ function toPayload(): ExpertCadreRecord {
     miniDepartnameId: formModel.value.miniDepartnameId,
     cadreCompetenceCategory: formModel.value.cadreCompetenceCategory,
     cadreType: formModel.value.cadreType,
-    newOnJob: formModel.value.newOnJob,
     departname1: formModel.value.departname1,
     departname2: formModel.value.departname2,
     departname3: formModel.value.departname3,
     departname4: formModel.value.departname4,
     departname5: formModel.value.departname5,
-    l2DepartmentCode: formModel.value.l2DepartmentCode,
-    l3DepartmentCode: formModel.value.l3DepartmentCode,
-    l4DepartmentCode: formModel.value.l4DepartmentCode,
-    l5DepartmentCode: formModel.value.l5DepartmentCode,
   }
 }
 
@@ -211,7 +198,7 @@ async function handleDelete(row: DisplayRecord) {
   }
   try {
     await ElMessageBox.confirm(
-      `确定删除${typeLabel.value}「${row.employeeName || row.account}」吗？`,
+      `确定删除${typeLabel.value}「${row.name || row.account}」吗？`,
       '删除确认',
       {
         type: 'warning',
@@ -246,7 +233,7 @@ onMounted(() => {
       <header class="dashboard__header glass-card">
         <div class="header-info">
           <h2>专家干部数据维护</h2>
-          <p>统一查询和维护专家、干部的 AI 成熟度及任职达标信息。</p>
+          <p>直接维护专家、干部本表数据，支持按工号或姓名查询与分页浏览。</p>
         </div>
       </header>
 
@@ -281,47 +268,29 @@ onMounted(() => {
 
         <el-table :data="tableData" border stripe max-height="560" class="maintenance-table">
           <el-table-column prop="account" label="工号" min-width="110" fixed="left" show-overflow-tooltip />
-          <el-table-column prop="employeeName" label="姓名" min-width="100" fixed="left" show-overflow-tooltip />
+          <el-table-column prop="name" label="姓名" min-width="100" fixed="left" show-overflow-tooltip />
           <el-table-column prop="positionAiMaturity" label="岗位AI成熟度" min-width="130" align="center" />
-          <el-table-column label="任职资格达标" min-width="120" align="center">
+          <el-table-column label="26年新上岗" min-width="115" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.isQualificationsStandard ? 'success' : 'info'" effect="plain">
-                {{ row.isQualificationsStandard ? '是' : '否' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="认证达标" min-width="100" align="center">
-            <template #default="{ row }">
-              <el-tag :type="row.isCertStandard ? 'success' : 'info'" effect="plain">
-                {{ row.isCertStandard ? '是' : '否' }}
+              <el-tag :type="row.newOnJob === 'Y' ? 'success' : 'info'" effect="plain">
+                {{ row.newOnJob === 'Y' ? '是' : '否' }}
               </el-tag>
             </template>
           </el-table-column>
 
           <template v-if="activeTab === 'expert'">
+            <el-table-column prop="origPositionName" label="岗位名称" min-width="160" show-overflow-tooltip />
             <el-table-column prop="origPositionGrade" label="原职位职级" min-width="120" show-overflow-tooltip />
-            <el-table-column prop="jobCategory" label="职位类别" min-width="120" show-overflow-tooltip />
           </template>
           <template v-else>
             <el-table-column prop="miniDepartnameId" label="最小部门ID" min-width="120" show-overflow-tooltip />
             <el-table-column prop="cadreCompetenceCategory" label="干部能力类别" min-width="140" show-overflow-tooltip />
             <el-table-column prop="cadreType" label="干部类型" min-width="110" show-overflow-tooltip />
-            <el-table-column label="26年新上岗" min-width="115" align="center">
-              <template #default="{ row }">
-                <el-tag :type="row.newOnJob === 'Y' ? 'success' : 'info'" effect="plain">
-                  {{ row.newOnJob === 'Y' ? '是' : '否' }}
-                </el-tag>
-              </template>
-            </el-table-column>
             <el-table-column prop="departname1" label="一级部门" min-width="140" show-overflow-tooltip />
             <el-table-column prop="departname2" label="二级部门" min-width="140" show-overflow-tooltip />
             <el-table-column prop="departname3" label="三级部门" min-width="140" show-overflow-tooltip />
             <el-table-column prop="departname4" label="四级部门" min-width="140" show-overflow-tooltip />
             <el-table-column prop="departname5" label="五级部门" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="l2DepartmentCode" label="二级部门编码" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="l3DepartmentCode" label="三级部门编码" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="l4DepartmentCode" label="四级部门编码" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="l5DepartmentCode" label="五级部门编码" min-width="140" show-overflow-tooltip />
           </template>
 
           <el-table-column v-if="canEditCredit" label="操作" width="150" fixed="right" align="center">
@@ -367,7 +336,7 @@ onMounted(() => {
           </el-col>
           <el-col :xs="24" :sm="12">
             <el-form-item label="姓名">
-              <el-input v-model="formModel.employeeName" disabled placeholder="由服务端获取" />
+              <el-input v-model="formModel.name" clearable placeholder="姓名" />
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -380,22 +349,20 @@ onMounted(() => {
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
-            <el-form-item label="任职资格达标">
-              <el-switch
-                v-model="formModel.isQualificationsStandard"
-                inline-prompt
-                active-text="是"
-                inactive-text="否"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12">
-            <el-form-item label="认证达标">
-              <el-switch v-model="formModel.isCertStandard" inline-prompt active-text="是" inactive-text="否" />
+            <el-form-item label="26年新上岗">
+              <el-select v-model="formModel.newOnJob">
+                <el-option label="是" value="Y" />
+                <el-option label="否" value="N" />
+              </el-select>
             </el-form-item>
           </el-col>
 
           <template v-if="activeTab === 'expert'">
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="岗位名称">
+                <el-input v-model="formModel.origPositionName" clearable />
+              </el-form-item>
+            </el-col>
             <el-col :xs="24" :sm="12">
               <el-form-item label="原职位职级">
                 <el-input-number
@@ -405,11 +372,6 @@ onMounted(() => {
                   controls-position="right"
                   placeholder="请输入数字职级"
                 />
-              </el-form-item>
-            </el-col>
-            <el-col :xs="24" :sm="12">
-              <el-form-item label="职位类别">
-                <el-input v-model="formModel.jobCategory" disabled placeholder="由服务端维护" />
               </el-form-item>
             </el-col>
           </template>
@@ -430,22 +392,9 @@ onMounted(() => {
                 <el-input v-model="formModel.cadreType" clearable />
               </el-form-item>
             </el-col>
-            <el-col :xs="24" :sm="12">
-              <el-form-item label="26年新上岗">
-                <el-select v-model="formModel.newOnJob">
-                  <el-option label="是" value="Y" />
-                  <el-option label="否" value="N" />
-                </el-select>
-              </el-form-item>
-            </el-col>
             <el-col v-for="level in 5" :key="`department-${level}`" :xs="24" :sm="12">
               <el-form-item :label="`${['一', '二', '三', '四', '五'][level - 1]}级部门`">
                 <el-input v-model="formModel[`departname${level}` as keyof MaintenanceForm]" clearable />
-              </el-form-item>
-            </el-col>
-            <el-col v-for="level in [2, 3, 4, 5]" :key="`code-${level}`" :xs="24" :sm="12">
-              <el-form-item :label="`${['二', '三', '四', '五'][level - 2]}级部门编码`">
-                <el-input v-model="formModel[`l${level}DepartmentCode` as keyof MaintenanceForm]" clearable />
               </el-form-item>
             </el-col>
           </template>
