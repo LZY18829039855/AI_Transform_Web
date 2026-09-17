@@ -12,6 +12,7 @@ export const ADMIN_ONLY_ROUTE_NAMES = new Set<string>([
   'CertificationDetail',
   'ManualCreditManagement',
   'TrainingCourseManagement',
+  'ExpertCadreMaintenance',
   'PermissionManagement',
 ])
 

@@ -38,6 +38,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/expert-cadre-maintenance',
+    name: 'ExpertCadreMaintenance',
+    component: () => import('@/views/ExpertCadreMaintenance.vue'),
+    meta: {
+      title: '专家干部数据维护',
+      requiresAuth: true,
+      requiresAdmin: true,
+      keepAlive: false,
+    },
+  },
+  {
     path: '/permission-management',
     name: 'PermissionManagement',
     component: () => import('@/views/PermissionManagement.vue'),

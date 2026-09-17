@@ -35,6 +35,14 @@ const handleGoTrainingCourseManagement = async () => {
   window.open(resolved.href, '_blank', 'noopener,noreferrer')
 }
 
+const handleGoExpertCadreMaintenance = async () => {
+  if (!(await guardAdminAccess())) {
+    return
+  }
+  const resolved = router.resolve({ name: 'ExpertCadreMaintenance' })
+  window.open(resolved.href, '_blank', 'noopener,noreferrer')
+}
+
 const handlePermissionManagement = async () => {
   if (!(await guardAdminAccess())) {
     return
@@ -75,6 +83,7 @@ const handlePermissionManagement = async () => {
                 <el-dropdown-item @click="handleGoHome">返回首页</el-dropdown-item>
                 <el-dropdown-item @click="handleGoCreditManagement">多元化学分管理</el-dropdown-item>
                 <el-dropdown-item @click="handleGoTrainingCourseManagement">AI训战课程管理</el-dropdown-item>
+                <el-dropdown-item @click="handleGoExpertCadreMaintenance">专家干部数据维护</el-dropdown-item>
                 <el-dropdown-item divided @click="handlePermissionManagement">权限管理</el-dropdown-item>
               </el-dropdown-menu>
             </template>
